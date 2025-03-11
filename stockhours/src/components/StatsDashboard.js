@@ -14,33 +14,54 @@ import { theme } from '../theme';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const StatsDashboard = ({ tradeData }) => {
+  console.log('Trade Data in StatsDashboard:', tradeData); // Debug log
+
   if (!tradeData.length) {
     return <p style={{ color: theme.colors.white }}>No data uploaded yet.</p>;
   }
 
-  // Calculate basic stats
-  const totalTrades = tradeData.length;
-  const profitLoss = tradeData.reduce((sum, trade) => {
-    const entry = parseFloat(trade['Entry Price']);
-    const exit = parseFloat(trade['Exit Price']);
-    const qty = parseInt(trade['Quantity']);
-    const pl = trade['Side'] === 'Buy' ? (exit - entry) * qty : (entry - exit) * qty;
-    return sum + pl;
-  }, 0);
-  const winRate = (tradeData.filter(trade => {
-    const entry = parseFloat(trade['Entry Price']);
-    const exit = parseFloat(trade['Exit Price']);
-    return (trade['Side'] === 'Buy' && exit > entry) || (trade['Side'] === 'Sell' && entry > exit);
-  }).length / totalTrades) * 100;
+  // Calculate P&L for each trade
+  const tradeStats = tradeData.map(trade => {
+    const { Symbol, Strike, Expiration, Transactions } = trade;
 
-  // Chart data
+    // Separate buy (opening) and sell (closing) transactions
+    const buys = Transactions.filter(t => t.PosEffect === 'OPEN' && t.Side === 'BUY');
+    const sells = Transactions.filter(t => t.PosEffect === 'CLOSE' && t.Side === 'SELL');
+
+    // Calculate total buy cost (Price * |Quantity| * 100 for options)
+    const buyCost = buys.reduce((sum, t) => {
+      const contractValue = t.Price * 100; // Price per contract
+      return sum + contractValue * Math.abs(t.Quantity);
+    }, 0);
+
+    // Calculate total sell proceeds (Price * |Quantity| * 100 for options)
+    const sellProceeds = sells.reduce((sum, t) => {
+      const contractValue = t.Price * 100; // Price per contract
+      return sum + contractValue * Math.abs(t.Quantity);
+    }, 0);
+
+    // P&L = Sell Proceeds - Buy Cost
+    const profitLoss = sellProceeds - buyCost;
+
+    return { Symbol, Strike, Expiration, profitLoss };
+  });
+
+  // Total trades (number of unique Symbol-Strike-Expiration combinations)
+  const totalTrades = tradeStats.length;
+
+  // Total P&L across all trades
+  const totalProfitLoss = tradeStats.reduce((sum, trade) => sum + trade.profitLoss, 0);
+
+  // Chart data (P&L per trade)
   const chartData = {
-    labels: ['Profit/Loss', 'Win Rate'],
+    labels: tradeStats.map(trade => `${trade.Symbol}`),
     datasets: [
       {
-        label: 'Stats',
-        data: [profitLoss, winRate],
-        backgroundColor: [profitLoss >= 0 ? theme.colors.green : theme.colors.red, theme.colors.white],
+        label: 'Profit/Loss per Trade',
+        data: tradeStats.map(trade => trade.profitLoss),
+        backgroundColor: tradeStats.map(trade =>
+          trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red
+        ),
       },
     ],
   };
@@ -49,10 +70,17 @@ const StatsDashboard = ({ tradeData }) => {
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
       <h2 style={{ color: theme.colors.white }}>Trading Stats</h2>
       <p>Total Trades: {totalTrades}</p>
-      <p>Profit/Loss: <span style={{ color: profitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
-        ${profitLoss.toFixed(2)}
+      <p>Total Profit/Loss: <span style={{ color: totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
+        ${totalProfitLoss.toFixed(2)}
       </span></p>
-      <p>Win Rate: {winRate.toFixed(2)}%</p>
+      <h3 style={{ color: theme.colors.white }}>P&L by Trade</h3>
+      {tradeStats.map((trade, index) => (
+        <p key={index}>
+          {trade.Symbol}: <span style={{ color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
+            ${trade.profitLoss.toFixed(2)}
+          </span>
+        </p>
+      ))}
       <Bar data={chartData} options={{ scales: { y: { beginAtZero: true } } }} />
     </div>
   );
