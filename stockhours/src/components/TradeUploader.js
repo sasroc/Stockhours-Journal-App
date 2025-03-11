@@ -67,10 +67,18 @@ const TradeUploader = ({ setTradeData }) => {
             expiration = `${date.d} ${date.m} ${date.y}`; // e.g., "14 MAR 25"
           }
 
+          // Handle Qty as a number or string
+          let qty = row['Qty'];
+          if (typeof qty === 'string') {
+            qty = parseInt(qty.replace('+', '')) || 0; // Handle string case with + sign
+          } else {
+            qty = parseInt(qty) || 0; // Handle number case directly
+          }
+
           return {
             ExecTime: row['Exec Time'] || 'N/A',
             Side: row['Side'] || 'N/A',
-            Quantity: parseInt(row['Qty'].replace('+', '')) || 0, // Remove + sign and parse
+            Quantity: qty,
             Symbol: symbol,
             Expiration: expiration,
             Strike: parseFloat(row['Strike']) || 0,
