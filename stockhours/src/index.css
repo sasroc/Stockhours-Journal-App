@@ -1,0 +1,11 @@
+/* src/index.css */
+body {
+  background-color: #1F1F1F;
+  color: #FFFFFF;
+  font-family: Arial, sans-serif;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
