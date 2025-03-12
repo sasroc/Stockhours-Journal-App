@@ -28,43 +28,54 @@ const TradeUploader = ({ setTradeData }) => {
 
         console.log('Raw Data:', data); // Debug: Log raw parsed data
 
-        // Find the "Filled Orders" and "Canceled Orders" sections
+        // Determine the section to parse based on CSV content
+        let sectionStart, sectionEnd, sectionHeaders;
         const filledOrdersStart = data.findIndex(row => row[0] === 'Filled Orders');
-        const canceledOrdersStart = data.findIndex(row => row[0] === 'Canceled Orders');
-        if (filledOrdersStart === -1) {
-          throw new Error('Filled Orders section not found in the CSV');
+        const tradeHistoryStart = data.findIndex(row => row[0] === 'Account Trade History');
+        
+        if (filledOrdersStart !== -1) {
+          // Order History CSV format
+          sectionStart = filledOrdersStart;
+          sectionEnd = data.findIndex(row => row[0] === 'Canceled Orders') !== -1 
+            ? data.findIndex(row => row[0] === 'Canceled Orders') 
+            : data.length;
+          sectionHeaders = data[sectionStart + 1].slice(2); // Skip first two empty columns
+        } else if (tradeHistoryStart !== -1) {
+          // Account Statement CSV format
+          sectionStart = tradeHistoryStart;
+          sectionEnd = data.length; // Assume trade history is at the end
+          sectionHeaders = data[sectionStart + 1].slice(1); // Skip the first empty column
+        } else {
+          throw new Error('No recognizable trade section (Filled Orders or Account Trade History) found in the CSV');
         }
 
-        // Extract headers (skip the first two empty columns)
-        const headers = data[filledOrdersStart + 1].slice(2); // ['Exec Time', 'Spread', 'Side', ...]
-        console.log('Headers:', headers); // Debug: Log extracted headers
+        console.log('Headers:', sectionHeaders); // Debug: Log extracted headers
 
-        // Extract filled orders data (up to but not including "Canceled Orders")
-        const filledOrdersEnd = canceledOrdersStart !== -1 ? canceledOrdersStart : data.length;
-        const filledOrdersData = data
-          .slice(filledOrdersStart + 2, filledOrdersEnd)
-          .filter(row => row.length > 2 && (typeof row[2] === 'string' || typeof row[2] === 'number')) // Accept string or number
+        // Extract trade data
+        const tradeData = data
+          .slice(sectionStart + 2, sectionEnd)
+          .filter(row => row.length >= sectionHeaders.length && (typeof row[1] === 'string' || typeof row[1] === 'number')) // Adjusted filter
           .map(row => {
-            const rowData = row.slice(2); // Skip first two empty columns
+            const rowData = sectionHeaders.length === 13 ? row.slice(2) : row.slice(1); // Adjust slicing based on header length
             const obj = {};
-            headers.forEach((header, index) => {
+            sectionHeaders.forEach((header, index) => {
               obj[header] = rowData[index];
             });
             return obj;
           });
 
-        console.log('Filled Orders Data:', filledOrdersData); // Debug: Log filled orders data
+        console.log('Trade Data:', tradeData); // Debug: Log extracted trade data
 
-        // Transform the data (no Status filter since all orders in "Filled Orders" are FILLED)
-        const transformedData = filledOrdersData.map(row => {
+        // Transform the data
+        const transformedData = tradeData.map(row => {
           const posEffect = row['Pos Effect'] || 'UNKNOWN';
-          const symbol = row['Symbol'] || 'UNKNOWN'; // Extract symbol from 'Symbol' column
+          const symbol = row['Symbol'] || 'UNKNOWN';
 
           // Convert Excel serial date to readable format if numeric
           let expiration = row['Exp'] || 'N/A';
           if (!isNaN(expiration)) {
             const date = XLSX.SSF.parse_date_code(parseFloat(expiration));
-            expiration = `${date.d} ${date.m} ${date.y}`; // e.g., "14 MAR 25"
+            expiration = `${date.d} ${date.m} ${date.y}`; // e.g., "7 MAR 25"
           }
 
           // Handle Qty as a number or string
