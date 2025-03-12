@@ -28,35 +28,22 @@ const TradeUploader = ({ setTradeData }) => {
 
         console.log('Raw Data:', data); // Debug: Log raw parsed data
 
-        // Determine the section to parse based on CSV content
-        let sectionStart, sectionEnd, sectionHeaders;
-        const filledOrdersStart = data.findIndex(row => row[0] === 'Filled Orders');
+        // Find the "Account Trade History" section
         const tradeHistoryStart = data.findIndex(row => row[0] === 'Account Trade History');
-        
-        if (filledOrdersStart !== -1) {
-          // Order History CSV format
-          sectionStart = filledOrdersStart;
-          sectionEnd = data.findIndex(row => row[0] === 'Canceled Orders') !== -1 
-            ? data.findIndex(row => row[0] === 'Canceled Orders') 
-            : data.length;
-          sectionHeaders = data[sectionStart + 1].slice(2); // Skip first two empty columns
-        } else if (tradeHistoryStart !== -1) {
-          // Account Statement CSV format
-          sectionStart = tradeHistoryStart;
-          sectionEnd = data.length; // Assume trade history is at the end
-          sectionHeaders = data[sectionStart + 1].slice(1); // Skip the first empty column
-        } else {
-          throw new Error('No recognizable trade section (Filled Orders or Account Trade History) found in the CSV');
+        if (tradeHistoryStart === -1) {
+          throw new Error('Account Trade History section not found in the CSV');
         }
 
+        // Extract headers (skip the first empty column)
+        const sectionHeaders = data[tradeHistoryStart + 1].slice(1); // ['Exec Time', 'Spread', 'Side', ...]
         console.log('Headers:', sectionHeaders); // Debug: Log extracted headers
 
-        // Extract trade data
+        // Extract trade data (from the section to the end)
         const tradeData = data
-          .slice(sectionStart + 2, sectionEnd)
-          .filter(row => row.length >= sectionHeaders.length && (typeof row[1] === 'string' || typeof row[1] === 'number')) // Adjusted filter
+          .slice(tradeHistoryStart + 2)
+          .filter(row => row.length >= sectionHeaders.length && (typeof row[1] === 'string' || typeof row[1] === 'number')) // Validate trade rows
           .map(row => {
-            const rowData = sectionHeaders.length === 13 ? row.slice(2) : row.slice(1); // Adjust slicing based on header length
+            const rowData = row.slice(1); // Skip the first empty column
             const obj = {};
             sectionHeaders.forEach((header, index) => {
               obj[header] = rowData[index];
