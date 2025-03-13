@@ -58,13 +58,19 @@ const TradeUploader = ({ setTradeData }) => {
           const posEffect = row['Pos Effect'] || 'UNKNOWN';
           const symbol = row['Symbol'] || 'UNKNOWN';
 
-          // Convert Excel serial date to readable format if numeric
+          // Convert Excel serial date to full timestamp and date-only format
           let execTime = row['Exec Time'] || 'N/A';
+          let tradeDate = 'N/A';
           if (!isNaN(execTime)) {
-            const date = XLSX.SSF.parse_date_code(parseFloat(execTime));
-            execTime = `${date.m}/${date.d}/${date.y}`; // e.g., "3/7/2025"
+            const serialDate = parseFloat(execTime);
+            const date = XLSX.SSF.parse_date_code(serialDate);
+            tradeDate = `${date.m}/${date.d}/${date.y}`; // e.g., "3/7/2025"
+            const hours = Math.floor((serialDate % 1) * 24);
+            const minutes = Math.floor(((serialDate % 1) * 24 - hours) * 60);
+            const seconds = Math.floor((((serialDate % 1) * 24 - hours) * 60 - minutes) * 60);
+            execTime = new Date(date.y, date.m - 1, date.d, hours, minutes, seconds).toISOString();
           }
-          console.log('ExecTime Converted:', execTime); // Debug: Log converted ExecTime
+          console.log('ExecTime Converted:', execTime, 'TradeDate:', tradeDate); // Debug: Log converted ExecTime and TradeDate
 
           // Convert Excel serial date to readable format if numeric
           let expiration = row['Exp'] || 'N/A';
@@ -82,7 +88,8 @@ const TradeUploader = ({ setTradeData }) => {
           }
 
           return {
-            ExecTime: execTime,
+            ExecTime: execTime, // ISO format for hour extraction
+            TradeDate: tradeDate, // MM/DD/YYYY for display
             Side: row['Side'] || 'N/A',
             Quantity: qty,
             Symbol: symbol,
