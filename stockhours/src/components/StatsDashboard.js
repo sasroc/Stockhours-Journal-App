@@ -23,6 +23,7 @@ const StatsDashboard = ({ tradeData }) => {
   // Calculate P&L for each trade
   const tradeStats = tradeData.map(trade => {
     const { Symbol, Strike, Expiration, Transactions } = trade;
+    const firstTransaction = Transactions[0]; // Get the first transaction for ExecTime
 
     // Separate buy (opening) and sell (closing) transactions
     const buys = Transactions.filter(t => t.PosEffect === 'OPEN' && t.Side === 'BUY');
@@ -43,7 +44,7 @@ const StatsDashboard = ({ tradeData }) => {
     // P&L = Sell Proceeds - Buy Cost
     const profitLoss = sellProceeds - buyCost;
 
-    return { Symbol, Strike, Expiration, profitLoss };
+    return { Symbol, Strike, Expiration, profitLoss, ExecTime: firstTransaction.ExecTime };
   });
 
   // Total trades (number of unique Symbol-Strike-Expiration combinations)
@@ -76,7 +77,7 @@ const StatsDashboard = ({ tradeData }) => {
       <h3 style={{ color: theme.colors.white }}>P&L by Trade</h3>
       {tradeStats.map((trade, index) => (
         <p key={index}>
-          {trade.Symbol}: <span style={{ color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
+          {index + 1}. ({trade.ExecTime}) {trade.Symbol}: <span style={{ color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
             ${trade.profitLoss.toFixed(2)}
           </span>
         </p>

@@ -59,6 +59,14 @@ const TradeUploader = ({ setTradeData }) => {
           const symbol = row['Symbol'] || 'UNKNOWN';
 
           // Convert Excel serial date to readable format if numeric
+          let execTime = row['Exec Time'] || 'N/A';
+          if (!isNaN(execTime)) {
+            const date = XLSX.SSF.parse_date_code(parseFloat(execTime));
+            execTime = `${date.m}/${date.d}/${date.y}`; // e.g., "3/7/2025"
+          }
+          console.log('ExecTime Converted:', execTime); // Debug: Log converted ExecTime
+
+          // Convert Excel serial date to readable format if numeric
           let expiration = row['Exp'] || 'N/A';
           if (!isNaN(expiration)) {
             const date = XLSX.SSF.parse_date_code(parseFloat(expiration));
@@ -74,7 +82,7 @@ const TradeUploader = ({ setTradeData }) => {
           }
 
           return {
-            ExecTime: row['Exec Time'] || 'N/A',
+            ExecTime: execTime,
             Side: row['Side'] || 'N/A',
             Quantity: qty,
             Symbol: symbol,
