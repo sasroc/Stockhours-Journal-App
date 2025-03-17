@@ -4,6 +4,7 @@ import StatsDashboard from './components/StatsDashboard';
 import { theme } from './theme';
 import logo from './assets/clocklogo.PNG'; // Clock logo
 import blackSHlogo from './assets/blackSHlogo.PNG'; // Stock Hours logo
+import * as XLSX from 'xlsx';
 import './App.css';
 
 function App() {
@@ -27,73 +28,125 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Function to handle file upload (replicating TradeUploader logic)
+  // Function to handle file upload using XLSX
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target.result;
-        const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim()));
-        let tradeDataStartIndex = rows.findIndex(row => row[0] === 'Account Trade History');
-        if (tradeDataStartIndex === -1) {
-          console.error('Account Trade History section not found');
-          return;
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      try {
+        let data;
+        if (file.name.endsWith('.csv')) {
+          const text = event.target.result;
+          const workbook = XLSX.read(text, { type: 'string' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        } else {
+          const binaryStr = event.target.result;
+          const workbook = XLSX.read(binaryStr, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         }
 
-        tradeDataStartIndex += 2; // Skip header row and section title
-        let tradeDataEndIndex = rows.findIndex((row, index) => index > tradeDataStartIndex && row[0].startsWith('Profits and Losses'));
-        if (tradeDataEndIndex === -1) tradeDataEndIndex = rows.length;
+        // Find the "Account Trade History" section
+        const tradeHistoryStart = data.findIndex(row => row[0] === 'Account Trade History');
+        if (tradeHistoryStart === -1) {
+          throw new Error('Account Trade History section not found in the CSV');
+        }
 
-        const tradeRows = rows.slice(tradeDataStartIndex, tradeDataEndIndex).filter(row => row.length > 1 && row[0] !== '');
-        const transformedData = tradeRows.map(row => {
-          try {
-            const execTimeStr = row[1]; // e.g., "2/28/25 09:31:48"
-            const [datePart, timePart] = execTimeStr.split(' ');
-            const [month, day, year] = datePart.split('/').map(Number);
-            const [hours, minutes, seconds] = timePart.split(':').map(Number);
-            const fullYear = 2000 + year; // Assuming 2-digit year (e.g., 25 -> 2025)
-            const execTime = new Date(fullYear, month - 1, day, hours, minutes, seconds).toISOString();
-            const tradeDate = `${month}/${day}/${fullYear}`;
-            return {
-              ExecTime: execTime,
-              TradeDate: tradeDate,
-              Side: row[2], // e.g., "SELL"
-              Quantity: parseInt(row[3], 10) || 0, // e.g., -1
-              PosEffect: row[4], // e.g., "TO CLOSE"
-              Symbol: row[5], // e.g., "TSLA"
-              Expiration: row[6], // e.g., "28 FEB 25"
-              Strike: parseFloat(row[7]) || 0, // e.g., 275
-              Type: row[8], // e.g., "PUT"
-              Price: parseFloat(row[9]) || 0, // e.g., 5.65
-              NetPrice: parseFloat(row[10]) || 0, // e.g., 5.65
-              OrderType: row[11], // e.g., "LMT"
-            };
-          } catch (error) {
-            console.error('Error parsing row:', row, error);
-            return null;
+        // Extract headers (skip the first empty column)
+        const sectionHeaders = data[tradeHistoryStart + 1].slice(1);
+
+        // Extract trade data (from the section to the end)
+        const tradeData = data
+          .slice(tradeHistoryStart + 2)
+          .filter(row => row.length >= sectionHeaders.length && (typeof row[1] === 'string' || typeof row[1] === 'number'))
+          .map(row => {
+            const rowData = row.slice(1);
+            const obj = {};
+            sectionHeaders.forEach((header, index) => {
+              obj[header] = rowData[index];
+            });
+            return obj;
+          });
+
+        // Transform the data
+        const transformedData = tradeData.map(row => {
+          const posEffect = row['Pos Effect'] || 'UNKNOWN';
+          const symbol = row['Symbol'] || 'UNKNOWN';
+
+          let execTime = row['Exec Time'] || 'N/A';
+          let tradeDate = 'N/A';
+          if (!isNaN(execTime)) {
+            const serialDate = parseFloat(execTime);
+            const date = XLSX.SSF.parse_date_code(serialDate);
+            tradeDate = `${date.m}/${date.d}/${date.y}`;
+            const hours = Math.floor((serialDate % 1) * 24);
+            const minutes = Math.floor(((serialDate % 1) * 24 - hours) * 60);
+            const seconds = Math.floor((((serialDate % 1) * 24 - hours) * 60 - minutes) * 60);
+            execTime = new Date(date.y, date.m - 1, date.d, hours, minutes, seconds).toISOString();
           }
-        }).filter(row => row !== null);
 
-        // Group trades by Symbol, Strike, and Expiration
-        const groupedTrades = transformedData.reduce((acc, curr) => {
-          const key = `${curr.Symbol}-${curr.Strike}-${curr.Expiration}`;
+          let expiration = row['Exp'] || 'N/A';
+          if (!isNaN(expiration)) {
+            const date = XLSX.SSF.parse_date_code(parseFloat(expiration));
+            expiration = `${date.d} ${date.m} ${date.y}`;
+          }
+
+          let qty = row['Qty'];
+          if (typeof qty === 'string') {
+            qty = parseInt(qty.replace('+', '')) || 0;
+          } else {
+            qty = parseInt(qty) || 0;
+          }
+
+          return {
+            ExecTime: execTime,
+            TradeDate: tradeDate,
+            Side: row['Side'] || 'N/A',
+            Quantity: qty,
+            Symbol: symbol,
+            Expiration: expiration,
+            Strike: parseFloat(row['Strike']) || 0,
+            Price: parseFloat(row['Price']) || 0,
+            OrderType: row['Order Type'] || 'N/A',
+            PosEffect: posEffect.includes('OPEN') ? 'OPEN' : posEffect.includes('CLOSE') ? 'CLOSE' : 'UNKNOWN',
+          };
+        });
+
+        // Group by Symbol, Strike, and Expiration
+        const groupedByTrade = transformedData.reduce((acc, trade) => {
+          const key = `${trade.Symbol}-${trade.Strike}-${trade.Expiration}`;
           if (!acc[key]) {
-            acc[key] = {
-              Symbol: curr.Symbol,
-              Strike: curr.Strike,
-              Expiration: curr.Expiration,
-              Transactions: [],
-            };
+            acc[key] = [];
           }
-          acc[key].Transactions.push(curr);
+          acc[key].push(trade);
           return acc;
         }, {});
 
-        setTradeData(Object.values(groupedTrades));
-        console.log('Processed tradeData:', Object.values(groupedTrades)); // Debug
-      };
+        // Convert grouped data to an array of trades
+        const groupedTrades = Object.keys(groupedByTrade).map(key => ({
+          Symbol: groupedByTrade[key][0].Symbol,
+          Strike: groupedByTrade[key][0].Strike,
+          Expiration: groupedByTrade[key][0].Expiration,
+          Transactions: groupedByTrade[key],
+        }));
+
+        setTradeData(groupedTrades);
+      } catch (error) {
+        alert('Error parsing file. Please ensure it is a valid Excel or CSV file.');
+        console.error('File parsing error:', error);
+      }
+    };
+
+    if (file.name.endsWith('.csv')) {
       reader.readAsText(file);
+    } else {
+      reader.readAsBinaryString(file);
     }
   };
 
@@ -164,6 +217,8 @@ function App() {
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <label
             htmlFor="sidebar-file-upload"
+            onMouseEnter={(e) => { e.target.querySelector('.tooltip').style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { e.target.querySelector('.tooltip').style.visibility = 'hidden'; }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -176,37 +231,37 @@ function App() {
               fontSize: '24px',
               color: theme.colors.white,
               marginBottom: '20px',
+              position: 'relative',
             }}
           >
             +
+            <span
+              className="tooltip"
+              style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
+              }}
+            >
+              Add Trade(s)
+            </span>
           </label>
           <input
             id="sidebar-file-upload"
             type="file"
-            accept=".csv"
+            accept=".xlsx, .xls, .csv"
             onChange={handleFileUpload}
             style={{ display: 'none' }}
           />
-          {/* Tooltip */}
-          <span
-            style={{
-              visibility: 'hidden',
-              position: 'absolute',
-              left: '50px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              backgroundColor: '#333',
-              color: theme.colors.white,
-              padding: '5px 10px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              whiteSpace: 'nowrap',
-              zIndex: 1001,
-            }}
-            className="tooltip"
-          >
-            Add Trade(s)
-          </span>
         </div>
       </div>
 
