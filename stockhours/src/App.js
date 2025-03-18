@@ -1,16 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TradeUploader from './components/TradeUploader';
 import StatsDashboard from './components/StatsDashboard';
+import ReportsScreen from './components/ReportsScreen'; // Import the new component
 import { theme } from './theme';
 import logo from './assets/clocklogo.PNG'; // Clock logo
 import blackSHlogo from './assets/blackSHlogo.PNG'; // Stock Hours logo
 import * as XLSX from 'xlsx';
 import './App.css';
+// Import Bar and ChartJS components (used in child components, suppress unused warning)
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function App() {
   const [tradeData, setTradeData] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960); // Adjusted breakpoint to 960px
+  const [currentScreen, setCurrentScreen] = useState('Dashboard'); // Track current screen: 'Dashboard' or 'Reports'
+
+  // Declare useRef for the new Dashboard and Reports buttons and their tooltips
+  const dashboardButtonRef = useRef(null);
+  const dashboardTooltipRef = useRef(null);
+  const reportsButtonRef = useRef(null);
+  const reportsTooltipRef = useRef(null);
 
   // Handle window resize to toggle sidebar visibility
   useEffect(() => {
@@ -150,9 +170,18 @@ function App() {
     }
   };
 
+  // Handler for switching screens
+  const handleReportsClick = () => {
+    setCurrentScreen('Reports');
+  };
+
+  const handleDashboardClick = () => {
+    setCurrentScreen('Dashboard');
+  };
+
   return (
     <div className="App" style={{ backgroundColor: '#000', minHeight: '100vh', color: theme.colors.white }}>
-      {/* Header with logo, hamburger menu (if half screen), and Dashboard text */}
+      {/* Header with logo, hamburger menu (if half screen), and screen title */}
       <header
         style={{
           display: 'flex',
@@ -194,7 +223,7 @@ function App() {
           style={{ height: '50px', marginRight: '15px' }}
         />
         <h2 style={{ margin: 0, fontSize: '24px', color: theme.colors.white }}>
-          Dashboard
+          {currentScreen}
         </h2>
       </header>
 
@@ -263,9 +292,128 @@ function App() {
             style={{ display: 'none' }}
           />
         </div>
+
+        {/* Dashboard Button with 2x2 Grid Icon and Tooltip */}
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+          <div
+            ref={dashboardButtonRef}
+            onClick={handleDashboardClick}
+            onMouseEnter={(e) => { dashboardTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { dashboardTooltipRef.current.style.visibility = 'hidden'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              backgroundColor: theme.colors.green,
+              borderRadius: '50%',
+              cursor: 'pointer',
+              marginBottom: '20px', // Maintain spacing similar to the '+' button
+              position: 'relative',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute' }}
+            >
+              {/* 2x2 Grid Icon */}
+              <rect x="4" y="4" width="6" height="6" />
+              <rect x="4" y="12" width="6" height="6" />
+              <rect x="12" y="4" width="6" height="6" />
+              <rect x="12" y="12" width="6" height="6" />
+            </svg>
+            <span
+              ref={dashboardTooltipRef}
+              className="tooltip"
+              style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
+              }}
+            >
+              Dashboard
+            </span>
+          </div>
+        </div>
+
+        {/* Reports Button with Icon from Attached Image and Tooltip */}
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+          <div
+            ref={reportsButtonRef}
+            onClick={handleReportsClick}
+            onMouseEnter={(e) => { reportsTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { reportsTooltipRef.current.style.visibility = 'hidden'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              backgroundColor: theme.colors.green,
+              borderRadius: '50%',
+              cursor: 'pointer',
+              marginBottom: '20px', // Maintain spacing similar to other buttons
+              position: 'relative',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute' }}
+            >
+              {/* Icon based on attached image (square with vertical lines) */}
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+              <line x1="10" y1="8" x2="10" y2="16" />
+              <line x1="14" y1="8" x2="14" y2="16" />
+            </svg>
+            <span
+              ref={reportsTooltipRef}
+              className="tooltip"
+              style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
+              }}
+            >
+              Reports
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Main content */}
+      {/* Main content based on current screen */}
       <div
         style={{
           display: 'flex',
@@ -276,24 +424,48 @@ function App() {
           transition: 'margin-left 0.3s ease',
         }}
       >
-        <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
-        <h1 style={{ color: theme.colors.white, marginBottom: '20px' }}>Stockhours</h1>
-        <TradeUploader setTradeData={setTradeData} />
+        {currentScreen === 'Dashboard' ? (
+          <>
+            <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <h1 style={{ color: theme.colors.white, marginBottom: '20px' }}>Stockhours Journal</h1>
+            <TradeUploader setTradeData={setTradeData} />
 
-        {/* Container for StatsDashboard */}
-        <div
-          style={{
-            width: '90%',
-            maxWidth: '1200px',
-            backgroundColor: '#0d0d0d',
-            borderRadius: '8px',
-            padding: '20px',
-            margin: '0 auto',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
-          }}
-        >
-          <StatsDashboard tradeData={tradeData} />
-        </div>
+            {/* Container for StatsDashboard */}
+            <div
+              style={{
+                width: '90%',
+                maxWidth: '1200px',
+                backgroundColor: '#0d0d0d',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '0 auto',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              <StatsDashboard tradeData={tradeData} />
+            </div>
+          </>
+        ) : (
+          <>
+            <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <TradeUploader setTradeData={setTradeData} />
+
+            {/* Container for Reports screen with modified StatsDashboard */}
+            <div
+              style={{
+                width: '90%',
+                maxWidth: '1200px',
+                backgroundColor: '#0d0d0d',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '0 auto',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              <ReportsScreen tradeData={tradeData} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
