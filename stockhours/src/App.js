@@ -1,7 +1,6 @@
 // StockHours-Journal-App/stockhours/src/App.js
 
 import React, { useState, useEffect, useRef } from 'react';
-import TradeUploader from './components/TradeUploader';
 import StatsDashboard from './components/StatsDashboard';
 import ReportsScreen from './components/ReportsScreen';
 import TradesScreen from './components/TradesScreen';
@@ -500,7 +499,7 @@ function App() {
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <h1 style={{ color: theme.colors.white, marginBottom: '20px' }}>Stockhours Journal</h1>
-            <TradeUploader setTradeData={setTradeData} />
+            {/* Removed TradeUploader from Dashboard screen */}
 
             {/* Container for StatsDashboard */}
             <div
@@ -520,7 +519,7 @@ function App() {
         ) : currentScreen === 'Reports' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
-            <TradeUploader setTradeData={setTradeData} />
+            {/* Removed TradeUploader from Reports screen */}
 
             {/* Container for Reports screen */}
             <div
@@ -540,7 +539,7 @@ function App() {
         ) : (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
-            {/* No TradeUploader for Trades screen as per requirements */}
+            {/* No TradeUploader for Trades screen as per previous requirements */}
 
             {/* Container for Trades screen */}
             <div
