@@ -1,7 +1,10 @@
+// StockHours-Journal-App/stockhours/src/App.js
+
 import React, { useState, useEffect, useRef } from 'react';
 import TradeUploader from './components/TradeUploader';
 import StatsDashboard from './components/StatsDashboard';
-import ReportsScreen from './components/ReportsScreen'; // Import the new component
+import ReportsScreen from './components/ReportsScreen';
+import TradesScreen from './components/TradesScreen';
 import { theme } from './theme';
 import logo from './assets/clocklogo.PNG'; // Clock logo
 import blackSHlogo from './assets/blackSHlogo.PNG'; // Stock Hours logo
@@ -24,13 +27,15 @@ function App() {
   const [tradeData, setTradeData] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960); // Adjusted breakpoint to 960px
-  const [currentScreen, setCurrentScreen] = useState('Dashboard'); // Track current screen: 'Dashboard' or 'Reports'
+  const [currentScreen, setCurrentScreen] = useState('Dashboard'); // Track current screen: 'Dashboard', 'Reports', or 'Trades'
 
-  // Declare useRef for the new Dashboard and Reports buttons and their tooltips
+  // Declare useRef for the buttons and their tooltips
   const dashboardButtonRef = useRef(null);
   const dashboardTooltipRef = useRef(null);
   const reportsButtonRef = useRef(null);
   const reportsTooltipRef = useRef(null);
+  const tradesButtonRef = useRef(null);
+  const tradesTooltipRef = useRef(null);
 
   // Handle window resize to toggle sidebar visibility
   useEffect(() => {
@@ -170,13 +175,17 @@ function App() {
     }
   };
 
-  // Handler for switching screens
+  // Handlers for switching screens
+  const handleDashboardClick = () => {
+    setCurrentScreen('Dashboard');
+  };
+
   const handleReportsClick = () => {
     setCurrentScreen('Reports');
   };
 
-  const handleDashboardClick = () => {
-    setCurrentScreen('Dashboard');
+  const handleTradesClick = () => {
+    setCurrentScreen('Trades');
   };
 
   return (
@@ -309,7 +318,7 @@ function App() {
               backgroundColor: theme.colors.green,
               borderRadius: '50%',
               cursor: 'pointer',
-              marginBottom: '20px', // Maintain spacing similar to the '+' button
+              marginBottom: '20px',
               position: 'relative',
             }}
           >
@@ -353,7 +362,7 @@ function App() {
           </div>
         </div>
 
-        {/* Reports Button with Icon from Attached Image and Tooltip */}
+        {/* Reports Button with Icon and Tooltip */}
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div
             ref={reportsButtonRef}
@@ -369,7 +378,7 @@ function App() {
               backgroundColor: theme.colors.green,
               borderRadius: '50%',
               cursor: 'pointer',
-              marginBottom: '20px', // Maintain spacing similar to other buttons
+              marginBottom: '20px',
               position: 'relative',
             }}
           >
@@ -411,6 +420,69 @@ function App() {
             </span>
           </div>
         </div>
+
+        {/* Trades Button with Candlestick Chart Icon and Tooltip */}
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+          <div
+            ref={tradesButtonRef}
+            onClick={handleTradesClick}
+            onMouseEnter={(e) => { tradesTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { tradesTooltipRef.current.style.visibility = 'hidden'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              backgroundColor: theme.colors.green,
+              borderRadius: '50%',
+              cursor: 'pointer',
+              marginBottom: '20px',
+              position: 'relative',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute' }}
+            >
+              {/* Left Candlestick (taller) */}
+              <line x1="8" y1="4" x2="8" y2="8" /> {/* Top wick */}
+              <rect x="6" y="8" width="4" height="8" /> {/* Body */}
+              <line x1="8" y1="16" x2="8" y2="20" /> {/* Bottom wick */}
+              {/* Right Candlestick (shorter) */}
+              <line x1="16" y1="6" x2="16" y2="9" /> {/* Top wick */}
+              <rect x="14" y="9" width="4" height="6" /> {/* Body */}
+              <line x1="16" y1="15" x2="16" y2="18" /> {/* Bottom wick */}
+            </svg>
+            <span
+              ref={tradesTooltipRef}
+              className="tooltip"
+              style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
+              }}
+            >
+              Trades
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Main content based on current screen */}
@@ -445,12 +517,12 @@ function App() {
               <StatsDashboard tradeData={tradeData} />
             </div>
           </>
-        ) : (
+        ) : currentScreen === 'Reports' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <TradeUploader setTradeData={setTradeData} />
 
-            {/* Container for Reports screen with modified StatsDashboard */}
+            {/* Container for Reports screen */}
             <div
               style={{
                 width: '90%',
@@ -463,6 +535,26 @@ function App() {
               }}
             >
               <ReportsScreen tradeData={tradeData} />
+            </div>
+          </>
+        ) : (
+          <>
+            <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            {/* No TradeUploader for Trades screen as per requirements */}
+
+            {/* Container for Trades screen */}
+            <div
+              style={{
+                width: '90%',
+                maxWidth: '1200px',
+                backgroundColor: '#0d0d0d',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '0 auto',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              <TradesScreen tradeData={tradeData} />
             </div>
           </>
         )}
