@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+// StockHours-Journal-App/stockhours/src/components/StatsDashboard.js
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -17,6 +19,14 @@ const StatsDashboard = ({ tradeData }) => {
   console.log('Trade Data in StatsDashboard:', tradeData);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState({});
+
+  // Refs for tooltips
+  const totalTradesRef = useRef(null);
+  const totalTradesTooltipRef = useRef(null);
+  const totalPnlInfoRef = useRef(null);
+  const totalPnlInfoTooltipRef = useRef(null);
+  const tradeExpectancyInfoRef = useRef(null);
+  const tradeExpectancyInfoTooltipRef = useRef(null);
 
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
@@ -121,11 +131,13 @@ const StatsDashboard = ({ tradeData }) => {
     }
   }, [tradeData, trades]);
 
+  // Now trades is accessible here
   console.log('Trade Stats:', trades);
 
   const totalTrades = trades.length;
   console.log('Total Trades:', totalTrades);
 
+  // If no trade data, render only the calendar in default view
   if (!tradeData.length) {
     return (
       <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
@@ -136,6 +148,13 @@ const StatsDashboard = ({ tradeData }) => {
   }
 
   const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
+  const tradeExpectancy = totalTrades > 0 ? totalProfitLoss / totalTrades : 0;
+
+  const getValueColor = (value) => {
+    if (value > 0) return theme.colors.green;
+    if (value < 0) return theme.colors.red;
+    return '#808080'; // Gray for neutral (0)
+  };
 
   const tickerPnl = trades.reduce((acc, trade) => {
     acc[trade.Symbol] = (acc[trade.Symbol] || 0) + trade.profitLoss;
@@ -270,19 +289,178 @@ const StatsDashboard = ({ tradeData }) => {
 
   return (
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
-      <h2 style={{ color: theme.colors.white }}>Trading Stats</h2>
-      <p>Total Trades: {totalTrades}</p>
-      <p>Total Profit/Loss: <span style={{ color: totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
-        ${totalProfitLoss.toFixed(2)}
-      </span></p>
-      <h3 style={{ color: theme.colors.white }}>P&L by Trade</h3>
-      {trades.map((trade, index) => (
-        <p key={index}>
-          {index + 1}. ({trade.TradeDate}) {trade.Symbol}: <span style={{ color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
-            ${trade.profitLoss.toFixed(2)}
-          </span>
-        </p>
-      ))}
+      {/* New Stats Boxes */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', gap: '10px' }}>
+        {/* Total P&L Box */}
+        <div
+          style={{
+            backgroundColor: '#2a2a2a',
+            borderRadius: '8px',
+            padding: '15px',
+            width: 'calc(50% - 5px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            position: 'relative',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+            <span style={{ color: theme.colors.white, fontSize: '16px' }}>Total P&L</span>
+            <span
+              ref={totalTradesRef}
+              onMouseEnter={() => { totalTradesTooltipRef.current.style.visibility = 'visible'; }}
+              onMouseLeave={() => { totalTradesTooltipRef.current.style.visibility = 'hidden'; }}
+              style={{ marginLeft: '5px', color: 'blue', fontSize: '14px', position: 'relative', cursor: 'pointer' }}
+            >
+              ({totalTrades})
+              <span
+                ref={totalTradesTooltipRef}
+                style={{
+                  visibility: 'hidden',
+                  position: 'absolute',
+                  top: '-30px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  backgroundColor: '#333',
+                  color: theme.colors.white,
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap',
+                  zIndex: 1001,
+                }}
+              >
+                Total Trades
+              </span>
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+            <span style={{ color: getValueColor(totalProfitLoss), fontSize: '24px', fontWeight: 'bold' }}>
+              ${totalProfitLoss.toFixed(2)}
+            </span>
+            <div
+              ref={totalPnlInfoRef}
+              onMouseEnter={() => {
+                totalPnlInfoTooltipRef.current.style.visibility = 'visible';
+                totalPnlInfoTooltipRef.current.style.backgroundColor = '#000000';
+              }}
+              onMouseLeave={() => {
+                totalPnlInfoTooltipRef.current.style.visibility = 'hidden';
+                totalPnlInfoTooltipRef.current.style.backgroundColor = '#333';
+              }}
+              style={{ position: 'relative', cursor: 'pointer' }}
+            >
+              <svg
+                style={{ marginLeft: '10px' }}
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#808080"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12" y2="8" />
+              </svg>
+              <span
+                ref={totalPnlInfoTooltipRef}
+                style={{
+                  visibility: 'hidden',
+                  position: 'absolute',
+                  top: '-30px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  backgroundColor: '#333',
+                  color: theme.colors.white,
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap', // Ensure single line
+                  zIndex: 1001,
+                  textAlign: 'center',
+                }}
+              >
+                The total realized profit and loss for all closed trades.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Trade Expectancy Box */}
+        <div
+          style={{
+            backgroundColor: '#2a2a2a',
+            borderRadius: '8px',
+            padding: '15px',
+            width: 'calc(50% - 5px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            position: 'relative',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+            <span style={{ color: theme.colors.white, fontSize: '16px' }}>Trade Expectancy</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+            <span style={{ color: getValueColor(tradeExpectancy), fontSize: '24px', fontWeight: 'bold' }}>
+              ${tradeExpectancy.toFixed(2)}
+            </span>
+            <div
+              ref={tradeExpectancyInfoRef}
+              onMouseEnter={() => {
+                tradeExpectancyInfoTooltipRef.current.style.visibility = 'visible';
+                tradeExpectancyInfoTooltipRef.current.style.backgroundColor = '#000000';
+              }}
+              onMouseLeave={() => {
+                tradeExpectancyInfoTooltipRef.current.style.visibility = 'hidden';
+                tradeExpectancyInfoTooltipRef.current.style.backgroundColor = '#333';
+              }}
+              style={{ position: 'relative', cursor: 'pointer' }}
+            >
+              <svg
+                style={{ marginLeft: '10px' }}
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#808080"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12" y2="8" />
+              </svg>
+              <span
+                ref={tradeExpectancyInfoTooltipRef}
+                style={{
+                  visibility: 'hidden',
+                  position: 'absolute',
+                  top: '-30px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  backgroundColor: '#333',
+                  color: theme.colors.white,
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap', // Ensure single line
+                  zIndex: 1001,
+                  textAlign: 'center',
+                }}
+              >
+                The average amount you make or lose per trade.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div style={{ marginTop: '20px' }}>
         <Bar data={tradeChartData} options={{ scales: { y: { beginAtZero: true } } }} />
       </div>
@@ -302,20 +480,14 @@ const StatsDashboard = ({ tradeData }) => {
           <button onClick={() => changeMonth(1)} style={{ marginLeft: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>→</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
-          <div style={{ display: 'flex', marginBottom: '5px' }}>
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-              <span
-                key={index}
-                style={{
-                  width: '40px',
-                  textAlign: 'center',
-                  color: theme.colors.white,
-                  fontSize: '12px',
-                }}
-              >
-                {day}
-              </span>
-            ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '5px' }}>
+            <span style={{ width: '40px', textAlign: 'center' }}>Sun</span>
+            <span style={{ width: '40px', textAlign: 'center' }}>Mon</span>
+            <span style={{ width: '40px', textAlign: 'center' }}>Tue</span>
+            <span style={{ width: '40px', textAlign: 'center' }}>Wed</span>
+            <span style={{ width: '40px', textAlign: 'center' }}>Thu</span>
+            <span style={{ width: '40px', textAlign: 'center' }}>Fri</span>
+            <span style={{ width: '40px', textAlign: 'center' }}>Sat</span>
           </div>
           {renderCalendar()}
         </div>
@@ -400,20 +572,14 @@ const Calendar = ({ defaultView }) => {
         <button onClick={() => changeMonth(1)} style={{ marginLeft: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>→</button>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
-        <div style={{ display: 'flex', marginBottom: '5px' }}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-            <span
-              key={index}
-              style={{
-                width: '40px',
-                textAlign: 'center',
-                color: theme.colors.white,
-                fontSize: '12px',
-              }}
-            >
-              {day}
-            </span>
-          ))}
+        <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '5px' }}>
+          <span style={{ width: '40px', textAlign: 'center' }}>Sun</span>
+          <span style={{ width: '40px', textAlign: 'center' }}>Mon</span>
+          <span style={{ width: '40px', textAlign: 'center' }}>Tue</span>
+          <span style={{ width: '40px', textAlign: 'center' }}>Wed</span>
+          <span style={{ width: '40px', textAlign: 'center' }}>Thu</span>
+          <span style={{ width: '40px', textAlign: 'center' }}>Fri</span>
+          <span style={{ width: '40px', textAlign: 'center' }}>Sat</span>
         </div>
         {renderCalendar()}
       </div>
