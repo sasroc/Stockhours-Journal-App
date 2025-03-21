@@ -1,6 +1,4 @@
-// StockHours-Journal-App/stockhours/src/components/StatsDashboard.js
-
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -15,18 +13,201 @@ import { theme } from '../theme';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+const InfoCircle = ({ tooltip }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        display: 'inline-flex',
+        marginLeft: '8px',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div
+        style={{
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          border: '1px solid #888',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
+          color: '#888',
+        }}
+      >
+        i
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          top: '-40px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#000',
+          color: '#fff',
+          padding: '8px 12px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          whiteSpace: 'nowrap',
+          opacity: isHovered ? 1 : 0,
+          visibility: isHovered ? 'visible' : 'hidden',
+          transition: 'opacity 0.2s, visibility 0.2s',
+          pointerEvents: 'none',
+          zIndex: 1000,
+        }}
+      >
+        {tooltip}
+      </div>
+    </div>
+  );
+};
+
+const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue, lossValue }) => {
+  const [hoveredSection, setHoveredSection] = useState(null);
+  const percentage = total > 0 ? (value / total) * 100 : 0;
+
+  if (isHalfCircle) {
+    // For half-circle (Trade Win %)
+    const radius = 40;
+    const circumference = 2 * Math.PI * radius;
+    const winPercentage = percentage;
+    const lossPercentage = total > 0 ? ((total - value) / total) * 100 : 0;
+    const halfCircumference = circumference / 2;
+
+
+    return (
+      <div
+        style={{
+          position: 'relative',
+          width: '100px',
+          height: '50px',
+          overflow: 'hidden',
+        }}
+      >
+        <svg
+          width="100"
+          height="50"
+          viewBox="0 0 100 50"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+          }}
+        >
+          {/* Green section (winning trades) */}
+          <path
+            d="M 10 50 A 40 40 0 0 1 90 50"
+            fill="none"
+            stroke={theme.colors.green}
+            strokeWidth="10"
+            strokeDasharray={`${(winPercentage / 100) * halfCircumference}, ${halfCircumference}`}
+            strokeDashoffset="0"
+            strokeLinecap="butt"
+          />
+          {/* Red section (losing trades) */}
+          <path
+            d="M 10 50 A 40 40 0 0 1 90 50"
+            fill="none"
+            stroke={theme.colors.red}
+            strokeWidth="10"
+            strokeDasharray={`${(lossPercentage / 100) * halfCircumference}, ${halfCircumference}`}
+            strokeDashoffset={-(winPercentage / 100) * halfCircumference}
+            strokeLinecap="butt"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  // For full circle (Profit Factor)
+  const radius = 50; // Increased radius for a larger circle
+  const circumference = 2 * Math.PI * radius;
+  const profitPercentage = percentage;
+  const lossPercentage = total > 0 ? ((total - value) / total) * 100 : 0;
+  const profitDashLength = (profitPercentage / 100) * circumference;
+  const lossDashLength = (lossPercentage / 100) * circumference;
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '60px', // Increased size
+        height: '60px',
+      }}
+    >
+      <svg width="60" height="60" viewBox="0 0 120 120">
+        {/* Green section (profits, left side) */}
+        <circle
+          cx="60"
+          cy="60"
+          r={radius}
+          fill="none"
+          stroke={theme.colors.green}
+          strokeWidth="10"
+          strokeDasharray={`${profitDashLength}, ${circumference - profitDashLength}`}
+          strokeDashoffset={circumference / 4} // Start at 90 degrees (top, adjusted to left)
+          strokeLinecap="butt"
+          style={{
+            transform: `rotate(-90deg)`,
+            transformOrigin: 'center',
+            opacity: hoveredSection === 'profit' ? 0.8 : 1,
+          }}
+          onMouseEnter={() => setHoveredSection('profit')}
+          onMouseLeave={() => setHoveredSection(null)}
+        />
+        {/* Red section (losses, right side) */}
+        <circle
+          cx="60"
+          cy="60"
+          r={radius}
+          fill="none"
+          stroke={theme.colors.red}
+          strokeWidth="10"
+          strokeDasharray={`${lossDashLength}, ${circumference - lossDashLength}`}
+          strokeDashoffset={-profitDashLength + circumference / 4} // Start where green ends
+          strokeLinecap="butt"
+          style={{
+            transform: `rotate(-90deg)`,
+            transformOrigin: 'center',
+            opacity: hoveredSection === 'loss' ? 0.8 : 1,
+          }}
+          onMouseEnter={() => setHoveredSection('loss')}
+          onMouseLeave={() => setHoveredSection(null)}
+        />
+      </svg>
+      {/* Hover tooltips */}
+      {hoveredSection && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '-30px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#000',
+            color: '#fff',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            whiteSpace: 'nowrap',
+            zIndex: 1000,
+          }}
+        >
+          ${hoveredSection === 'profit' ? profitValue?.toFixed(2) : lossValue?.toFixed(2)}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const StatsDashboard = ({ tradeData }) => {
   console.log('Trade Data in StatsDashboard:', tradeData);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState({});
-
-  // Refs for tooltips
-  const totalTradesRef = useRef(null);
-  const totalTradesTooltipRef = useRef(null);
-  const totalPnlInfoRef = useRef(null);
-  const totalPnlInfoTooltipRef = useRef(null);
-  const tradeExpectancyInfoRef = useRef(null);
-  const tradeExpectancyInfoTooltipRef = useRef(null);
 
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
@@ -131,13 +312,8 @@ const StatsDashboard = ({ tradeData }) => {
     }
   }, [tradeData, trades]);
 
-  // Now trades is accessible here
-  console.log('Trade Stats:', trades);
-
   const totalTrades = trades.length;
-  console.log('Total Trades:', totalTrades);
 
-  // If no trade data, render only the calendar in default view
   if (!tradeData.length) {
     return (
       <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
@@ -147,14 +323,31 @@ const StatsDashboard = ({ tradeData }) => {
     );
   }
 
+  // Calculate metrics
   const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
   const tradeExpectancy = totalTrades > 0 ? totalProfitLoss / totalTrades : 0;
 
-  const getValueColor = (value) => {
-    if (value > 0) return theme.colors.green;
-    if (value < 0) return theme.colors.red;
-    return '#808080'; // Gray for neutral (0)
-  };
+  // Calculate Profit Factor
+  const totalProfits = trades.filter(trade => trade.profitLoss > 0).reduce((sum, trade) => sum + trade.profitLoss, 0);
+  const totalLosses = Math.abs(trades.filter(trade => trade.profitLoss < 0).reduce((sum, trade) => sum + trade.profitLoss, 0));
+  const profitFactor = totalLosses === 0 ? (totalProfits > 0 ? Infinity : 0) : totalProfits / totalLosses;
+
+  // Calculate Win Rate
+  const winningTrades = trades.filter(trade => trade.profitLoss > 0).length;
+  const losingTrades = trades.filter(trade => trade.profitLoss < 0).length;
+  const neutralTrades = trades.filter(trade => trade.profitLoss === 0).length;
+  const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+
+  // Calculate Average Win/Loss
+  const avgWinTrade = winningTrades > 0
+    ? trades.filter(trade => trade.profitLoss > 0).reduce((sum, trade) => sum + trade.profitLoss, 0) / winningTrades
+    : 0;
+  const avgLossTrade = losingTrades > 0
+    ? Math.abs(trades.filter(trade => trade.profitLoss < 0).reduce((sum, trade) => sum + trade.profitLoss, 0)) / losingTrades
+    : 0;
+  const avgWinLossRatio = avgLossTrade > 0 ? avgWinTrade / avgLossTrade : avgWinTrade > 0 ? Infinity : 0;
+
+
 
   const tickerPnl = trades.reduce((acc, trade) => {
     acc[trade.Symbol] = (acc[trade.Symbol] || 0) + trade.profitLoss;
@@ -289,173 +482,235 @@ const StatsDashboard = ({ tradeData }) => {
 
   return (
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
-      {/* New Stats Boxes */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', gap: '10px' }}>
-        {/* Total P&L Box */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '20px',
+          marginBottom: '20px',
+        }}
+      >
+        {/* Net P&L Box */}
         <div
           style={{
-            backgroundColor: '#2a2a2a',
-            borderRadius: '8px',
+            backgroundColor: '#1a1a1a',
             padding: '15px',
-            width: 'calc(50% - 5px)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
+            borderRadius: '8px',
             position: 'relative',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <span style={{ color: theme.colors.white, fontSize: '16px' }}>Total P&L</span>
-            <span
-              ref={totalTradesRef}
-              onMouseEnter={() => { totalTradesTooltipRef.current.style.visibility = 'visible'; }}
-              onMouseLeave={() => { totalTradesTooltipRef.current.style.visibility = 'hidden'; }}
-              style={{ marginLeft: '5px', color: 'blue', fontSize: '14px', position: 'relative', cursor: 'pointer' }}
-            >
-              ({totalTrades})
-              <span
-                ref={totalTradesTooltipRef}
-                style={{
-                  visibility: 'hidden',
-                  position: 'absolute',
-                  top: '-30px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  backgroundColor: '#333',
-                  color: theme.colors.white,
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap',
-                  zIndex: 1001,
-                }}
-              >
-                Total Trades
-              </span>
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-            <span style={{ color: getValueColor(totalProfitLoss), fontSize: '24px', fontWeight: 'bold' }}>
-              ${totalProfitLoss.toFixed(2)}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', color: '#888' }}>Net P&L</span>
+            <InfoCircle tooltip="The total realized net profit and loss for all closed trades." />
             <div
-              ref={totalPnlInfoRef}
-              onMouseEnter={() => {
-                totalPnlInfoTooltipRef.current.style.visibility = 'visible';
-                totalPnlInfoTooltipRef.current.style.backgroundColor = '#000000';
+              style={{
+                marginLeft: 'auto',
+                backgroundColor: '#2a2a2a',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                color: '#fff',
               }}
-              onMouseLeave={() => {
-                totalPnlInfoTooltipRef.current.style.visibility = 'hidden';
-                totalPnlInfoTooltipRef.current.style.backgroundColor = '#333';
-              }}
-              style={{ position: 'relative', cursor: 'pointer' }}
             >
-              <svg
-                style={{ marginLeft: '10px' }}
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#808080"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12" y2="8" />
-              </svg>
-              <span
-                ref={totalPnlInfoTooltipRef}
-                style={{
-                  visibility: 'hidden',
-                  position: 'absolute',
-                  top: '-30px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  backgroundColor: '#333',
-                  color: theme.colors.white,
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap', // Ensure single line
-                  zIndex: 1001,
-                  textAlign: 'center',
-                }}
-              >
-                The total realized profit and loss for all closed trades.
-              </span>
+              {totalTrades}
             </div>
+          </div>
+          <div
+            style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red,
+              marginTop: '8px',
+            }}
+          >
+            ${totalProfitLoss.toFixed(2)}
           </div>
         </div>
 
         {/* Trade Expectancy Box */}
         <div
           style={{
-            backgroundColor: '#2a2a2a',
-            borderRadius: '8px',
+            backgroundColor: '#1a1a1a',
             padding: '15px',
-            width: 'calc(50% - 5px)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
+            borderRadius: '8px',
             position: 'relative',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <span style={{ color: theme.colors.white, fontSize: '16px' }}>Trade Expectancy</span>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', color: '#888' }}>Trade expectancy</span>
+            <InfoCircle tooltip="The average amount you can expect to win, or lose, per trade based on your closed trades." />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-            <span style={{ color: getValueColor(tradeExpectancy), fontSize: '24px', fontWeight: 'bold' }}>
-              ${tradeExpectancy.toFixed(2)}
-            </span>
+          <div
+            style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: tradeExpectancy >= 0 ? theme.colors.green : theme.colors.red,
+              marginTop: '8px',
+            }}
+          >
+            ${tradeExpectancy.toFixed(2)}
+          </div>
+        </div>
+
+        {/* Profit Factor Box */}
+        <div
+          style={{
+            backgroundColor: '#1a1a1a',
+            padding: '15px',
+            borderRadius: '8px',
+            position: 'relative',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', color: '#888' }}>Profit factor</span>
+            <InfoCircle tooltip="Total profits divided by total losses. A profit factor above 1.0 indicates a profitable trading system." />
+          </div>
+          <div
+            style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#fff',
+              marginTop: '8px',
+              marginBottom: '12px',
+            }}
+          >
+            {profitFactor.toFixed(2)}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <CircleProgress
+              value={totalProfits}
+              total={totalProfits + totalLosses}
+              color={theme.colors.green}
+              profitValue={totalProfits}
+              lossValue={totalLosses}
+            />
+          </div>
+        </div>
+
+        {/* Trade Win % Box */}
+        <div
+          style={{
+            backgroundColor: '#1a1a1a',
+            padding: '15px',
+            borderRadius: '8px',
+            position: 'relative',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', color: '#888' }}>Trade win %</span>
+            <InfoCircle tooltip="Reflects the percentage of your winning trades out of total trades taken." />
+          </div>
+          <div
+            style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#fff',
+              marginTop: '8px',
+              marginBottom: '12px',
+            }}
+          >
+            {winRate.toFixed(2)}%
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+            <CircleProgress
+              value={winningTrades}
+              total={totalTrades}
+              color={theme.colors.green}
+              isHalfCircle={true}
+            />
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '12px',
+              color: '#888',
+              position: 'relative',
+              top: '-10px',
+            }}
+          >
+            <span style={{ color: theme.colors.green }}>{winningTrades}</span>
+            <span style={{ color: '#888', fontSize: '10px' }}>{neutralTrades}</span>
+            <span style={{ color: theme.colors.red }}>{losingTrades}</span>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '12px',
+              color: '#888',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{ width: '8px', height: '8px', backgroundColor: theme.colors.green, borderRadius: '50%' }} />
+              <span>Winning Trades</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span>Losing Trades</span>
+              <div style={{ width: '8px', height: '8px', backgroundColor: theme.colors.red, borderRadius: '50%' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Avg Win/Loss Trade Box */}
+        <div
+          style={{
+            backgroundColor: '#1a1a1a',
+            padding: '15px',
+            borderRadius: '8px',
+            position: 'relative',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', color: '#888' }}>Avg win/loss trade</span>
+            <InfoCircle tooltip="The average profit on all winning and losing trades." />
+          </div>
+          <div
+            style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#fff',
+              marginTop: '8px',
+            }}
+          >
+            {avgWinLossRatio.toFixed(2)}
+          </div>
+          <div style={{ marginTop: '8px' }}>
             <div
-              ref={tradeExpectancyInfoRef}
-              onMouseEnter={() => {
-                tradeExpectancyInfoTooltipRef.current.style.visibility = 'visible';
-                tradeExpectancyInfoTooltipRef.current.style.backgroundColor = '#000000';
+              style={{
+                height: '4px',
+                backgroundColor: '#2a2a2a',
+                borderRadius: '2px',
+                overflow: 'hidden',
+                display: 'flex',
               }}
-              onMouseLeave={() => {
-                tradeExpectancyInfoTooltipRef.current.style.visibility = 'hidden';
-                tradeExpectancyInfoTooltipRef.current.style.backgroundColor = '#333';
-              }}
-              style={{ position: 'relative', cursor: 'pointer' }}
             >
-              <svg
-                style={{ marginLeft: '10px' }}
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#808080"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12" y2="8" />
-              </svg>
-              <span
-                ref={tradeExpectancyInfoTooltipRef}
+              <div
                 style={{
-                  visibility: 'hidden',
-                  position: 'absolute',
-                  top: '-30px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  backgroundColor: '#333',
-                  color: theme.colors.white,
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap', // Ensure single line
-                  zIndex: 1001,
-                  textAlign: 'center',
+                  width: `${(avgWinTrade / (avgWinTrade + avgLossTrade)) * 100}%`,
+                  backgroundColor: theme.colors.green,
+                  borderRadius: '2px 0 0 2px',
                 }}
-              >
-                The average amount you make or lose per trade.
-              </span>
+              />
+              <div
+                style={{
+                  width: `${(avgLossTrade / (avgWinTrade + avgLossTrade)) * 100}%`,
+                  backgroundColor: theme.colors.red,
+                  borderRadius: '0 2px 2px 0',
+                }}
+              />
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: '4px',
+                fontSize: '12px',
+              }}
+            >
+              <span style={{ color: theme.colors.green }}>${avgWinTrade.toFixed(1)}</span>
+              <span style={{ color: theme.colors.red }}>-${avgLossTrade.toFixed(1)}</span>
             </div>
           </div>
         </div>
@@ -475,9 +730,13 @@ const StatsDashboard = ({ tradeData }) => {
       <h3 style={{ color: theme.colors.white }}>Trade Calendar</h3>
       <div style={{ marginTop: '20px' }}>
         <div style={{ color: theme.colors.white, display: 'flex', alignItems: 'center' }}>
-          <button onClick={() => changeMonth(-1)} style={{ marginRight: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>←</button>
+          <button onClick={() => changeMonth(-1)} style={{ marginRight: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>
+            ←
+          </button>
           <span>{currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}</span>
-          <button onClick={() => changeMonth(1)} style={{ marginLeft: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>→</button>
+          <button onClick={() => changeMonth(1)} style={{ marginLeft: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>
+            →
+          </button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '5px' }}>
@@ -567,9 +826,13 @@ const Calendar = ({ defaultView }) => {
   return (
     <div style={{ marginTop: '20px' }}>
       <div style={{ color: theme.colors.white, display: 'flex', alignItems: 'center' }}>
-        <button onClick={() => changeMonth(-1)} style={{ marginRight: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>←</button>
+        <button onClick={() => changeMonth(-1)} style={{ marginRight: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>
+          ←
+        </button>
         <span>{currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}</span>
-        <button onClick={() => changeMonth(1)} style={{ marginLeft: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>→</button>
+        <button onClick={() => changeMonth(1)} style={{ marginLeft: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>
+          →
+        </button>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '5px' }}>
