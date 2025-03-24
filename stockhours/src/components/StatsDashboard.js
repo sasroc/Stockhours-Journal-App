@@ -1,17 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
 import { theme } from '../theme';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const InfoCircle = ({ tooltip }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -78,7 +66,6 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
     const winPercentage = percentage;
     const lossPercentage = total > 0 ? ((total - value) / total) * 100 : 0;
     const halfCircumference = circumference / 2;
-
 
     return (
       <div
@@ -346,63 +333,6 @@ const StatsDashboard = ({ tradeData }) => {
     ? Math.abs(trades.filter(trade => trade.profitLoss < 0).reduce((sum, trade) => sum + trade.profitLoss, 0)) / losingTrades
     : 0;
   const avgWinLossRatio = avgLossTrade > 0 ? avgWinTrade / avgLossTrade : avgWinTrade > 0 ? Infinity : 0;
-
-
-
-  const tickerPnl = trades.reduce((acc, trade) => {
-    acc[trade.Symbol] = (acc[trade.Symbol] || 0) + trade.profitLoss;
-    return acc;
-  }, {});
-
-  const tickerChartData = {
-    labels: Object.keys(tickerPnl),
-    datasets: [
-      {
-        label: 'Total Profit/Loss per Ticker',
-        data: Object.values(tickerPnl),
-        backgroundColor: Object.values(tickerPnl).map(pnl =>
-          pnl >= 0 ? theme.colors.green : theme.colors.red
-        ),
-      },
-    ],
-  };
-
-  const tradeCountsByHour = new Array(24).fill(0);
-  trades.forEach(trade => {
-    const execTime = new Date(trade.FirstBuyExecTime);
-    const hour = execTime.getHours();
-    console.log('Trade:', trade.Symbol, 'FirstBuyExecTime:', trade.FirstBuyExecTime, 'Hour:', hour);
-    if (hour >= 0 && hour <= 23) {
-      tradeCountsByHour[hour]++;
-    }
-  });
-
-  console.log('Trade Counts by Hour:', tradeCountsByHour);
-  console.log('Sum of Trades Per Hour:', tradeCountsByHour.reduce((sum, count) => sum + count, 0));
-
-  const hourChartData = {
-    labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-    datasets: [
-      {
-        label: 'Trades per Hour',
-        data: tradeCountsByHour,
-        backgroundColor: 'blue',
-      },
-    ],
-  };
-
-  const tradeChartData = {
-    labels: trades.map(trade => `${trade.Symbol}`),
-    datasets: [
-      {
-        label: 'Profit/Loss per Trade',
-        data: trades.map(trade => trade.profitLoss),
-        backgroundColor: trades.map(trade =>
-          trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red
-        ),
-      },
-    ],
-  };
 
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -716,17 +646,7 @@ const StatsDashboard = ({ tradeData }) => {
         </div>
       </div>
 
-      <div style={{ marginTop: '20px' }}>
-        <Bar data={tradeChartData} options={{ scales: { y: { beginAtZero: true } } }} />
-      </div>
-      <h3 style={{ color: theme.colors.white }}>Total P&L by Ticker</h3>
-      <div style={{ marginTop: '20px' }}>
-        <Bar data={tickerChartData} options={{ scales: { y: { beginAtZero: true } } }} />
-      </div>
-      <h3 style={{ color: theme.colors.white }}>Trades per Hour</h3>
-      <div style={{ marginTop: '20px' }}>
-        <Bar data={hourChartData} options={{ scales: { y: { beginAtZero: true, min: 0 } } }} />
-      </div>
+      {/* Trade Calendar */}
       <h3 style={{ color: theme.colors.white }}>Trade Calendar</h3>
       <div style={{ marginTop: '20px' }}>
         <div style={{ color: theme.colors.white, display: 'flex', alignItems: 'center' }}>
