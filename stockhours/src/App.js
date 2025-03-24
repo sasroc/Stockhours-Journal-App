@@ -197,8 +197,12 @@ function App() {
           backgroundColor: '#1a1a1a',
           padding: '10px 20px',
           borderBottom: '1px solid #333',
-          position: 'relative',
-          zIndex: 1000, // Ensure header is above sidebar
+          position: 'fixed', // Changed to fixed to stay at the top
+          top: 0, // Align to the top of the viewport
+          left: 0, // Align to the left of the viewport
+          width: '100%', // Span the full width
+          boxSizing: 'border-box',
+          zIndex: 1000, // Ensure header is above other elements
         }}
       >
         {/* Hamburger menu for half screen */}
@@ -492,6 +496,7 @@ function App() {
           alignItems: 'center',
           padding: '20px',
           marginLeft: (isHalfScreen && !isSidebarOpen) ? '0' : '50px', // Adjust for sidebar width
+          marginTop: '71px', // Add margin to account for the fixed header height (50px height + 10px padding + 1px border)
           transition: 'margin-left 0.3s ease',
         }}
       >
