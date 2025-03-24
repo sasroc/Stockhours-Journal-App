@@ -1,4 +1,6 @@
-import React, {useMemo } from 'react';
+// StockHours-Journal-App/stockhours/src/components/ReportsScreen.js
+
+import React, { useState, useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -13,7 +15,13 @@ import { theme } from '../theme';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const ReportsScreen = ({ tradeData }) => {
+const ReportsScreen = ({ tradeData, isHalfScreen, isSidebarOpen }) => {
+  const [expandedSections, setExpandedSections] = useState({
+    dateTime: true,
+    priceQuantity: true,
+    options: true,
+  });
+
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
 
@@ -102,6 +110,15 @@ const ReportsScreen = ({ tradeData }) => {
   }, [tradeData]);
 
   const totalTrades = trades.length;
+
+  // Toggle expand/collapse for a section
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   if (!tradeData.length) {
     return (
       <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
@@ -163,31 +180,356 @@ const ReportsScreen = ({ tradeData }) => {
     ],
   };
 
+  // Common styles for menu items (main sections and sub-options)
+  const menuItemStyle = {
+    padding: '5px 8px',
+    borderRadius: '4px',
+    transition: 'background-color 0.2s, border 0.2s',
+    cursor: 'pointer',
+  };
+
+  const menuItemHoverStyle = {
+    border: `1px solid ${theme.colors.white}`,
+    backgroundColor: '#2a2a2a',
+  };
+
+  // Determine the left position and content margin based on isHalfScreen and isSidebarOpen
+  const menuLeftPosition = isHalfScreen && !isSidebarOpen ? '0' : '50px';
+  const contentMarginLeft = isHalfScreen && !isSidebarOpen ? '200px' : '250px';
+
   return (
-    <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
-      <h2 style={{ color: theme.colors.white }}>Trading Stats</h2>
-      <p>Total Trades: {totalTrades}</p>
-      <p>Total Profit/Loss: <span style={{ color: totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
-        ${totalProfitLoss.toFixed(2)}
-      </span></p>
-      <h3 style={{ color: theme.colors.white }}>P&L by Trade</h3>
-      {trades.map((trade, index) => (
-        <p key={index}>
-          {index + 1}. ({trade.TradeDate}) {trade.Symbol}: <span style={{ color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
-            ${trade.profitLoss.toFixed(2)}
+    <div style={{ display: 'flex', backgroundColor: theme.colors.black }}>
+      {/* Selection Menu */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '71px',
+          left: menuLeftPosition, // Dynamically set based on sidebar state
+          width: '200px',
+          height: 'calc(100% - 71px)',
+          backgroundColor: '#1a1a1a',
+          padding: '20px',
+          boxSizing: 'border-box',
+          zIndex: 800,
+          overflowY: 'auto',
+          transition: 'left 0.3s ease', // Smooth transition for shifting
+        }}
+      >
+        {/* Overview */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '10px 0',
+            color: theme.colors.white,
+            ...menuItemStyle,
+          }}
+          onClick={() => {}}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.border = menuItemHoverStyle.border;
+            e.currentTarget.style.backgroundColor = menuItemHoverStyle.backgroundColor;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.border = 'none';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.colors.white}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ marginRight: '10px' }}
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          <span>Overview</span>
+        </div>
+
+        {/* Date & Time Section */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '10px 0',
+            color: theme.colors.white,
+            ...menuItemStyle,
+          }}
+          onClick={() => toggleSection('dateTime')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.border = menuItemHoverStyle.border;
+            e.currentTarget.style.backgroundColor = menuItemHoverStyle.backgroundColor;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.border = 'none';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.colors.white}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              marginRight: '10px',
+              transform: expandedSections.dateTime ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.3s',
+            }}
+          >
+            <path d="M19 9l-7 7-7-7" />
+          </svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.colors.white}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ marginRight: '10px' }}
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span>Date & Time</span>
+        </div>
+        {expandedSections.dateTime && (
+          <div style={{ paddingLeft: '40px' }}>
+            {['Days', 'Weeks', 'Months', 'Trade time', 'Trade duration'].map(option => (
+              <div
+                key={option}
+                style={{
+                  padding: '5px 0',
+                  color: '#888',
+                  ...menuItemStyle,
+                }}
+                onClick={() => {}}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.border = menuItemHoverStyle.border;
+                  e.currentTarget.style.backgroundColor = menuItemHoverStyle.backgroundColor;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.border = 'none';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                {option}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Price & Quantity Section */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '10px 0',
+            color: theme.colors.white,
+            ...menuItemStyle,
+          }}
+          onClick={() => toggleSection('priceQuantity')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.border = menuItemHoverStyle.border;
+            e.currentTarget.style.backgroundColor = menuItemHoverStyle.backgroundColor;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.border = 'none';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.colors.white}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              marginRight: '10px',
+              transform: expandedSections.priceQuantity ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.3s',
+            }}
+          >
+            <path d="M19 9l-7 7-7-7" />
+          </svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.colors.white}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ marginRight: '10px' }}
+          >
+            <path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
+            <path d="M12 2v4" />
+            <path d="M8 6h8a4 4 0 0 1 0 8H8a4 4 0 0 1 0-8z" />
+          </svg>
+          <span>Price & Quantity</span>
+        </div>
+        {expandedSections.priceQuantity && (
+          <div style={{ paddingLeft: '40px' }}>
+            {['Price', 'Volume', 'Instrument'].map(option => (
+              <div
+                key={option}
+                style={{
+                  padding: '5px 0',
+                  color: '#888',
+                  ...menuItemStyle,
+                }}
+                onClick={() => {}}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.border = menuItemHoverStyle.border;
+                  e.currentTarget.style.backgroundColor = menuItemHoverStyle.backgroundColor;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.border = 'none';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                {option}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Options Section */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '10px 0',
+            color: theme.colors.white,
+            ...menuItemStyle,
+          }}
+          onClick={() => toggleSection('options')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.border = menuItemHoverStyle.border;
+            e.currentTarget.style.backgroundColor = menuItemHoverStyle.backgroundColor;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.border = 'none';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.colors.white}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              marginRight: '10px',
+              transform: expandedSections.options ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.3s',
+            }}
+          >
+            <path d="M19 9l-7 7-7-7" />
+          </svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.colors.white}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ marginRight: '10px' }}
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <polyline points="9 8 12 5 15 8" />
+            <polyline points="9 16 12 19 15 16" />
+          </svg>
+          <span>Options</span>
+        </div>
+        {expandedSections.options && (
+          <div style={{ paddingLeft: '40px' }}>
+            {['Days till expiration'].map(option => (
+              <div
+                key={option}
+                style={{
+                  padding: '5px 0',
+                  color: '#888',
+                  ...menuItemStyle,
+                }}
+                onClick={() => {}}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.border = menuItemHoverStyle.border;
+                  e.currentTarget.style.backgroundColor = menuItemHoverStyle.backgroundColor;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.border = 'none';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                {option}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Main Reports Content */}
+      <div
+        style={{
+          marginLeft: contentMarginLeft, // Adjust based on menu position
+          padding: '20px',
+          width: `calc(100% - ${contentMarginLeft})`, // Adjust width to account for menu position
+          transition: 'margin-left 0.3s ease, width 0.3s ease', // Smooth transition for shifting
+        }}
+      >
+        <h2 style={{ color: theme.colors.white }}>Trading Stats</h2>
+        <p>Total Trades: {totalTrades}</p>
+        <p>
+          Total Profit/Loss:{' '}
+          <span style={{ color: totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
+            ${totalProfitLoss.toFixed(2)}
           </span>
         </p>
-      ))}
-      <div style={{ marginTop: '20px' }}>
-        <Bar data={tradeChartData} options={{ scales: { y: { beginAtZero: true } } }} />
-      </div>
-      <h3 style={{ color: theme.colors.white }}>Total P&L by Ticker</h3>
-      <div style={{ marginTop: '20px' }}>
-        <Bar data={tickerChartData} options={{ scales: { y: { beginAtZero: true } } }} />
-      </div>
-      <h3 style={{ color: theme.colors.white }}>Trades per Hour</h3>
-      <div style={{ marginTop: '20px' }}>
-        <Bar data={hourChartData} options={{ scales: { y: { beginAtZero: true, min: 0 } } }} />
+        <h3 style={{ color: theme.colors.white }}>P&L by Trade</h3>
+        {trades.map((trade, index) => (
+          <p key={index}>
+            {index + 1}. ({trade.TradeDate}) {trade.Symbol}:{' '}
+            <span style={{ color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
+              ${trade.profitLoss.toFixed(2)}
+            </span>
+          </p>
+        ))}
+
+        <h3 style={{ color: theme.colors.white }}>P&L by Ticker</h3>
+        <div style={{ height: '300px' }}>
+          <Bar data={tickerChartData} />
+        </div>
+
+        <h3 style={{ color: theme.colors.white }}>Trades by Hour</h3>
+        <div style={{ height: '300px' }}>
+          <Bar data={hourChartData} />
+        </div>
+
+        <h3 style={{ color: theme.colors.white }}>P&L by Trade</h3>
+        <div style={{ height: '300px' }}>
+          <Bar data={tradeChartData} />
+        </div>
       </div>
     </div>
   );

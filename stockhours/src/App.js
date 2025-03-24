@@ -1,6 +1,6 @@
 // StockHours-Journal-App/stockhours/src/App.js
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import StatsDashboard from './components/StatsDashboard';
 import ReportsScreen from './components/ReportsScreen';
 import TradesScreen from './components/TradesScreen';
@@ -27,14 +27,7 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960); // Adjusted breakpoint to 960px
   const [currentScreen, setCurrentScreen] = useState('Dashboard'); // Track current screen: 'Dashboard', 'Reports', or 'Trades'
-
-  // Declare useRef for the buttons and their tooltips
-  const dashboardButtonRef = useRef(null);
-  const dashboardTooltipRef = useRef(null);
-  const reportsButtonRef = useRef(null);
-  const reportsTooltipRef = useRef(null);
-  const tradesButtonRef = useRef(null);
-  const tradesTooltipRef = useRef(null);
+  const [visibleTooltip, setVisibleTooltip] = useState(null); // Track which tooltip is visible
 
   // Handle window resize to toggle sidebar visibility
   useEffect(() => {
@@ -187,6 +180,22 @@ function App() {
     setCurrentScreen('Trades');
   };
 
+  // Common tooltip style
+  const tooltipStyle = {
+    position: 'absolute',
+    left: '50px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    backgroundColor: '#333',
+    color: theme.colors.white,
+    padding: '5px 10px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    whiteSpace: 'nowrap',
+    zIndex: 1001,
+    transition: 'opacity 0.2s, visibility 0.2s',
+  };
+
   return (
     <div className="App" style={{ backgroundColor: '#000', minHeight: '100vh', color: theme.colors.white }}>
       {/* Header with logo, hamburger menu (if half screen), and screen title */}
@@ -197,12 +206,12 @@ function App() {
           backgroundColor: '#1a1a1a',
           padding: '10px 20px',
           borderBottom: '1px solid #333',
-          position: 'fixed', // Changed to fixed to stay at the top
-          top: 0, // Align to the top of the viewport
-          left: 0, // Align to the left of the viewport
-          width: '100%', // Span the full width
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
           boxSizing: 'border-box',
-          zIndex: 1000, // Ensure header is above other elements
+          zIndex: 1000,
         }}
       >
         {/* Hamburger menu for half screen */}
@@ -243,23 +252,21 @@ function App() {
       <div
         style={{
           position: 'fixed',
-          top: '71px', // Adjusted to be flush with header bottom (50px height + 10px padding + 1px border)
+          top: '71px',
           left: 0,
-          width: '50px', // Match blackSHlogo width
-          height: 'calc(100% - 71px)', // Full height minus header
+          width: '50px',
+          height: 'calc(100% - 71px)',
           backgroundColor: '#1a1a1a',
-          display: (isHalfScreen && !isSidebarOpen) ? 'none' : 'block', // Hide on half screen unless open
+          display: (isHalfScreen && !isSidebarOpen) ? 'none' : 'block',
           padding: '20px 0',
           boxSizing: 'border-box',
-          zIndex: 900, // Below header zIndex
+          zIndex: 900,
         }}
       >
         {/* "+" Button with Tooltip */}
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <label
             htmlFor="sidebar-file-upload"
-            onMouseEnter={(e) => { e.target.querySelector('.tooltip').style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { e.target.querySelector('.tooltip').style.visibility = 'hidden'; }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -274,23 +281,15 @@ function App() {
               marginBottom: '20px',
               position: 'relative',
             }}
+            onMouseEnter={() => setVisibleTooltip('addTrade')}
+            onMouseLeave={() => setVisibleTooltip(null)}
           >
             +
             <span
-              className="tooltip"
               style={{
-                visibility: 'hidden',
-                position: 'absolute',
-                left: '50px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                backgroundColor: '#333',
-                color: theme.colors.white,
-                padding: '5px 10px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                whiteSpace: 'nowrap',
-                zIndex: 1001,
+                ...tooltipStyle,
+                visibility: visibleTooltip === 'addTrade' ? 'visible' : 'hidden',
+                opacity: visibleTooltip === 'addTrade' ? 1 : 0,
               }}
             >
               Add Trade(s)
@@ -308,10 +307,7 @@ function App() {
         {/* Dashboard Button with 2x2 Grid Icon and Tooltip */}
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div
-            ref={dashboardButtonRef}
             onClick={handleDashboardClick}
-            onMouseEnter={(e) => { dashboardTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { dashboardTooltipRef.current.style.visibility = 'hidden'; }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -324,6 +320,8 @@ function App() {
               marginBottom: '20px',
               position: 'relative',
             }}
+            onMouseEnter={() => setVisibleTooltip('dashboard')}
+            onMouseLeave={() => setVisibleTooltip(null)}
           >
             <svg
               width="20"
@@ -336,28 +334,16 @@ function App() {
               strokeLinejoin="round"
               style={{ position: 'absolute' }}
             >
-              {/* 2x2 Grid Icon */}
               <rect x="4" y="4" width="6" height="6" />
               <rect x="4" y="12" width="6" height="6" />
               <rect x="12" y="4" width="6" height="6" />
               <rect x="12" y="12" width="6" height="6" />
             </svg>
             <span
-              ref={dashboardTooltipRef}
-              className="tooltip"
               style={{
-                visibility: 'hidden',
-                position: 'absolute',
-                left: '50px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                backgroundColor: '#333',
-                color: theme.colors.white,
-                padding: '5px 10px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                whiteSpace: 'nowrap',
-                zIndex: 1001,
+                ...tooltipStyle,
+                visibility: visibleTooltip === 'dashboard' ? 'visible' : 'hidden',
+                opacity: visibleTooltip === 'dashboard' ? 1 : 0,
               }}
             >
               Dashboard
@@ -368,10 +354,7 @@ function App() {
         {/* Reports Button with Icon and Tooltip */}
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div
-            ref={reportsButtonRef}
             onClick={handleReportsClick}
-            onMouseEnter={(e) => { reportsTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { reportsTooltipRef.current.style.visibility = 'hidden'; }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -384,6 +367,8 @@ function App() {
               marginBottom: '20px',
               position: 'relative',
             }}
+            onMouseEnter={() => setVisibleTooltip('reports')}
+            onMouseLeave={() => setVisibleTooltip(null)}
           >
             <svg
               width="20"
@@ -396,27 +381,15 @@ function App() {
               strokeLinejoin="round"
               style={{ position: 'absolute' }}
             >
-              {/* Icon based on attached image (square with vertical lines) */}
               <rect x="6" y="6" width="12" height="12" rx="2" />
               <line x1="10" y1="8" x2="10" y2="16" />
               <line x1="14" y1="8" x2="14" y2="16" />
             </svg>
             <span
-              ref={reportsTooltipRef}
-              className="tooltip"
               style={{
-                visibility: 'hidden',
-                position: 'absolute',
-                left: '50px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                backgroundColor: '#333',
-                color: theme.colors.white,
-                padding: '5px 10px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                whiteSpace: 'nowrap',
-                zIndex: 1001,
+                ...tooltipStyle,
+                visibility: visibleTooltip === 'reports' ? 'visible' : 'hidden',
+                opacity: visibleTooltip === 'reports' ? 1 : 0,
               }}
             >
               Reports
@@ -427,10 +400,7 @@ function App() {
         {/* Trades Button with Candlestick Chart Icon and Tooltip */}
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div
-            ref={tradesButtonRef}
             onClick={handleTradesClick}
-            onMouseEnter={(e) => { tradesTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { tradesTooltipRef.current.style.visibility = 'hidden'; }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -443,6 +413,8 @@ function App() {
               marginBottom: '20px',
               position: 'relative',
             }}
+            onMouseEnter={() => setVisibleTooltip('trades')}
+            onMouseLeave={() => setVisibleTooltip(null)}
           >
             <svg
               width="20"
@@ -455,31 +427,18 @@ function App() {
               strokeLinejoin="round"
               style={{ position: 'absolute' }}
             >
-              {/* Left Candlestick (taller) */}
-              <line x1="8" y1="4" x2="8" y2="8" /> {/* Top wick */}
-              <rect x="6" y="8" width="4" height="8" /> {/* Body */}
-              <line x1="8" y1="16" x2="8" y2="20" /> {/* Bottom wick */}
-              {/* Right Candlestick (shorter) */}
-              <line x1="16" y1="6" x2="16" y2="9" /> {/* Top wick */}
-              <rect x="14" y="9" width="4" height="6" /> {/* Body */}
-              <line x1="16" y1="15" x2="16" y2="18" /> {/* Bottom wick */}
+              <line x1="8" y1="4" x2="8" y2="8" />
+              <rect x="6" y="8" width="4" height="8" />
+              <line x1="8" y1="16" x2="8" y2="20" />
+              <line x1="16" y1="6" x2="16" y2="9" />
+              <rect x="14" y="9" width="4" height="6" />
+              <line x1="16" y1="15" x2="16" y2="18" />
             </svg>
             <span
-              ref={tradesTooltipRef}
-              className="tooltip"
               style={{
-                visibility: 'hidden',
-                position: 'absolute',
-                left: '50px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                backgroundColor: '#333',
-                color: theme.colors.white,
-                padding: '5px 10px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                whiteSpace: 'nowrap',
-                zIndex: 1001,
+                ...tooltipStyle,
+                visibility: visibleTooltip === 'trades' ? 'visible' : 'hidden',
+                opacity: visibleTooltip === 'trades' ? 1 : 0,
               }}
             >
               Trades
@@ -495,8 +454,8 @@ function App() {
           flexDirection: 'column',
           alignItems: 'center',
           padding: '20px',
-          marginLeft: (isHalfScreen && !isSidebarOpen) ? '0' : '50px', // Adjust for sidebar width
-          marginTop: '71px', // Add margin to account for the fixed header height (50px height + 10px padding + 1px border)
+          marginLeft: (isHalfScreen && !isSidebarOpen) ? '0' : '50px',
+          marginTop: '71px',
           transition: 'margin-left 0.3s ease',
         }}
       >
@@ -504,9 +463,6 @@ function App() {
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <h1 style={{ color: theme.colors.white, marginBottom: '20px' }}>Stockhours Journal</h1>
-            {/* Removed TradeUploader from Dashboard screen */}
-
-            {/* Container for StatsDashboard */}
             <div
               style={{
                 width: '90%',
@@ -524,9 +480,6 @@ function App() {
         ) : currentScreen === 'Reports' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
-            {/* Removed TradeUploader from Reports screen */}
-
-            {/* Container for Reports screen */}
             <div
               style={{
                 width: '90%',
@@ -538,15 +491,12 @@ function App() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <ReportsScreen tradeData={tradeData} />
+              <ReportsScreen tradeData={tradeData} isHalfScreen={isHalfScreen} isSidebarOpen={isSidebarOpen} />
             </div>
           </>
         ) : (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
-            {/* No TradeUploader for Trades screen as per previous requirements */}
-
-            {/* Container for Trades screen */}
             <div
               style={{
                 width: '90%',
