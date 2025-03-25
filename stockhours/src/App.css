@@ -37,3 +37,117 @@ header h2 {
 label:hover .tooltip {
   visibility: visible !important;
 }
+
+/* Custom styles for react-date-range to match the dark theme */
+.dark-date-range {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  display: flex !important;
+  gap: 20px !important;
+}
+
+.dark-date-range .rdrMonthAndYearWrapper {
+  background-color: #1a1a1a !important;
+}
+
+.dark-date-range .rdrMonthAndYearPickers select {
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 5px !important;
+  font-Size: 14px !important;
+}
+
+.dark-date-range .rdrMonthAndYearPickers select option {
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+}
+
+.dark-date-range .rdrDayNumber span {
+  color: #ffffff !important;
+}
+
+.dark-date-range .rdrDayDisabled {
+  background-color: #333 !important;
+  opacity: 0.5 !important;
+}
+
+.dark-date-range .rdrDayToday .rdrDayNumber span:after {
+  background: #52C41A !important; /* Green for today's date underline */
+}
+
+.dark-date-range .rdrDayPassive .rdrDayNumber span {
+  color: #888 !important; /* Dimmed color for days outside the current month */
+}
+
+.dark-date-range .rdrDayHovered {
+  background-color: #333 !important;
+}
+
+.dark-date-range .rdrDayStartPreview,
+.dark-date-range .rdrDayEndPreview,
+.dark-date-range .rdrDayInPreview {
+  background-color: rgba(82, 196, 26, 0.3) !important; /* Green highlight for the range preview */
+  border: none !important;
+}
+
+.dark-date-range .rdrDayStartOfMonth .rdrDayInPreview,
+.dark-date-range .rdrDayEndOfMonth .rdrDayInPreview {
+  border: none !important;
+}
+
+.dark-date-range .rdrDayStart,
+.dark-date-range .rdrDayEnd {
+  background-color: #52C41A !important; /* Green highlight for start and end dates */
+}
+
+.dark-date-range .rdrDayStart .rdrDayNumber,
+.dark-date-range .rdrDayEnd .rdrDayNumber {
+  background-color: #52C41A !important; /* Ensure the number background is green */
+}
+
+.dark-date-range .rdrDayStart .rdrDayNumber span,
+.dark-date-range .rdrDayEnd .rdrDayNumber span {
+  color: #ffffff !important; /* Ensure the number text is white for contrast */
+}
+
+.dark-date-range .rdrNextPrevButton {
+  background-color: #2a2a2a !important;
+}
+
+.dark-date-range .rdrNextPrevButton:hover {
+  background-color: #333 !important;
+}
+
+.dark-date-range .rdrMonthName {
+  color: #ffffff !important;
+  font-size: 14px !important;
+}
+
+.dark-date-range .rdrDays {
+  background-color: #1a1a1a !important;
+}
+
+.dark-date-range .rdrDayName {
+  color: #888 !important;
+  font-size: 12px !important;
+}
+
+/* Ensure calendars are sized appropriately and don't overlap */
+.dark-date-range .rdrMonth {
+  width: 220px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Position the month/year dropdowns above each calendar */
+.dark-date-range .rdrMonthAndYearWrapper {
+  display: flex !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+}
+
+.dark-date-range .rdrMonthAndYearPickers {
+  flex: 1 !important;
+  text-align: center !important;
+}

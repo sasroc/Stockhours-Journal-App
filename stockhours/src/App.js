@@ -1,15 +1,15 @@
 // StockHours-Journal-App/stockhours/src/App.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import StatsDashboard from './components/StatsDashboard';
 import ReportsScreen from './components/ReportsScreen';
 import TradesScreen from './components/TradesScreen';
+import DateRangePicker from './components/DateRangePicker';
 import { theme } from './theme';
 import logo from './assets/clocklogo.PNG'; // Clock logo
 import blackSHlogo from './assets/blackSHlogo.PNG'; // Stock Hours logo
 import * as XLSX from 'xlsx';
 import './App.css';
-// Import Bar and ChartJS components (used in child components, suppress unused warning)
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,28 +24,62 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 function App() {
   const [tradeData, setTradeData] = useState([]);
+  const [filteredTradeData, setFilteredTradeData] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960); // Adjusted breakpoint to 960px
-  const [currentScreen, setCurrentScreen] = useState('Dashboard'); // Track current screen: 'Dashboard', 'Reports', or 'Trades'
-  const [visibleTooltip, setVisibleTooltip] = useState(null); // Track which tooltip is visible
+  const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960);
+  const [currentScreen, setCurrentScreen] = useState('Dashboard');
+  const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
 
-  // Handle window resize to toggle sidebar visibility
+  const dashboardButtonRef = useRef(null);
+  const dashboardTooltipRef = useRef(null);
+  const reportsButtonRef = useRef(null);
+  const reportsTooltipRef = useRef(null);
+  const tradesButtonRef = useRef(null);
+  const tradesTooltipRef = useRef(null);
+
   useEffect(() => {
     const handleResize = () => {
-      const halfScreen = window.innerWidth <= 960; // Adjusted breakpoint
+      const halfScreen = window.innerWidth <= 960;
       setIsHalfScreen(halfScreen);
       if (!halfScreen) {
-        setIsSidebarOpen(false); // Close sidebar when switching to full screen
+        setIsSidebarOpen(false);
       }
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize(); // Initial check
+    handleResize();
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Function to handle file upload using XLSX
+  useEffect(() => {
+    if (!tradeData.length) {
+      setFilteredTradeData([]);
+      return;
+    }
+
+    if (!dateRange.startDate || !dateRange.endDate) {
+      setFilteredTradeData(tradeData);
+      return;
+    }
+
+    const startDate = new Date(dateRange.startDate);
+    const endDate = new Date(dateRange.endDate);
+    endDate.setHours(23, 59, 59, 999);
+
+    const filtered = tradeData
+      .map((trade) => {
+        const filteredTransactions = trade.Transactions.filter((transaction) => {
+          const execTime = new Date(transaction.ExecTime);
+          return execTime >= startDate && execTime <= endDate;
+        });
+        return { ...trade, Transactions: filteredTransactions };
+      })
+      .filter((trade) => trade.Transactions.length > 0);
+
+    setFilteredTradeData(filtered);
+  }, [tradeData, dateRange]);
+
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -69,16 +103,13 @@ function App() {
           data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         }
 
-        // Find the "Account Trade History" section
         const tradeHistoryStart = data.findIndex(row => row[0] === 'Account Trade History');
         if (tradeHistoryStart === -1) {
           throw new Error('Account Trade History section not found in the CSV');
         }
 
-        // Extract headers (skip the first empty column)
         const sectionHeaders = data[tradeHistoryStart + 1].slice(1);
 
-        // Extract trade data (from the section to the end)
         const tradeData = data
           .slice(tradeHistoryStart + 2)
           .filter(row => row.length >= sectionHeaders.length && (typeof row[1] === 'string' || typeof row[1] === 'number'))
@@ -91,7 +122,6 @@ function App() {
             return obj;
           });
 
-        // Transform the data
         const transformedData = tradeData.map(row => {
           const posEffect = row['Pos Effect'] || 'UNKNOWN';
           const symbol = row['Symbol'] || 'UNKNOWN';
@@ -135,7 +165,6 @@ function App() {
           };
         });
 
-        // Group by Symbol, Strike, and Expiration
         const groupedByTrade = transformedData.reduce((acc, trade) => {
           const key = `${trade.Symbol}-${trade.Strike}-${trade.Expiration}`;
           if (!acc[key]) {
@@ -145,7 +174,6 @@ function App() {
           return acc;
         }, {});
 
-        // Convert grouped data to an array of trades
         const groupedTrades = Object.keys(groupedByTrade).map(key => ({
           Symbol: groupedByTrade[key][0].Symbol,
           Strike: groupedByTrade[key][0].Strike,
@@ -167,7 +195,10 @@ function App() {
     }
   };
 
-  // Handlers for switching screens
+  const handleDateChange = (startDate, endDate) => {
+    setDateRange({ startDate, endDate });
+  };
+
   const handleDashboardClick = () => {
     setCurrentScreen('Dashboard');
   };
@@ -180,25 +211,9 @@ function App() {
     setCurrentScreen('Trades');
   };
 
-  // Common tooltip style
-  const tooltipStyle = {
-    position: 'absolute',
-    left: '50px',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    backgroundColor: '#333',
-    color: theme.colors.white,
-    padding: '5px 10px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    whiteSpace: 'nowrap',
-    zIndex: 1001,
-    transition: 'opacity 0.2s, visibility 0.2s',
-  };
-
   return (
     <div className="App" style={{ backgroundColor: '#000', minHeight: '100vh', color: theme.colors.white }}>
-      {/* Header with logo, hamburger menu (if half screen), and screen title */}
+      {/* Header with logo, hamburger menu (if half screen), screen title, and date picker */}
       <header
         style={{
           display: 'flex',
@@ -214,38 +229,44 @@ function App() {
           zIndex: 1000,
         }}
       >
-        {/* Hamburger menu for half screen */}
-        {isHalfScreen && (
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: theme.colors.white,
-              cursor: 'pointer',
-              marginRight: '10px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: '30px',
-              height: '30px',
-            }}
-          >
-            <div style={{ width: '20px', height: '3px', backgroundColor: theme.colors.white, margin: '2px 0' }} />
-            <div style={{ width: '20px', height: '3px', backgroundColor: theme.colors.white, margin: '2px 0' }} />
-            <div style={{ width: '20px', height: '3px', backgroundColor: theme.colors.white, margin: '2px 0' }} />
-          </button>
-        )}
+        {/* Left Section: Hamburger, Logo, and Title */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {isHalfScreen && (
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: theme.colors.white,
+                cursor: 'pointer',
+                marginRight: '10px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '30px',
+                height: '30px',
+              }}
+            >
+              <div style={{ width: '20px', height: '3px', backgroundColor: theme.colors.white, margin: '2px 0' }} />
+              <div style={{ width: '20px', height: '3px', backgroundColor: theme.colors.white, margin: '2px 0' }} />
+              <div style={{ width: '20px', height: '3px', backgroundColor: theme.colors.white, margin: '2px 0' }} />
+            </button>
+          )}
+          <img
+            src={blackSHlogo}
+            alt="Stock Hours Trading Logo"
+            style={{ height: '50px', marginRight: '15px' }}
+          />
+          <h2 style={{ margin: 0, fontSize: '24px', color: theme.colors.white }}>
+            {currentScreen}
+          </h2>
+        </div>
 
-        <img
-          src={blackSHlogo}
-          alt="Stock Hours Trading Logo"
-          style={{ height: '50px', marginRight: '15px' }}
-        />
-        <h2 style={{ margin: 0, fontSize: '24px', color: theme.colors.white }}>
-          {currentScreen}
-        </h2>
+        {/* Right Section: Date Range Picker */}
+        <div style={{ marginLeft: 'auto' }}>
+          <DateRangePicker onDateChange={handleDateChange} />
+        </div>
       </header>
 
       {/* Sidebar */}
@@ -263,10 +284,11 @@ function App() {
           zIndex: 900,
         }}
       >
-        {/* "+" Button with Tooltip */}
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <label
             htmlFor="sidebar-file-upload"
+            onMouseEnter={(e) => { e.target.querySelector('.tooltip').style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { e.target.querySelector('.tooltip').style.visibility = 'hidden'; }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -281,15 +303,23 @@ function App() {
               marginBottom: '20px',
               position: 'relative',
             }}
-            onMouseEnter={() => setVisibleTooltip('addTrade')}
-            onMouseLeave={() => setVisibleTooltip(null)}
           >
             +
             <span
+              className="tooltip"
               style={{
-                ...tooltipStyle,
-                visibility: visibleTooltip === 'addTrade' ? 'visible' : 'hidden',
-                opacity: visibleTooltip === 'addTrade' ? 1 : 0,
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
               }}
             >
               Add Trade(s)
@@ -304,10 +334,12 @@ function App() {
           />
         </div>
 
-        {/* Dashboard Button with 2x2 Grid Icon and Tooltip */}
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div
+            ref={dashboardButtonRef}
             onClick={handleDashboardClick}
+            onMouseEnter={(e) => { dashboardTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { dashboardTooltipRef.current.style.visibility = 'hidden'; }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -320,8 +352,6 @@ function App() {
               marginBottom: '20px',
               position: 'relative',
             }}
-            onMouseEnter={() => setVisibleTooltip('dashboard')}
-            onMouseLeave={() => setVisibleTooltip(null)}
           >
             <svg
               width="20"
@@ -340,10 +370,21 @@ function App() {
               <rect x="12" y="12" width="6" height="6" />
             </svg>
             <span
+              ref={dashboardTooltipRef}
+              className="tooltip"
               style={{
-                ...tooltipStyle,
-                visibility: visibleTooltip === 'dashboard' ? 'visible' : 'hidden',
-                opacity: visibleTooltip === 'dashboard' ? 1 : 0,
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
               }}
             >
               Dashboard
@@ -351,10 +392,12 @@ function App() {
           </div>
         </div>
 
-        {/* Reports Button with Icon and Tooltip */}
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div
+            ref={reportsButtonRef}
             onClick={handleReportsClick}
+            onMouseEnter={(e) => { reportsTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { reportsTooltipRef.current.style.visibility = 'hidden'; }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -367,8 +410,6 @@ function App() {
               marginBottom: '20px',
               position: 'relative',
             }}
-            onMouseEnter={() => setVisibleTooltip('reports')}
-            onMouseLeave={() => setVisibleTooltip(null)}
           >
             <svg
               width="20"
@@ -386,10 +427,21 @@ function App() {
               <line x1="14" y1="8" x2="14" y2="16" />
             </svg>
             <span
+              ref={reportsTooltipRef}
+              className="tooltip"
               style={{
-                ...tooltipStyle,
-                visibility: visibleTooltip === 'reports' ? 'visible' : 'hidden',
-                opacity: visibleTooltip === 'reports' ? 1 : 0,
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
               }}
             >
               Reports
@@ -397,10 +449,12 @@ function App() {
           </div>
         </div>
 
-        {/* Trades Button with Candlestick Chart Icon and Tooltip */}
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div
+            ref={tradesButtonRef}
             onClick={handleTradesClick}
+            onMouseEnter={(e) => { tradesTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { tradesTooltipRef.current.style.visibility = 'hidden'; }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -413,8 +467,6 @@ function App() {
               marginBottom: '20px',
               position: 'relative',
             }}
-            onMouseEnter={() => setVisibleTooltip('trades')}
-            onMouseLeave={() => setVisibleTooltip(null)}
           >
             <svg
               width="20"
@@ -435,10 +487,21 @@ function App() {
               <line x1="16" y1="15" x2="16" y2="18" />
             </svg>
             <span
+              ref={tradesTooltipRef}
+              className="tooltip"
               style={{
-                ...tooltipStyle,
-                visibility: visibleTooltip === 'trades' ? 'visible' : 'hidden',
-                opacity: visibleTooltip === 'trades' ? 1 : 0,
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
               }}
             >
               Trades
@@ -447,7 +510,6 @@ function App() {
         </div>
       </div>
 
-      {/* Main content based on current screen */}
       <div
         style={{
           display: 'flex',
@@ -474,7 +536,7 @@ function App() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <StatsDashboard tradeData={tradeData} />
+              <StatsDashboard tradeData={filteredTradeData} />
             </div>
           </>
         ) : currentScreen === 'Reports' ? (
@@ -491,7 +553,7 @@ function App() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <ReportsScreen tradeData={tradeData} isHalfScreen={isHalfScreen} isSidebarOpen={isSidebarOpen} />
+              <ReportsScreen tradeData={filteredTradeData} />
             </div>
           </>
         ) : (
@@ -508,7 +570,7 @@ function App() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <TradesScreen tradeData={tradeData} />
+              <TradesScreen tradeData={filteredTradeData} />
             </div>
           </>
         )}
