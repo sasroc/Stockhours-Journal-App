@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { theme } from '../theme';
-import { startOfWeek, endOfWeek, eachWeekOfInterval } from 'date-fns'; // Removed unused getISOWeek and addDays
+import { startOfWeek, endOfWeek, eachWeekOfInterval, getMonth } from 'date-fns';
 
 const ReportsScreen = ({ tradeData }) => {
   const [selectedReport, setSelectedReport] = useState('Overview');
@@ -249,24 +249,20 @@ const ReportsScreen = ({ tradeData }) => {
     const earliestDate = new Date(Math.min(...allExecTimes));
     const latestDate = new Date(Math.max(...allExecTimes));
 
-    // Generate all weeks in the range, even those with no trades
     const weekStarts = eachWeekOfInterval(
       { start: startOfWeek(earliestDate, { weekStartsOn: 1 }), end: endOfWeek(latestDate, { weekStartsOn: 1 }) },
-      { weekStartsOn: 1 } // ISO weeks start on Monday
+      { weekStartsOn: 1 }
     );
 
     const weekMap = new Map();
     weekStarts.forEach((weekStart, index) => {
-      const weekNumber = index + 1; // Sequential week number starting from 1
+      const weekNumber = index + 1;
       weekMap.set(weekNumber, { totalPnl: 0, tradeCount: 0, weekStart });
     });
 
-    // Populate trades into their respective weeks
     processedTrades.forEach(trade => {
       const execTime = new Date(trade.FirstBuyExecTime);
       if (isNaN(execTime)) return;
-
-      // Find the week this trade belongs to
       const weekStart = startOfWeek(execTime, { weekStartsOn: 1 });
       const weekIndex = weekStarts.findIndex(ws => ws.getTime() === weekStart.getTime());
       if (weekIndex !== -1) {
@@ -277,7 +273,6 @@ const ReportsScreen = ({ tradeData }) => {
       }
     });
 
-    // Convert to array for charting
     return Array.from(weekMap.entries()).map(([weekNumber, stats]) => ({
       weekNumber,
       totalPnl: stats.totalPnl,
@@ -286,7 +281,7 @@ const ReportsScreen = ({ tradeData }) => {
   }, [processedTrades]);
 
   const weeksPnlChartData = {
-    labels: weeksStats.map(week => `${week.weekNumber}`), // Just the number
+    labels: weeksStats.map(week => `${week.weekNumber}`),
     datasets: [{
       label: 'Profit/Loss ($)',
       data: weeksStats.map(week => week.totalPnl),
@@ -319,7 +314,7 @@ const ReportsScreen = ({ tradeData }) => {
   };
 
   const weeksTradesChartData = {
-    labels: weeksStats.map(week => `${week.weekNumber}`), // Just the number
+    labels: weeksStats.map(week => `${week.weekNumber}`),
     datasets: [{
       label: 'Number of Trades',
       data: weeksStats.map(week => week.tradeCount),
@@ -341,6 +336,93 @@ const ReportsScreen = ({ tradeData }) => {
       x: { 
         title: { display: true, text: 'Week Number', color: theme.colors.white }, 
         ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0 },
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        beginAtZero: true, 
+        title: { display: true, text: 'Number of Trades', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, stepSize: 1 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  // Chart Data for "Months"
+  const monthsStats = useMemo(() => {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthData = monthNames.map(() => ({ totalPnl: 0, tradeCount: 0 }));
+
+    processedTrades.forEach(trade => {
+      const execTime = new Date(trade.FirstBuyExecTime);
+      if (isNaN(execTime)) return;
+      const monthIndex = getMonth(execTime); // 0 = Jan, 11 = Dec
+      monthData[monthIndex].totalPnl += trade.profitLoss;
+      monthData[monthIndex].tradeCount += 1;
+    });
+
+    return monthData.map((stats, index) => ({
+      month: monthNames[index],
+      totalPnl: stats.totalPnl,
+      tradeCount: stats.tradeCount,
+    }));
+  }, [processedTrades]);
+
+  const monthsPnlChartData = {
+    labels: monthsStats.map(stats => stats.month),
+    datasets: [{
+      label: 'Profit/Loss ($)',
+      data: monthsStats.map(stats => stats.totalPnl),
+      backgroundColor: monthsStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderColor: monthsStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderWidth: 1,
+    }],
+  };
+
+  const monthsPnlChartOptions = {
+    indexAxis: 'x',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: $${context.raw.toFixed(2)}` } },
+    },
+    scales: {
+      x: { 
+        title: { display: true, text: 'Month', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 8 } }, // Smaller font size
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Profit/Loss ($)', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  const monthsTradesChartData = {
+    labels: monthsStats.map(stats => stats.month),
+    datasets: [{
+      label: 'Number of Trades',
+      data: monthsStats.map(stats => stats.tradeCount),
+      backgroundColor: '#1890ff',
+      borderColor: '#1890ff',
+      borderWidth: 1,
+    }],
+  };
+
+  const monthsTradesChartOptions = {
+    indexAxis: 'x',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.raw}` } },
+    },
+    scales: {
+      x: { 
+        title: { display: true, text: 'Month', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 8 } }, // Smaller font size
         grid: { color: 'rgba(255, 255, 255, 0.1)' } 
       },
       y: { 
@@ -440,6 +522,23 @@ const ReportsScreen = ({ tradeData }) => {
             <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades per Week</h3>
             <div style={{ height: '100%', width: '100%' }}>
               <Bar data={weeksTradesChartData} options={weeksTradesChartOptions} />
+            </div>
+          </div>
+        </div>
+      );
+    } else if (selectedReport === 'Months') {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L per Month</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={monthsPnlChartData} options={monthsPnlChartOptions} />
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades per Month</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={monthsTradesChartData} options={monthsTradesChartOptions} />
             </div>
           </div>
         </div>
