@@ -272,13 +272,11 @@ const StatsDashboard = ({ tradeData }) => {
     return processedTrades;
   }, [tradeData]);
 
-  // Calculate daily and cumulative P&L with initial 0 point
   const { dailyPnlData, cumulativePnlData } = useMemo(() => {
     const dailyPnlMap = {};
     const cumulativePnlData = [];
     const sortedTrades = trades.sort((a, b) => new Date(a.FirstBuyExecTime) - new Date(b.FirstBuyExecTime));
 
-    // Add initial point at 0 if there are trades
     if (sortedTrades.length > 0) {
       const firstDate = new Date(sortedTrades[0].FirstBuyExecTime);
       const initialDate = new Date(firstDate);
@@ -310,7 +308,6 @@ const StatsDashboard = ({ tradeData }) => {
     return { dailyPnlData, cumulativePnlData };
   }, [trades]);
 
-  // Cumulative P&L Line Chart Data with single continuous line and transition-based coloring
   const cumulativePnlChartData = useMemo(() => {
     return {
       labels: cumulativePnlData.map(data => data.date),
@@ -318,8 +315,8 @@ const StatsDashboard = ({ tradeData }) => {
         {
           label: 'Cumulative P&L',
           data: cumulativePnlData.map(data => data.cumulativePnl),
-          borderColor: theme.colors.green, // Default color, overridden by segment
-          backgroundColor: theme.colors.green, // Default for points, overridden by pointBackgroundColor
+          borderColor: theme.colors.green,
+          backgroundColor: theme.colors.green,
           fill: false,
           tension: 0.1,
           pointRadius: 4,
@@ -332,11 +329,8 @@ const StatsDashboard = ({ tradeData }) => {
             borderColor: ctx => {
               const prevValue = ctx.p0.parsed.y;
               const nextValue = ctx.p1.parsed.y;
-              // Transition from positive to negative: red
               if (prevValue >= 0 && nextValue < 0) return theme.colors.red;
-              // Transition from negative to positive: green
               if (prevValue < 0 && nextValue >= 0) return theme.colors.green;
-              // Both positive or both negative: match the starting point's color
               return prevValue >= 0 ? theme.colors.green : theme.colors.red;
             },
           },
@@ -382,13 +376,17 @@ const StatsDashboard = ({ tradeData }) => {
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
-  const renderCalendar = () => {
+  const renderCalendar = (isHalfScreen) => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
     const weeks = [];
     let dayCount = 1;
+
+    // Adjust size based on screen width
+    const daySize = isHalfScreen ? '10vw' : '12vw'; // Smaller for half-screen, larger for full-screen
+    const fontSize = isHalfScreen ? '14px' : '16px'; // Adjust font size accordingly
 
     for (let i = 0; i < 6; i++) {
       const week = [];
@@ -398,14 +396,14 @@ const StatsDashboard = ({ tradeData }) => {
             <div
               key={j}
               style={{
-                width: '40px',
-                height: '40px',
-                backgroundColor: theme.colors.grey,
+                width: daySize,
+                height: daySize,
+                backgroundColor: '#333', // Light grey for non-month days
                 color: theme.colors.white,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '2px',
+                margin: '4px',
                 borderRadius: '4px',
               }}
             />
@@ -413,29 +411,35 @@ const StatsDashboard = ({ tradeData }) => {
         } else {
           const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayCount).padStart(2, '0')}`;
           const dailyData = calendarData[dateKey] || { pnl: 0, tradeCount: 0 };
-          const color = dailyData.pnl !== 0 ? (dailyData.pnl >= 0 ? theme.colors.green : theme.colors.red) : theme.colors.grey;
+          const hasTrades = dailyData.tradeCount > 0;
+          const backgroundColor = hasTrades
+            ? dailyData.pnl >= 0
+              ? theme.colors.green
+              : theme.colors.red
+            : '#444'; // Light grey for days with no trades
+
           week.push(
             <div
               key={j}
               style={{
-                width: '40px',
-                height: '40px',
-                backgroundColor: color,
+                width: daySize,
+                height: daySize,
+                backgroundColor,
                 color: theme.colors.white,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '2px',
+                margin: '4px',
                 borderRadius: '4px',
-                fontSize: '12px',
+                fontSize,
               }}
             >
               <div>{dayCount}</div>
-              {dailyData.pnl !== 0 && (
+              {hasTrades && (
                 <div>
-                  <div style={{ fontSize: '10px' }}>${dailyData.pnl.toFixed(1)}</div>
-                  <div style={{ fontSize: '8px' }}>
+                  <div style={{ fontSize: isHalfScreen ? '12px' : '14px' }}>${dailyData.pnl.toFixed(1)}</div>
+                  <div style={{ fontSize: isHalfScreen ? '10px' : '12px' }}>
                     {dailyData.tradeCount} trade{dailyData.tradeCount !== 1 ? 's' : ''}
                   </div>
                 </div>
@@ -445,7 +449,7 @@ const StatsDashboard = ({ tradeData }) => {
           dayCount++;
         }
       }
-      weeks.push(<div key={i} style={{ display: 'flex' }}>{week}</div>);
+      weeks.push(<div key={i} style={{ display: 'flex', justifyContent: 'center' }}>{week}</div>);
     }
 
     return weeks;
@@ -574,11 +578,13 @@ const StatsDashboard = ({ tradeData }) => {
     },
   };
 
+  const isHalfScreen = window.innerWidth <= 960;
+
   if (!tradeData.length) {
     return (
       <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
         <p style={{ color: theme.colors.white }}>No data uploaded yet.</p>
-        <Calendar defaultView={true} />
+        <Calendar defaultView={true} isHalfScreen={isHalfScreen} />
       </div>
     );
   }
@@ -834,8 +840,8 @@ const StatsDashboard = ({ tradeData }) => {
 
       {/* Trade Calendar */}
       <h3 style={{ color: theme.colors.white, marginTop: '40px' }}>Trade Calendar</h3>
-      <div style={{ marginTop: '20px' }}>
-        <div style={{ color: theme.colors.white, display: 'flex', alignItems: 'center' }}>
+      <div style={{ marginTop: '20px', width: '100%' }}>
+        <div style={{ color: theme.colors.white, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <button onClick={() => changeMonth(-1)} style={{ marginRight: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>
             ←
           </button>
@@ -844,24 +850,24 @@ const StatsDashboard = ({ tradeData }) => {
             →
           </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '5px' }}>
-            <span style={{ width: '40px', textAlign: 'center' }}>Sun</span>
-            <span style={{ width: '40px', textAlign: 'center' }}>Mon</span>
-            <span style={{ width: '40px', textAlign: 'center' }}>Tue</span>
-            <span style={{ width: '40px', textAlign: 'center' }}>Wed</span>
-            <span style={{ width: '40px', textAlign: 'center' }}>Thu</span>
-            <span style={{ width: '40px', textAlign: 'center' }}>Fri</span>
-            <span style={{ width: '40px', textAlign: 'center' }}>Sat</span>
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px', width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '10px', fontSize: isHalfScreen ? '14px' : '16px' }}>
+            <span style={{ flex: 1, textAlign: 'center' }}>Sun</span>
+            <span style={{ flex: 1, textAlign: 'center' }}>Mon</span>
+            <span style={{ flex: 1, textAlign: 'center' }}>Tue</span>
+            <span style={{ flex: 1, textAlign: 'center' }}>Wed</span>
+            <span style={{ flex: 1, textAlign: 'center' }}>Thu</span>
+            <span style={{ flex: 1, textAlign: 'center' }}>Fri</span>
+            <span style={{ flex: 1, textAlign: 'center' }}>Sat</span>
           </div>
-          {renderCalendar()}
+          {renderCalendar(isHalfScreen)}
         </div>
       </div>
     </div>
   );
 };
 
-const Calendar = ({ defaultView }) => {
+const Calendar = ({ defaultView, isHalfScreen }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -875,6 +881,9 @@ const Calendar = ({ defaultView }) => {
     const weeks = [];
     let dayCount = 1;
 
+    const daySize = isHalfScreen ? '10vw' : '12vw';
+    const fontSize = isHalfScreen ? '14px' : '16px';
+
     for (let i = 0; i < 6; i++) {
       const week = [];
       for (let j = 0; j < 7; j++) {
@@ -883,14 +892,14 @@ const Calendar = ({ defaultView }) => {
             <div
               key={j}
               style={{
-                width: '40px',
-                height: '40px',
-                backgroundColor: theme.colors.grey,
+                width: daySize,
+                height: daySize,
+                backgroundColor: '#333',
                 color: theme.colors.white,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '2px',
+                margin: '4px',
                 borderRadius: '4px',
               }}
             />
@@ -900,16 +909,16 @@ const Calendar = ({ defaultView }) => {
             <div
               key={j}
               style={{
-                width: '40px',
-                height: '40px',
-                backgroundColor: theme.colors.grey,
+                width: daySize,
+                height: daySize,
+                backgroundColor: '#444', // Light grey for days with no trades in default view
                 color: theme.colors.white,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '2px',
+                margin: '4px',
                 borderRadius: '4px',
-                fontSize: '12px',
+                fontSize,
               }}
             >
               {dayCount}
@@ -918,7 +927,7 @@ const Calendar = ({ defaultView }) => {
           dayCount++;
         }
       }
-      weeks.push(<div key={i} style={{ display: 'flex' }}>{week}</div>);
+      weeks.push(<div key={i} style={{ display: 'flex', justifyContent: 'center' }}>{week}</div>);
     }
 
     return weeks;
@@ -929,8 +938,8 @@ const Calendar = ({ defaultView }) => {
   };
 
   return (
-    <div style={{ marginTop: '20px' }}>
-      <div style={{ color: theme.colors.white, display: 'flex', alignItems: 'center' }}>
+    <div style={{ marginTop: '20px', width: '100%' }}>
+      <div style={{ color: theme.colors.white, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <button onClick={() => changeMonth(-1)} style={{ marginRight: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>
           ←
         </button>
@@ -939,15 +948,15 @@ const Calendar = ({ defaultView }) => {
           →
         </button>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '5px' }}>
-          <span style={{ width: '40px', textAlign: 'center' }}>Sun</span>
-          <span style={{ width: '40px', textAlign: 'center' }}>Mon</span>
-          <span style={{ width: '40px', textAlign: 'center' }}>Tue</span>
-          <span style={{ width: '40px', textAlign: 'center' }}>Wed</span>
-          <span style={{ width: '40px', textAlign: 'center' }}>Thu</span>
-          <span style={{ width: '40px', textAlign: 'center' }}>Fri</span>
-          <span style={{ width: '40px', textAlign: 'center' }}>Sat</span>
+      <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px', width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '10px', fontSize: isHalfScreen ? '14px' : '16px' }}>
+          <span style={{ flex: 1, textAlign: 'center' }}>Sun</span>
+          <span style={{ flex: 1, textAlign: 'center' }}>Mon</span>
+          <span style={{ flex: 1, textAlign: 'center' }}>Tue</span>
+          <span style={{ flex: 1, textAlign: 'center' }}>Wed</span>
+          <span style={{ flex: 1, textAlign: 'center' }}>Thu</span>
+          <span style={{ flex: 1, textAlign: 'center' }}>Fri</span>
+          <span style={{ flex: 1, textAlign: 'center' }}>Sat</span>
         </div>
         {renderCalendar()}
       </div>
