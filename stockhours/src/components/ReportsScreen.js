@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { theme } from '../theme';
-import { startOfWeek, endOfWeek, eachWeekOfInterval, getMonth } from 'date-fns';
+import { startOfWeek, endOfWeek, eachWeekOfInterval, getMonth, getHours, differenceInDays } from 'date-fns';
 
 const ReportsScreen = ({ tradeData }) => {
   const [selectedReport, setSelectedReport] = useState('Overview');
@@ -41,7 +41,7 @@ const ReportsScreen = ({ tradeData }) => {
         position.currentQuantity += transaction.Quantity;
         position.buyRecords.push({ quantity: transaction.Quantity, price: transaction.Price, tradeDate: transaction.TradeDate, execTime: transaction.ExecTime });
       } else if (transaction.PosEffect === 'CLOSE' && transaction.Side === 'SELL') {
-        position.sellRecords.push({ quantity: Math.abs(transaction.Quantity), price: transaction.Price });
+        position.sellRecords.push({ quantity: Math.abs(transaction.Quantity), price: transaction.Price, execTime: transaction.ExecTime });
         position.currentQuantity -= Math.abs(transaction.Quantity);
 
         if (position.currentQuantity === 0) {
@@ -66,13 +66,19 @@ const ReportsScreen = ({ tradeData }) => {
           }
 
           const profitLoss = totalSellProceeds - totalBuyCost;
+          const exitTime = sellRecordsForCycle[sellRecordsForCycle.length - 1].execTime;
+          const totalVolume = totalBuyQuantity;
+          const firstBuyPrice = buyRecordsForCycle[0].price;
           trades.push({
             Symbol: transaction.Symbol,
             Strike: transaction.Strike,
             Expiration: transaction.Expiration,
             TradeDate: buyRecordsForCycle[0].tradeDate,
             FirstBuyExecTime: buyRecordsForCycle[0].execTime,
+            ExitTime: exitTime,
             profitLoss,
+            totalVolume,
+            firstBuyPrice,
           });
 
           position.totalQuantity = 0;
@@ -355,7 +361,7 @@ const ReportsScreen = ({ tradeData }) => {
     processedTrades.forEach(trade => {
       const execTime = new Date(trade.FirstBuyExecTime);
       if (isNaN(execTime)) return;
-      const monthIndex = getMonth(execTime); // 0 = Jan, 11 = Dec
+      const monthIndex = getMonth(execTime);
       monthData[monthIndex].totalPnl += trade.profitLoss;
       monthData[monthIndex].tradeCount += 1;
     });
@@ -389,7 +395,7 @@ const ReportsScreen = ({ tradeData }) => {
     scales: {
       x: { 
         title: { display: true, text: 'Month', color: theme.colors.white }, 
-        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 8 } }, // Smaller font size
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 8 } },
         grid: { color: 'rgba(255, 255, 255, 0.1)' } 
       },
       y: { 
@@ -422,13 +428,543 @@ const ReportsScreen = ({ tradeData }) => {
     scales: {
       x: { 
         title: { display: true, text: 'Month', color: theme.colors.white }, 
-        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 8 } }, // Smaller font size
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 8 } },
         grid: { color: 'rgba(255, 255, 255, 0.1)' } 
       },
       y: { 
         beginAtZero: true, 
         title: { display: true, text: 'Number of Trades', color: theme.colors.white }, 
         ticks: { color: theme.colors.white, stepSize: 1 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  // Chart Data for "Trade time"
+  const tradeTimeStats = useMemo(() => {
+    const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+    const hourData = hours.map(() => ({ totalPnl: 0, tradeCount: 0 }));
+
+    processedTrades.forEach(trade => {
+      const exitTime = new Date(trade.ExitTime);
+      if (isNaN(exitTime)) return;
+      const hourIndex = getHours(exitTime);
+      hourData[hourIndex].totalPnl += trade.profitLoss;
+      hourData[hourIndex].tradeCount += 1;
+    });
+
+    return hourData.map((stats, index) => ({
+      hour: hours[index],
+      totalPnl: stats.totalPnl,
+      tradeCount: stats.tradeCount,
+    }));
+  }, [processedTrades]);
+
+  const tradeTimePnlChartData = {
+    labels: tradeTimeStats.map(stats => stats.hour),
+    datasets: [{
+      label: 'Profit/Loss ($)',
+      data: tradeTimeStats.map(stats => stats.totalPnl),
+      backgroundColor: tradeTimeStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderColor: tradeTimeStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderWidth: 1,
+    }],
+  };
+
+  const tradeTimePnlChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: $${context.raw.toFixed(2)}` } },
+    },
+    scales: {
+      x: { 
+        title: { display: true, text: 'Profit/Loss ($)', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Hour of Day', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 10 } },
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  const tradeTimeTradesChartData = {
+    labels: tradeTimeStats.map(stats => stats.hour),
+    datasets: [{
+      label: 'Number of Trades',
+      data: tradeTimeStats.map(stats => stats.tradeCount),
+      backgroundColor: '#1890ff',
+      borderColor: '#1890ff',
+      borderWidth: 1,
+    }],
+  };
+
+  const tradeTimeTradesChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.raw}` } },
+    },
+    scales: {
+      x: { 
+        beginAtZero: true, 
+        title: { display: true, text: 'Number of Trades', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, stepSize: 1 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Hour of Day', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 10 } },
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  // Chart Data for "Trade duration"
+  const tradeDurationStats = useMemo(() => {
+    const durationBuckets = [
+      { label: 'Under 1 min', min: 0, max: 60 },
+      { label: '1:00 to 1:59', min: 60, max: 120 },
+      { label: '2:00 to 4:59', min: 120, max: 300 },
+      { label: '5:00 to 9:59', min: 300, max: 600 },
+      { label: '10:00 to 29:59', min: 600, max: 1800 },
+      { label: '30:00 to 59:59', min: 1800, max: 3600 },
+      { label: '1:00:00 to 1:59:00', min: 3600, max: 7200 },
+    ];
+    const durationData = durationBuckets.map(() => ({ totalPnl: 0, tradeCount: 0 }));
+
+    processedTrades.forEach(trade => {
+      const entryTime = new Date(trade.FirstBuyExecTime);
+      const exitTime = new Date(trade.ExitTime);
+      if (isNaN(entryTime) || isNaN(exitTime)) return;
+      const durationSeconds = (exitTime - entryTime) / 1000;
+      if (durationSeconds < 0) return;
+
+      const bucketIndex = durationBuckets.findIndex(bucket => durationSeconds >= bucket.min && durationSeconds < bucket.max);
+      if (bucketIndex !== -1) {
+        durationData[bucketIndex].totalPnl += trade.profitLoss;
+        durationData[bucketIndex].tradeCount += 1;
+      }
+    });
+
+    return durationData.map((stats, index) => ({
+      duration: durationBuckets[index].label,
+      totalPnl: stats.totalPnl,
+      tradeCount: stats.tradeCount,
+    }));
+  }, [processedTrades]);
+
+  const tradeDurationPnlChartData = {
+    labels: tradeDurationStats.map(stats => stats.duration),
+    datasets: [{
+      label: 'Profit/Loss ($)',
+      data: tradeDurationStats.map(stats => stats.totalPnl),
+      backgroundColor: tradeDurationStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderColor: tradeDurationStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderWidth: 1,
+    }],
+  };
+
+  const tradeDurationPnlChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: $${context.raw.toFixed(2)}` } },
+    },
+    scales: {
+      x: { 
+        title: { display: true, text: 'Profit/Loss ($)', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Trade Duration', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  const tradeDurationTradesChartData = {
+    labels: tradeDurationStats.map(stats => stats.duration),
+    datasets: [{
+      label: 'Number of Trades',
+      data: tradeDurationStats.map(stats => stats.tradeCount),
+      backgroundColor: '#1890ff',
+      borderColor: '#1890ff',
+      borderWidth: 1,
+    }],
+  };
+
+  const tradeDurationTradesChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.raw}` } },
+    },
+    scales: {
+      x: { 
+        beginAtZero: true, 
+        title: { display: true, text: 'Number of Trades', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, stepSize: 1 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Trade Duration', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  // Chart Data for "Volume"
+  const volumeStats = useMemo(() => {
+    const volumeBuckets = [
+      { label: '1 to 2', min: 1, max: 3 },
+      { label: '3 to 4', min: 3, max: 5 },
+      { label: '5 to 9', min: 5, max: 10 },
+      { label: '10 to 19', min: 10, max: 20 },
+      { label: '20 to 49', min: 20, max: 50 },
+      { label: '50 to 99', min: 50, max: 100 },
+      { label: '100 to 499', min: 100, max: 500 },
+      { label: '500 to 999', min: 500, max: 1000 },
+      { label: '1000 and over', min: 1000, max: Infinity },
+    ];
+    const volumeData = volumeBuckets.map(() => ({ totalPnl: 0, tradeCount: 0 }));
+
+    processedTrades.forEach(trade => {
+      const volume = trade.totalVolume;
+      if (!volume || volume < 1) return;
+
+      const bucketIndex = volumeBuckets.findIndex(bucket => volume >= bucket.min && volume < bucket.max);
+      if (bucketIndex !== -1) {
+        volumeData[bucketIndex].totalPnl += trade.profitLoss;
+        volumeData[bucketIndex].tradeCount += 1;
+      }
+    });
+
+    return volumeData.map((stats, index) => ({
+      volume: volumeBuckets[index].label,
+      totalPnl: stats.totalPnl,
+      tradeCount: stats.tradeCount,
+    }));
+  }, [processedTrades]);
+
+  const volumePnlChartData = {
+    labels: volumeStats.map(stats => stats.volume),
+    datasets: [{
+      label: 'Profit/Loss ($)',
+      data: volumeStats.map(stats => stats.totalPnl),
+      backgroundColor: volumeStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderColor: volumeStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderWidth: 1,
+    }],
+  };
+
+  const volumePnlChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: $${context.raw.toFixed(2)}` } },
+    },
+    scales: {
+      x: { 
+        title: { display: true, text: 'Profit/Loss ($)', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Volume', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  const volumeTradesChartData = {
+    labels: volumeStats.map(stats => stats.volume),
+    datasets: [{
+      label: 'Number of Trades',
+      data: volumeStats.map(stats => stats.tradeCount),
+      backgroundColor: '#1890ff',
+      borderColor: '#1890ff',
+      borderWidth: 1,
+    }],
+  };
+
+  const volumeTradesChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.raw}` } },
+    },
+    scales: {
+      x: { 
+        beginAtZero: true, 
+        title: { display: true, text: 'Number of Trades', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, stepSize: 1 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Volume', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  // Chart Data for "Price"
+  const priceStats = useMemo(() => {
+    const priceBuckets = [
+      { label: 'Under $0.99', min: 0, max: 0.99 },
+      { label: '$1.00 to $1.99', min: 1.00, max: 2.00 },
+      { label: '$2.00 to $4.99', min: 2.00, max: 5.00 },
+      { label: '$5.00 to $9.99', min: 5.00, max: 10.00 },
+      { label: 'Above $10.00', min: 10.00, max: Infinity },
+    ];
+    const priceData = priceBuckets.map(() => ({ totalPnl: 0, tradeCount: 0 }));
+
+    processedTrades.forEach(trade => {
+      const price = trade.firstBuyPrice;
+      if (!price || price < 0) return;
+
+      const bucketIndex = priceBuckets.findIndex(bucket => price >= bucket.min && price < bucket.max);
+      if (bucketIndex !== -1) {
+        priceData[bucketIndex].totalPnl += trade.profitLoss;
+        priceData[bucketIndex].tradeCount += 1;
+      }
+    });
+
+    return priceData.map((stats, index) => ({
+      price: priceBuckets[index].label,
+      totalPnl: stats.totalPnl,
+      tradeCount: stats.tradeCount,
+    }));
+  }, [processedTrades]);
+
+  const pricePnlChartData = {
+    labels: priceStats.map(stats => stats.price),
+    datasets: [{
+      label: 'Profit/Loss ($)',
+      data: priceStats.map(stats => stats.totalPnl),
+      backgroundColor: priceStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderColor: priceStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderWidth: 1,
+    }],
+  };
+
+  const pricePnlChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: $${context.raw.toFixed(2)}` } },
+    },
+    scales: {
+      x: { 
+        title: { display: true, text: 'Profit/Loss ($)', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Contract Price', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  const priceTradesChartData = {
+    labels: priceStats.map(stats => stats.price),
+    datasets: [{
+      label: 'Number of Trades',
+      data: priceStats.map(stats => stats.tradeCount),
+      backgroundColor: '#1890ff',
+      borderColor: '#1890ff',
+      borderWidth: 1,
+    }],
+  };
+
+  const priceTradesChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.raw}` } },
+    },
+    scales: {
+      x: { 
+        beginAtZero: true, 
+        title: { display: true, text: 'Number of Trades', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, stepSize: 1 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Contract Price', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  // Chart Data for "Days till expiration"
+  const daysTillExpirationStats = useMemo(() => {
+    const dayBuckets = [
+      { label: 'Same day', min: 0, max: 1 },
+      { label: '1 day', min: 1, max: 2 },
+      { label: '2 days', min: 2, max: 3 },
+      { label: '3 days', min: 3, max: 4 },
+      { label: '4 days', min: 4, max: 5 },
+      { label: '5 days', min: 5, max: 6 },
+      { label: '6 days', min: 6, max: 7 },
+      { label: '7 days', min: 7, max: 8 },
+      { label: '8 days', min: 8, max: 9 },
+      { label: '9 days', min: 9, max: 10 },
+      { label: '10+ days', min: 10, max: Infinity },
+    ];
+    const dayData = dayBuckets.map(() => ({ totalPnl: 0, tradeCount: 0 }));
+
+    // Custom date parsing for TradeDate (MM/DD/YYYY) and Expiration (DD MM YYYY)
+    const parseTradeDate = (dateStr) => {
+      if (!dateStr) return null;
+      const [month, day, year] = dateStr.split('/').map(Number);
+      return new Date(year, month - 1, day); // month - 1 because JS months are 0-based
+    };
+
+    const parseExpirationDate = (dateStr) => {
+      if (!dateStr) return null;
+      const [day, month, year] = dateStr.split(' ').map(Number);
+      return new Date(year, month - 1, day); // month - 1 because JS months are 0-based
+    };
+
+    processedTrades.forEach((trade, index) => {
+      const tradeDate = parseTradeDate(trade.TradeDate);
+      const expirationDate = parseExpirationDate(trade.Expiration);
+
+      // Debugging: Log the first few trades to inspect parsing
+      if (index < 5) {
+        console.log(`Trade ${index}:`, {
+          TradeDate: trade.TradeDate,
+          ParsedTradeDate: tradeDate,
+          Expiration: trade.Expiration,
+          ParsedExpiration: expirationDate,
+          ProfitLoss: trade.profitLoss,
+        });
+      }
+
+      if (!tradeDate || !expirationDate || isNaN(tradeDate) || isNaN(expirationDate)) {
+        console.warn(`Invalid dates for trade ${index}: TradeDate=${trade.TradeDate}, Expiration=${trade.Expiration}`);
+        return;
+      }
+
+      const daysTillExpiration = differenceInDays(expirationDate, tradeDate);
+      if (daysTillExpiration < 0) {
+        console.warn(`Negative days till expiration for trade ${index}: ${daysTillExpiration}`);
+        return;
+      }
+
+      const bucketIndex = dayBuckets.findIndex(bucket => daysTillExpiration >= bucket.min && daysTillExpiration < bucket.max);
+      if (bucketIndex !== -1) {
+        dayData[bucketIndex].totalPnl += trade.profitLoss;
+        dayData[bucketIndex].tradeCount += 1;
+      } else {
+        console.warn(`Trade ${index} daysTillExpiration ${daysTillExpiration} didn’t match any bucket`);
+      }
+    });
+
+    // Log final stats for verification
+    console.log('Days till Expiration Stats:', dayData.map((stats, index) => ({
+      Bucket: dayBuckets[index].label,
+      TotalPnl: stats.totalPnl,
+      TradeCount: stats.tradeCount,
+    })));
+
+    return dayData.map((stats, index) => ({
+      days: dayBuckets[index].label,
+      totalPnl: stats.totalPnl,
+      tradeCount: stats.tradeCount,
+    }));
+  }, [processedTrades]);
+
+  const daysTillExpirationPnlChartData = {
+    labels: daysTillExpirationStats.map(stats => stats.days),
+    datasets: [{
+      label: 'Profit/Loss ($)',
+      data: daysTillExpirationStats.map(stats => stats.totalPnl),
+      backgroundColor: daysTillExpirationStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderColor: daysTillExpirationStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderWidth: 1,
+    }],
+  };
+
+  const daysTillExpirationPnlChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: $${context.raw.toFixed(2)}` } },
+    },
+    scales: {
+      x: { 
+        title: { display: true, text: 'Profit/Loss ($)', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Days till Expiration', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+    },
+  };
+
+  const daysTillExpirationTradesChartData = {
+    labels: daysTillExpirationStats.map(stats => stats.days),
+    datasets: [{
+      label: 'Number of Trades',
+      data: daysTillExpirationStats.map(stats => stats.tradeCount),
+      backgroundColor: '#1890ff',
+      borderColor: '#1890ff',
+      borderWidth: 1,
+    }],
+  };
+
+  const daysTillExpirationTradesChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { color: theme.colors.white } },
+      tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.raw}` } },
+    },
+    scales: {
+      x: { 
+        beginAtZero: true, 
+        title: { display: true, text: 'Number of Trades', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, stepSize: 1 }, 
+        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+      },
+      y: { 
+        title: { display: true, text: 'Days till Expiration', color: theme.colors.white }, 
+        ticks: { color: theme.colors.white, autoSkip: false, maxRotation: 0, minRotation: 0 }, 
         grid: { color: 'rgba(255, 255, 255, 0.1)' } 
       },
     },
@@ -539,6 +1075,93 @@ const ReportsScreen = ({ tradeData }) => {
             <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades per Month</h3>
             <div style={{ height: '100%', width: '100%' }}>
               <Bar data={monthsTradesChartData} options={monthsTradesChartOptions} />
+            </div>
+          </div>
+        </div>
+      );
+    } else if (selectedReport === 'Trade time') {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '450px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Exit Hour</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={tradeTimePnlChartData} options={tradeTimePnlChartOptions} />
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '450px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Exit Hour</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={tradeTimeTradesChartData} options={tradeTimeTradesChartOptions} />
+            </div>
+          </div>
+        </div>
+      );
+    } else if (selectedReport === 'Trade duration') {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Trade Duration</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={tradeDurationPnlChartData} options={tradeDurationPnlChartOptions} />
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Trade Duration</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={tradeDurationTradesChartData} options={tradeDurationTradesChartOptions} />
+            </div>
+          </div>
+        </div>
+      );
+    } else if (selectedReport === 'Volume') {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Volume</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={volumePnlChartData} options={volumePnlChartOptions} />
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Volume</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+
+
+              <Bar data={volumeTradesChartData} options={volumeTradesChartOptions} />
+            </div>
+          </div>
+        </div>
+      );
+    } else if (selectedReport === 'Price') {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Contract Price</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={pricePnlChartData} options={pricePnlChartOptions} />
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Contract Price</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={priceTradesChartData} options={priceTradesChartOptions} />
+            </div>
+          </div>
+        </div>
+      );
+    } else if (selectedReport === 'Days till expiration') {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Days till Expiration</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={daysTillExpirationPnlChartData} options={daysTillExpirationPnlChartOptions} />
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Days till Expiration</h3>
+            <div style={{ height: '100%', width: '100%' }}>
+              <Bar data={daysTillExpirationTradesChartData} options={daysTillExpirationTradesChartOptions} />
             </div>
           </div>
         </div>
