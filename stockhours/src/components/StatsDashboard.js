@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Line, Bar } from 'react-chartjs-2';
 import { theme } from '../theme';
 
 const InfoCircle = ({ tooltip }) => {
@@ -60,7 +61,6 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
   const percentage = total > 0 ? (value / total) * 100 : 0;
 
   if (isHalfCircle) {
-    // For half-circle (Trade Win %)
     const radius = 40;
     const circumference = 2 * Math.PI * radius;
     const winPercentage = percentage;
@@ -86,7 +86,6 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
             left: 0,
           }}
         >
-          {/* Green section (winning trades) */}
           <path
             d="M 10 50 A 40 40 0 0 1 90 50"
             fill="none"
@@ -96,7 +95,6 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
             strokeDashoffset="0"
             strokeLinecap="butt"
           />
-          {/* Red section (losing trades) */}
           <path
             d="M 10 50 A 40 40 0 0 1 90 50"
             fill="none"
@@ -111,8 +109,7 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
     );
   }
 
-  // For full circle (Profit Factor)
-  const radius = 50; // Increased radius for a larger circle
+  const radius = 50;
   const circumference = 2 * Math.PI * radius;
   const profitPercentage = percentage;
   const lossPercentage = total > 0 ? ((total - value) / total) * 100 : 0;
@@ -123,12 +120,11 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
     <div
       style={{
         position: 'relative',
-        width: '60px', // Increased size
+        width: '60px',
         height: '60px',
       }}
     >
       <svg width="60" height="60" viewBox="0 0 120 120">
-        {/* Green section (profits, left side) */}
         <circle
           cx="60"
           cy="60"
@@ -137,7 +133,7 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
           stroke={theme.colors.green}
           strokeWidth="10"
           strokeDasharray={`${profitDashLength}, ${circumference - profitDashLength}`}
-          strokeDashoffset={circumference / 4} // Start at 90 degrees (top, adjusted to left)
+          strokeDashoffset={circumference / 4}
           strokeLinecap="butt"
           style={{
             transform: `rotate(-90deg)`,
@@ -147,7 +143,6 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
           onMouseEnter={() => setHoveredSection('profit')}
           onMouseLeave={() => setHoveredSection(null)}
         />
-        {/* Red section (losses, right side) */}
         <circle
           cx="60"
           cy="60"
@@ -156,7 +151,7 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
           stroke={theme.colors.red}
           strokeWidth="10"
           strokeDasharray={`${lossDashLength}, ${circumference - lossDashLength}`}
-          strokeDashoffset={-profitDashLength + circumference / 4} // Start where green ends
+          strokeDashoffset={-profitDashLength + circumference / 4}
           strokeLinecap="butt"
           style={{
             transform: `rotate(-90deg)`,
@@ -167,7 +162,6 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
           onMouseLeave={() => setHoveredSection(null)}
         />
       </svg>
-      {/* Hover tooltips */}
       {hoveredSection && (
         <div
           style={{
@@ -192,21 +186,17 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
 };
 
 const StatsDashboard = ({ tradeData }) => {
-  console.log('Trade Data in StatsDashboard:', tradeData);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState({});
 
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
 
-    // Flatten all transactions for processing
     const allTransactions = tradeData.flatMap(trade => trade.Transactions);
-
-    // Sort transactions by ExecTime to process in chronological order
     const sortedTransactions = allTransactions.sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
 
     const processedTrades = [];
-    const positions = new Map(); // Map of Symbol-Strike-Expiration to { totalQuantity, currentQuantity, buyRecords, sellRecords }
+    const positions = new Map();
     const CONTRACT_MULTIPLIER = 100;
 
     sortedTransactions.forEach(transaction => {
@@ -215,8 +205,8 @@ const StatsDashboard = ({ tradeData }) => {
         positions.set(key, {
           totalQuantity: 0,
           currentQuantity: 0,
-          buyRecords: [], // { quantity, price, tradeDate, execTime }
-          sellRecords: [], // { quantity, price }
+          buyRecords: [],
+          sellRecords: [],
         });
       }
 
@@ -239,7 +229,6 @@ const StatsDashboard = ({ tradeData }) => {
 
         position.currentQuantity -= Math.abs(transaction.Quantity);
 
-        // If the position is fully closed or after a cycle, create a trade
         if (position.currentQuantity === 0) {
           let totalBuyQuantity = 0;
           let totalBuyCost = 0;
@@ -283,12 +272,85 @@ const StatsDashboard = ({ tradeData }) => {
     return processedTrades;
   }, [tradeData]);
 
+  // Calculate daily and cumulative P&L with initial 0 point
+  const { dailyPnlData, cumulativePnlData } = useMemo(() => {
+    const dailyPnlMap = {};
+    const cumulativePnlData = [];
+    const sortedTrades = trades.sort((a, b) => new Date(a.FirstBuyExecTime) - new Date(b.FirstBuyExecTime));
+
+    // Add initial point at 0 if there are trades
+    if (sortedTrades.length > 0) {
+      const firstDate = new Date(sortedTrades[0].FirstBuyExecTime);
+      const initialDate = new Date(firstDate);
+      initialDate.setDate(firstDate.getDate() - 1);
+      cumulativePnlData.push({ date: initialDate.toISOString().split('T')[0], cumulativePnl: 0 });
+    }
+
+    sortedTrades.forEach(trade => {
+      const dateKey = new Date(trade.FirstBuyExecTime).toISOString().split('T')[0];
+      if (!dailyPnlMap[dateKey]) {
+        dailyPnlMap[dateKey] = 0;
+      }
+      dailyPnlMap[dateKey] += trade.profitLoss;
+    });
+
+    const dailyPnlData = Object.entries(dailyPnlMap).map(([date, pnl]) => ({
+      date,
+      pnl,
+    }));
+
+    dailyPnlData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    let cumulativePnl = 0;
+    dailyPnlData.forEach(({ date, pnl }) => {
+      cumulativePnl += pnl;
+      cumulativePnlData.push({ date, cumulativePnl });
+    });
+
+    return { dailyPnlData, cumulativePnlData };
+  }, [trades]);
+
+  // Cumulative P&L Line Chart Data with single continuous line and transition-based coloring
+  const cumulativePnlChartData = useMemo(() => {
+    return {
+      labels: cumulativePnlData.map(data => data.date),
+      datasets: [
+        {
+          label: 'Cumulative P&L',
+          data: cumulativePnlData.map(data => data.cumulativePnl),
+          borderColor: theme.colors.green, // Default color, overridden by segment
+          backgroundColor: theme.colors.green, // Default for points, overridden by pointBackgroundColor
+          fill: false,
+          tension: 0.1,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: ctx => {
+            const value = ctx.dataset.data[ctx.dataIndex];
+            return value < 0 ? theme.colors.red : theme.colors.green;
+          },
+          segment: {
+            borderColor: ctx => {
+              const prevValue = ctx.p0.parsed.y;
+              const nextValue = ctx.p1.parsed.y;
+              // Transition from positive to negative: red
+              if (prevValue >= 0 && nextValue < 0) return theme.colors.red;
+              // Transition from negative to positive: green
+              if (prevValue < 0 && nextValue >= 0) return theme.colors.green;
+              // Both positive or both negative: match the starting point's color
+              return prevValue >= 0 ? theme.colors.green : theme.colors.red;
+            },
+          },
+        },
+      ],
+    };
+  }, [cumulativePnlData]);
+
   useEffect(() => {
     if (tradeData.length > 0) {
       const dailyPnl = {};
       trades.forEach(trade => {
         const tradeDate = new Date(trade.FirstBuyExecTime);
-        const dateKey = tradeDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        const dateKey = tradeDate.toISOString().split('T')[0];
         if (!dailyPnl[dateKey]) {
           dailyPnl[dateKey] = { pnl: 0, tradeCount: 0 };
         }
@@ -300,32 +362,15 @@ const StatsDashboard = ({ tradeData }) => {
   }, [tradeData, trades]);
 
   const totalTrades = trades.length;
-
-  if (!tradeData.length) {
-    return (
-      <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
-        <p style={{ color: theme.colors.white }}>No data uploaded yet.</p>
-        <Calendar defaultView={true} />
-      </div>
-    );
-  }
-
-  // Calculate metrics
   const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
   const tradeExpectancy = totalTrades > 0 ? totalProfitLoss / totalTrades : 0;
-
-  // Calculate Profit Factor
   const totalProfits = trades.filter(trade => trade.profitLoss > 0).reduce((sum, trade) => sum + trade.profitLoss, 0);
   const totalLosses = Math.abs(trades.filter(trade => trade.profitLoss < 0).reduce((sum, trade) => sum + trade.profitLoss, 0));
   const profitFactor = totalLosses === 0 ? (totalProfits > 0 ? Infinity : 0) : totalProfits / totalLosses;
-
-  // Calculate Win Rate
   const winningTrades = trades.filter(trade => trade.profitLoss > 0).length;
   const losingTrades = trades.filter(trade => trade.profitLoss < 0).length;
   const neutralTrades = trades.filter(trade => trade.profitLoss === 0).length;
   const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-
-  // Calculate Average Win/Loss
   const avgWinTrade = winningTrades > 0
     ? trades.filter(trade => trade.profitLoss > 0).reduce((sum, trade) => sum + trade.profitLoss, 0) / winningTrades
     : 0;
@@ -409,6 +454,134 @@ const StatsDashboard = ({ tradeData }) => {
   const changeMonth = (delta) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + delta, 1));
   };
+
+  const cumulativePnlChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Date',
+          color: theme.colors.white,
+        },
+        ticks: {
+          color: theme.colors.white,
+          maxTicksLimit: 10,
+        },
+        grid: {
+          color: '#333',
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Cumulative P&L ($)',
+          color: theme.colors.white,
+        },
+        ticks: {
+          color: theme.colors.white,
+          callback: value => `$${value.toFixed(2)}`,
+        },
+        grid: {
+          color: '#333',
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: context => {
+            const date = context.label;
+            const value = context.parsed.y;
+            return `Date: ${date}, Cumulative P&L: $${value.toFixed(2)}`;
+          },
+        },
+        backgroundColor: '#333',
+        titleColor: theme.colors.white,
+        bodyColor: theme.colors.white,
+      },
+    },
+  };
+
+  const dailyPnlChartData = {
+    labels: dailyPnlData.map(data => data.date),
+    datasets: [
+      {
+        label: 'Daily P&L',
+        data: dailyPnlData.map(data => data.pnl),
+        backgroundColor: dailyPnlData.map(data => (data.pnl >= 0 ? theme.colors.green : theme.colors.red)),
+        borderColor: dailyPnlData.map(data => (data.pnl >= 0 ? theme.colors.green : theme.colors.red)),
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const dailyPnlChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Date',
+          color: theme.colors.white,
+        },
+        ticks: {
+          color: theme.colors.white,
+          maxTicksLimit: 10,
+        },
+        grid: {
+          color: '#333',
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Daily P&L ($)',
+          color: theme.colors.white,
+        },
+        ticks: {
+          color: theme.colors.white,
+          callback: value => `$${value.toFixed(2)}`,
+        },
+        grid: {
+          color: '#333',
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        labels: {
+          color: theme.colors.white,
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: context => {
+            const date = context.label;
+            const value = context.parsed.y;
+            return `Date: ${date}, Daily P&L: $${value.toFixed(2)}`;
+          },
+        },
+        backgroundColor: '#333',
+        titleColor: theme.colors.white,
+        bodyColor: theme.colors.white,
+      },
+    },
+  };
+
+  if (!tradeData.length) {
+    return (
+      <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
+        <p style={{ color: theme.colors.white }}>No data uploaded yet.</p>
+        <Calendar defaultView={true} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
@@ -646,8 +819,21 @@ const StatsDashboard = ({ tradeData }) => {
         </div>
       </div>
 
+      {/* New Charts Section */}
+      <div style={{ marginTop: '40px' }}>
+        <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Cumulative Daily P&L</h3>
+        <div style={{ height: '300px', backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px' }}>
+          <Line data={cumulativePnlChartData} options={cumulativePnlChartOptions} />
+        </div>
+
+        <h3 style={{ color: theme.colors.white, marginTop: '40px', marginBottom: '20px' }}>Daily P&L</h3>
+        <div style={{ height: '300px', backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px' }}>
+          <Bar data={dailyPnlChartData} options={dailyPnlChartOptions} />
+        </div>
+      </div>
+
       {/* Trade Calendar */}
-      <h3 style={{ color: theme.colors.white }}>Trade Calendar</h3>
+      <h3 style={{ color: theme.colors.white, marginTop: '40px' }}>Trade Calendar</h3>
       <div style={{ marginTop: '20px' }}>
         <div style={{ color: theme.colors.white, display: 'flex', alignItems: 'center' }}>
           <button onClick={() => changeMonth(-1)} style={{ marginRight: '10px', background: 'none', border: 'none', color: theme.colors.white, cursor: 'pointer' }}>
@@ -675,7 +861,6 @@ const StatsDashboard = ({ tradeData }) => {
   );
 };
 
-// Separate Calendar component for default view
 const Calendar = ({ defaultView }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
