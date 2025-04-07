@@ -1,13 +1,13 @@
 // StockHours-Journal-App/stockhours/src/App.js
-
 import React, { useState, useEffect, useRef } from 'react';
 import StatsDashboard from './components/StatsDashboard';
 import ReportsScreen from './components/ReportsScreen';
 import TradesScreen from './components/TradesScreen';
 import DateRangePicker from './components/DateRangePicker';
+import ImportsScreen from './components/ImportsScreen';
 import { theme } from './theme';
-import logo from './assets/clocklogo.PNG'; // Clock logo
-import blackSHlogo from './assets/blackSHlogo.PNG'; // Stock Hours logo
+import logo from './assets/clocklogo.PNG';
+import blackSHlogo from './assets/blackSHlogo.PNG';
 import * as XLSX from 'xlsx';
 import './App.css';
 import {
@@ -25,6 +25,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 function App() {
   const [tradeData, setTradeData] = useState([]);
   const [filteredTradeData, setFilteredTradeData] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960);
   const [currentScreen, setCurrentScreen] = useState('Dashboard');
@@ -36,6 +37,9 @@ function App() {
   const reportsTooltipRef = useRef(null);
   const tradesButtonRef = useRef(null);
   const tradesTooltipRef = useRef(null);
+  const importsButtonRef = useRef(null);
+  const importsTooltipRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -80,6 +84,25 @@ function App() {
     setFilteredTradeData(filtered);
   }, [tradeData, dateRange]);
 
+  const generateTransactionKey = (transaction) => {
+    // Generate a unique key for each transaction
+    const execTime = new Date(transaction.ExecTime);
+    const normalizedExecTime = new Date(
+      execTime.getFullYear(),
+      execTime.getMonth(),
+      execTime.getDate(),
+      execTime.getHours(),
+      execTime.getMinutes(),
+      execTime.getSeconds()
+    ).toISOString();
+    return `${transaction.Symbol}-${transaction.Strike}-${transaction.Expiration}-${normalizedExecTime}-${transaction.Side}-${transaction.Quantity}-${transaction.Price}-${transaction.PosEffect}-${transaction.OrderType}`;
+  };
+
+  const generateGroupKey = (trade) => {
+    // Key for grouping trades (Symbol, Strike, Expiration)
+    return `${trade.Symbol}-${trade.Strike}-${trade.Expiration}`;
+  };
+
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -110,7 +133,7 @@ function App() {
 
         const sectionHeaders = data[tradeHistoryStart + 1].slice(1);
 
-        const tradeData = data
+        const tradeDataRaw = data
           .slice(tradeHistoryStart + 2)
           .filter(row => row.length >= sectionHeaders.length && (typeof row[1] === 'string' || typeof row[1] === 'number'))
           .map(row => {
@@ -122,7 +145,7 @@ function App() {
             return obj;
           });
 
-        const transformedData = tradeData.map(row => {
+        const transformedData = tradeDataRaw.map(row => {
           const posEffect = row['Pos Effect'] || 'UNKNOWN';
           const symbol = row['Symbol'] || 'UNKNOWN';
 
@@ -165,26 +188,106 @@ function App() {
           };
         });
 
+        // Group transactions by Symbol, Strike, and Expiration
         const groupedByTrade = transformedData.reduce((acc, trade) => {
-          const key = `${trade.Symbol}-${trade.Strike}-${trade.Expiration}`;
-          if (!acc[key]) {
-            acc[key] = [];
+          const groupKey = generateGroupKey(trade);
+          if (!acc[groupKey]) {
+            acc[groupKey] = { Transactions: new Map(), fileRefs: new Set() };
           }
-          acc[key].push(trade);
+          const txKey = generateTransactionKey(trade);
+          acc[groupKey].Transactions.set(txKey, trade);
+          acc[groupKey].fileRefs.add(file.name);
           return acc;
         }, {});
 
-        const groupedTrades = Object.keys(groupedByTrade).map(key => ({
-          Symbol: groupedByTrade[key][0].Symbol,
-          Strike: groupedByTrade[key][0].Strike,
-          Expiration: groupedByTrade[key][0].Expiration,
-          Transactions: groupedByTrade[key],
+        const newGroupedTrades = Object.entries(groupedByTrade).map(([key, value]) => ({
+          Symbol: value.Transactions.values().next().value.Symbol,
+          Strike: value.Transactions.values().next().value.Strike,
+          Expiration: value.Transactions.values().next().value.Expiration,
+          Transactions: Array.from(value.Transactions.values()),
+          fileRefs: value.fileRefs
         }));
 
-        setTradeData(groupedTrades);
+        // Deduplicate and update state
+        setUploadedFiles(prev => {
+          const newFiles = [...prev, { name: file.name, trades: [] }];
+          const tradeMap = new Map();
+
+          // Process existing trades
+          prev.forEach(file => {
+            file.trades.forEach(tradeEntry => {
+              const groupKey = generateGroupKey(tradeEntry.trade);
+              if (!tradeMap.has(groupKey)) {
+                tradeMap.set(groupKey, {
+                  trade: {
+                    Symbol: tradeEntry.trade.Symbol,
+                    Strike: tradeEntry.trade.Strike,
+                    Expiration: tradeEntry.trade.Expiration,
+                    Transactions: new Map()
+                  },
+                  fileRefs: new Set()
+                });
+              }
+              tradeEntry.trade.Transactions.forEach(tx => {
+                const txKey = generateTransactionKey(tx);
+                tradeMap.get(groupKey).trade.Transactions.set(txKey, tx);
+              });
+              tradeEntry.fileRefs.forEach(ref => tradeMap.get(groupKey).fileRefs.add(ref));
+            });
+          });
+
+          // Process new trades
+          newGroupedTrades.forEach(newTrade => {
+            const groupKey = generateGroupKey(newTrade);
+            if (!tradeMap.has(groupKey)) {
+              tradeMap.set(groupKey, {
+                trade: {
+                  Symbol: newTrade.Symbol,
+                  Strike: newTrade.Strike,
+                  Expiration: newTrade.Expiration,
+                  Transactions: new Map()
+                },
+                fileRefs: new Set()
+              });
+            }
+            const existingTrade = tradeMap.get(groupKey);
+            newTrade.Transactions.forEach(newTx => {
+              const txKey = generateTransactionKey(newTx);
+              existingTrade.trade.Transactions.set(txKey, newTx);
+            });
+            newTrade.fileRefs.forEach(ref => existingTrade.fileRefs.add(ref));
+          });
+
+          // Convert transaction Maps back to arrays
+          const updatedFiles = newFiles.map(f => ({
+            name: f.name,
+            trades: Array.from(tradeMap.values())
+              .filter(entry => entry.fileRefs.has(f.name))
+              .map(entry => ({
+                trade: {
+                  ...entry.trade,
+                  Transactions: Array.from(entry.trade.Transactions.values())
+                },
+                fileRefs: Array.from(entry.fileRefs)
+              }))
+          }));
+
+          setTradeData(Array.from(tradeMap.values()).map(entry => ({
+            ...entry.trade,
+            Transactions: Array.from(entry.trade.Transactions.values())
+          })));
+          return updatedFiles;
+        });
+
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       } catch (error) {
         alert('Error parsing file. Please ensure it is a valid Excel or CSV file.');
         console.error('File parsing error:', error);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     };
 
@@ -193,6 +296,62 @@ function App() {
     } else {
       reader.readAsBinaryString(file);
     }
+  };
+
+  const handleDeleteFile = (fileName) => {
+    setUploadedFiles(prev => {
+      const fileToDelete = prev.find(file => file.name === fileName);
+      if (!fileToDelete) return prev;
+
+      const remainingFiles = prev.filter(file => file.name !== fileName);
+      const tradeMap = new Map();
+
+      remainingFiles.forEach(file => {
+        file.trades.forEach(tradeEntry => {
+          const groupKey = generateGroupKey(tradeEntry.trade);
+          if (!tradeMap.has(groupKey)) {
+            tradeMap.set(groupKey, {
+              trade: {
+                Symbol: tradeEntry.trade.Symbol,
+                Strike: tradeEntry.trade.Strike,
+                Expiration: tradeEntry.trade.Expiration,
+                Transactions: new Map()
+              },
+              fileRefs: new Set()
+            });
+          }
+          tradeEntry.trade.Transactions.forEach(tx => {
+            const txKey = generateTransactionKey(tx);
+            tradeMap.get(groupKey).trade.Transactions.set(txKey, tx);
+          });
+          tradeEntry.fileRefs.forEach(ref => tradeMap.get(groupKey).fileRefs.add(ref));
+        });
+      });
+
+      const updatedFiles = remainingFiles.map(file => ({
+        name: file.name,
+        trades: Array.from(tradeMap.values())
+          .filter(entry => entry.fileRefs.has(file.name))
+          .map(entry => ({
+            trade: {
+              ...entry.trade,
+              Transactions: Array.from(entry.trade.Transactions.values())
+            },
+            fileRefs: Array.from(entry.fileRefs)
+          }))
+      }));
+
+      setTradeData(Array.from(tradeMap.values()).map(entry => ({
+        ...entry.trade,
+        Transactions: Array.from(entry.trade.Transactions.values())
+      })));
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      return updatedFiles;
+    });
   };
 
   const handleDateChange = (startDate, endDate) => {
@@ -211,9 +370,12 @@ function App() {
     setCurrentScreen('Trades');
   };
 
+  const handleImportsClick = () => {
+    setCurrentScreen('Imports');
+  };
+
   return (
     <div className="App" style={{ backgroundColor: '#000', minHeight: '100vh', color: theme.colors.white }}>
-      {/* Header with logo, hamburger menu (if half screen), screen title, and date picker */}
       <header
         style={{
           display: 'flex',
@@ -229,7 +391,6 @@ function App() {
           zIndex: 1000,
         }}
       >
-        {/* Left Section: Hamburger, Logo, and Title */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {isHalfScreen && (
             <button
@@ -262,14 +423,11 @@ function App() {
             {currentScreen}
           </h2>
         </div>
-
-        {/* Right Section: Date Range Picker */}
         <div style={{ marginLeft: 'auto' }}>
           <DateRangePicker onDateChange={handleDateChange} />
         </div>
       </header>
 
-      {/* Sidebar */}
       <div
         style={{
           position: 'fixed',
@@ -326,6 +484,7 @@ function App() {
             </span>
           </label>
           <input
+            ref={fileInputRef}
             id="sidebar-file-upload"
             type="file"
             accept=".xlsx, .xls, .csv"
@@ -508,6 +667,63 @@ function App() {
             </span>
           </div>
         </div>
+
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+          <div
+            ref={importsButtonRef}
+            onClick={handleImportsClick}
+            onMouseEnter={(e) => { importsTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { importsTooltipRef.current.style.visibility = 'hidden'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              backgroundColor: theme.colors.green,
+              borderRadius: '50%',
+              cursor: 'pointer',
+              marginBottom: '20px',
+              position: 'relative',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute' }}
+            >
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <path d="M15 2H9v4" />
+              <path d="M12 12l2 2-6 6H6v-2l6-6z" />
+            </svg>
+            <span
+              ref={importsTooltipRef}
+              className="tooltip"
+              style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
+              }}
+            >
+              Imports
+            </span>
+          </div>
+        </div>
       </div>
 
       <div
@@ -556,7 +772,7 @@ function App() {
               <ReportsScreen tradeData={filteredTradeData} />
             </div>
           </>
-        ) : (
+        ) : currentScreen === 'Trades' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
@@ -573,7 +789,24 @@ function App() {
               <TradesScreen tradeData={filteredTradeData} />
             </div>
           </>
-        )}
+        ) : currentScreen === 'Imports' ? (
+          <>
+            <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <div
+              style={{
+                width: '90%',
+                maxWidth: '1200px',
+                backgroundColor: '#0d0d0d',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '0 auto',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              <ImportsScreen uploadedFiles={uploadedFiles} onDeleteFile={handleDeleteFile} />
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );
