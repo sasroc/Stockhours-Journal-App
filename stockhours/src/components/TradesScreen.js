@@ -13,11 +13,14 @@ import {
   Legend,
 } from 'chart.js';
 import { theme } from '../theme';
+import ShareModal from './ShareModal';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const TradesScreen = ({ tradeData }) => {
   const [expandedDays, setExpandedDays] = useState({}); // Track which days are expanded
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedDayStats, setSelectedDayStats] = useState(null);
 
   // Process trades and group by day
   const dailyTrades = useMemo(() => {
@@ -279,6 +282,27 @@ const TradesScreen = ({ tradeData }) => {
                   </span>
                 </span>
                 <button
+                  onClick={() => {
+                    setSelectedDayStats({
+                      trades,
+                      totalProfitLoss,
+                      date,
+                    });
+                    setShareModalOpen(true);
+                  }}
+                  style={{
+                    backgroundColor: theme.colors.green,
+                    color: theme.colors.white,
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '5px 10px',
+                    cursor: 'pointer',
+                    marginRight: '10px',
+                  }}
+                >
+                  Share
+                </button>
+                <button
                   style={{
                     background: 'none',
                     border: 'none',
@@ -413,6 +437,14 @@ const TradesScreen = ({ tradeData }) => {
             </div>
           );
         })}
+
+      {shareModalOpen && selectedDayStats && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          dayStats={selectedDayStats}
+        />
+      )}
     </div>
   );
 };
