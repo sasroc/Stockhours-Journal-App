@@ -1,4 +1,3 @@
-// StockHours-Journal-App/stockhours/src/App.js
 import React, { useState, useEffect, useRef } from 'react';
 import StatsDashboard from './components/StatsDashboard';
 import ReportsScreen from './components/ReportsScreen';
@@ -84,8 +83,7 @@ function App() {
     setFilteredTradeData(filtered);
   }, [tradeData, dateRange]);
 
-  const generateTransactionKey = (transaction) => {
-    // Generate a unique key for each transaction
+  const generateTransactionKey = (transaction, index) => {
     const execTime = new Date(transaction.ExecTime);
     const normalizedExecTime = new Date(
       execTime.getFullYear(),
@@ -95,11 +93,10 @@ function App() {
       execTime.getMinutes(),
       execTime.getSeconds()
     ).toISOString();
-    return `${transaction.Symbol}-${transaction.Strike}-${transaction.Expiration}-${normalizedExecTime}-${transaction.Side}-${transaction.Quantity}-${transaction.Price}-${transaction.PosEffect}-${transaction.OrderType}`;
+    return `${transaction.Symbol}-${transaction.Strike}-${transaction.Expiration}-${normalizedExecTime}-${transaction.Side}-${transaction.Quantity}-${transaction.Price}-${transaction.PosEffect}-${transaction.OrderType}-${index}`;
   };
 
   const generateGroupKey = (trade) => {
-    // Key for grouping trades (Symbol, Strike, Expiration)
     return `${trade.Symbol}-${trade.Strike}-${trade.Expiration}`;
   };
 
@@ -159,6 +156,19 @@ function App() {
             const minutes = Math.floor(((serialDate % 1) * 24 - hours) * 60);
             const seconds = Math.floor((((serialDate % 1) * 24 - hours) * 60 - minutes) * 60);
             execTime = new Date(date.y, date.m - 1, date.d, hours, minutes, seconds).toISOString();
+          } else {
+            // Handle string date format like "4/8/25 10:30:51"
+            const dateTimeParts = execTime.split(' ');
+            const dateParts = dateTimeParts[0].split('/');
+            const timeParts = dateTimeParts[1].split(':');
+            const month = parseInt(dateParts[0], 10) - 1; // JS months are 0-based
+            const day = parseInt(dateParts[1], 10);
+            const year = 2000 + parseInt(dateParts[2], 10); // Assuming 20XX
+            const hours = parseInt(timeParts[0], 10);
+            const minutes = parseInt(timeParts[1], 10);
+            const seconds = parseInt(timeParts[2], 10);
+            execTime = new Date(year, month, day, hours, minutes, seconds).toISOString();
+            tradeDate = `${month + 1}/${day}/${year}`;
           }
 
           let expiration = row['Exp'] || 'N/A';
@@ -185,16 +195,17 @@ function App() {
             Price: parseFloat(row['Price']) || 0,
             OrderType: row['Order Type'] || 'N/A',
             PosEffect: posEffect.includes('OPEN') ? 'OPEN' : posEffect.includes('CLOSE') ? 'CLOSE' : 'UNKNOWN',
+            Type: row['Type'] || 'UNKNOWN', // Preserve CALL/PUT
           };
         });
 
         // Group transactions by Symbol, Strike, and Expiration
-        const groupedByTrade = transformedData.reduce((acc, trade) => {
+        const groupedByTrade = transformedData.reduce((acc, trade, index) => {
           const groupKey = generateGroupKey(trade);
           if (!acc[groupKey]) {
             acc[groupKey] = { Transactions: new Map(), fileRefs: new Set() };
           }
-          const txKey = generateTransactionKey(trade);
+          const txKey = generateTransactionKey(trade, index);
           acc[groupKey].Transactions.set(txKey, trade);
           acc[groupKey].fileRefs.add(file.name);
           return acc;
@@ -228,8 +239,8 @@ function App() {
                   fileRefs: new Set()
                 });
               }
-              tradeEntry.trade.Transactions.forEach(tx => {
-                const txKey = generateTransactionKey(tx);
+              tradeEntry.trade.Transactions.forEach((tx, idx) => {
+                const txKey = generateTransactionKey(tx, idx);
                 tradeMap.get(groupKey).trade.Transactions.set(txKey, tx);
               });
               tradeEntry.fileRefs.forEach(ref => tradeMap.get(groupKey).fileRefs.add(ref));
@@ -251,8 +262,8 @@ function App() {
               });
             }
             const existingTrade = tradeMap.get(groupKey);
-            newTrade.Transactions.forEach(newTx => {
-              const txKey = generateTransactionKey(newTx);
+            newTrade.Transactions.forEach((newTx, idx) => {
+              const txKey = generateTransactionKey(newTx, idx);
               existingTrade.trade.Transactions.set(txKey, newTx);
             });
             newTrade.fileRefs.forEach(ref => existingTrade.fileRefs.add(ref));
@@ -320,8 +331,8 @@ function App() {
               fileRefs: new Set()
             });
           }
-          tradeEntry.trade.Transactions.forEach(tx => {
-            const txKey = generateTransactionKey(tx);
+          tradeEntry.trade.Transactions.forEach((tx, idx) => {
+            const txKey = generateTransactionKey(tx, idx);
             tradeMap.get(groupKey).trade.Transactions.set(txKey, tx);
           });
           tradeEntry.fileRefs.forEach(ref => tradeMap.get(groupKey).fileRefs.add(ref));
