@@ -858,17 +858,6 @@ const ReportsScreen = ({ tradeData }) => {
       const tradeDate = parseTradeDate(trade.TradeDate);
       const expirationDate = parseExpirationDate(trade.Expiration);
 
-      // Debugging: Log the first few trades to inspect parsing
-      if (index < 5) {
-        console.log(`Trade ${index}:`, {
-          TradeDate: trade.TradeDate,
-          ParsedTradeDate: tradeDate,
-          Expiration: trade.Expiration,
-          ParsedExpiration: expirationDate,
-          ProfitLoss: trade.profitLoss,
-        });
-      }
-
       if (!tradeDate || !expirationDate || isNaN(tradeDate) || isNaN(expirationDate)) {
         console.warn(`Invalid dates for trade ${index}: TradeDate=${trade.TradeDate}, Expiration=${trade.Expiration}`);
         return;
@@ -885,16 +874,9 @@ const ReportsScreen = ({ tradeData }) => {
         dayData[bucketIndex].totalPnl += trade.profitLoss;
         dayData[bucketIndex].tradeCount += 1;
       } else {
-        console.warn(`Trade ${index} daysTillExpiration ${daysTillExpiration} didn’t match any bucket`);
+        console.warn(`Trade ${index} daysTillExpiration ${daysTillExpiration} didn't match any bucket`);
       }
     });
-
-    // Log final stats for verification
-    console.log('Days till Expiration Stats:', dayData.map((stats, index) => ({
-      Bucket: dayBuckets[index].label,
-      TotalPnl: stats.totalPnl,
-      TradeCount: stats.tradeCount,
-    })));
 
     return dayData.map((stats, index) => ({
       days: dayBuckets[index].label,
@@ -1125,8 +1107,6 @@ const ReportsScreen = ({ tradeData }) => {
           <div style={{ flex: 1, minWidth: isHalfScreen ? '200px' : '300px', height: '400px', position: 'relative' }}>
             <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Volume</h3>
             <div style={{ height: '100%', width: '100%' }}>
-
-
               <Bar data={volumeTradesChartData} options={volumeTradesChartOptions} />
             </div>
           </div>
