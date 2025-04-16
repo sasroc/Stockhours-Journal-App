@@ -743,7 +743,8 @@ function App() {
           flexDirection: 'column',
           alignItems: 'center',
           padding: '20px',
-          marginLeft: (isHalfScreen && !isSidebarOpen) ? '0' : '50px',
+          marginLeft: (isHalfScreen && !isSidebarOpen) ? '0' : '70px',
+          marginRight: '70px',
           marginTop: '71px',
           transition: 'margin-left 0.3s ease',
         }}
@@ -754,8 +755,8 @@ function App() {
             <h1 style={{ color: theme.colors.white, marginBottom: '20px' }}>Stockhours Journal</h1>
             <div
               style={{
-                width: '90%',
-                maxWidth: '1200px',
+                width: '100%',
+                maxWidth: '1600px',
                 backgroundColor: '#0d0d0d',
                 borderRadius: '8px',
                 padding: '20px',
@@ -771,8 +772,8 @@ function App() {
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
               style={{
-                width: '90%',
-                maxWidth: '1200px',
+                width: '100%',
+                maxWidth: '1600px',
                 backgroundColor: '#0d0d0d',
                 borderRadius: '8px',
                 padding: '20px',
@@ -788,8 +789,8 @@ function App() {
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
               style={{
-                width: '90%',
-                maxWidth: '1200px',
+                width: '100%',
+                maxWidth: '1400px',
                 backgroundColor: '#0d0d0d',
                 borderRadius: '8px',
                 padding: '20px',
@@ -805,8 +806,8 @@ function App() {
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
               style={{
-                width: '90%',
-                maxWidth: '1200px',
+                width: '100%',
+                maxWidth: '1400px',
                 backgroundColor: '#0d0d0d',
                 borderRadius: '8px',
                 padding: '20px',

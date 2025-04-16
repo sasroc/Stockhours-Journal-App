@@ -385,8 +385,9 @@ const StatsDashboard = ({ tradeData }) => {
     let dayCount = 1;
 
     // Adjust size based on screen width
-    const daySize = isHalfScreen ? '10vw' : '12vw'; // Smaller for half-screen, larger for full-screen
-    const fontSize = isHalfScreen ? '14px' : '16px'; // Adjust font size accordingly
+    const daySize = isHalfScreen ? '10vw' : '6vw'; // Smaller for full-screen
+    const fontSize = isHalfScreen ? '14px' : '12px'; // Adjust font size accordingly
+    const dayInfoFontSize = isHalfScreen ? '12px' : '10px'; // Smaller for trade info in full-screen
 
     for (let i = 0; i < 6; i++) {
       const week = [];
@@ -398,7 +399,7 @@ const StatsDashboard = ({ tradeData }) => {
               style={{
                 width: daySize,
                 height: daySize,
-                backgroundColor: '#333', // Light grey for non-month days
+                backgroundColor: '#333',
                 color: theme.colors.white,
                 display: 'flex',
                 alignItems: 'center',
@@ -416,7 +417,7 @@ const StatsDashboard = ({ tradeData }) => {
             ? dailyData.pnl >= 0
               ? theme.colors.green
               : theme.colors.red
-            : '#444'; // Light grey for days with no trades
+            : '#444';
 
           week.push(
             <div
@@ -438,8 +439,8 @@ const StatsDashboard = ({ tradeData }) => {
               <div>{dayCount}</div>
               {hasTrades && (
                 <div>
-                  <div style={{ fontSize: isHalfScreen ? '12px' : '14px' }}>${dailyData.pnl.toFixed(1)}</div>
-                  <div style={{ fontSize: isHalfScreen ? '10px' : '12px' }}>
+                  <div style={{ fontSize: dayInfoFontSize }}>${dailyData.pnl.toFixed(1)}</div>
+                  <div style={{ fontSize: dayInfoFontSize }}>
                     {dailyData.tradeCount} trade{dailyData.tradeCount !== 1 ? 's' : ''}
                   </div>
                 </div>
@@ -703,6 +704,7 @@ const StatsDashboard = ({ tradeData }) => {
             padding: '15px',
             borderRadius: '8px',
             position: 'relative',
+            width: isHalfScreen ? 'calc(150% - 10px)' : 'auto',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -769,6 +771,8 @@ const StatsDashboard = ({ tradeData }) => {
             padding: '15px',
             borderRadius: '8px',
             position: 'relative',
+            width: isHalfScreen ? 'calc(140% - 10px)' : 'auto',
+            marginLeft: isHalfScreen ? '150px' : '0',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -827,14 +831,35 @@ const StatsDashboard = ({ tradeData }) => {
 
       {/* New Charts Section */}
       <div style={{ marginTop: '40px' }}>
-        <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Cumulative Daily P&L</h3>
-        <div style={{ height: '300px', backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px' }}>
-          <Line data={cumulativePnlChartData} options={cumulativePnlChartOptions} />
-        </div>
+        <div style={{ 
+          display: 'flex', 
+          gap: '20px',
+          flexDirection: isHalfScreen ? 'column' : 'row',
+          marginBottom: '40px' 
+        }}>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px', textAlign: 'center' }}>Cumulative Daily P&L</h3>
+            <div style={{ 
+              height: '300px', 
+              backgroundColor: '#1a1a1a', 
+              padding: '20px', 
+              borderRadius: '8px'
+            }}>
+              <Line data={cumulativePnlChartData} options={cumulativePnlChartOptions} />
+            </div>
+          </div>
 
-        <h3 style={{ color: theme.colors.white, marginTop: '40px', marginBottom: '20px' }}>Daily P&L</h3>
-        <div style={{ height: '300px', backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px' }}>
-          <Bar data={dailyPnlChartData} options={dailyPnlChartOptions} />
+          <div style={{ flex: 1 }}>
+            <h3 style={{ color: theme.colors.white, marginBottom: '20px', textAlign: 'center' }}>Daily P&L</h3>
+            <div style={{ 
+              height: '300px', 
+              backgroundColor: '#1a1a1a', 
+              padding: '20px', 
+              borderRadius: '8px'
+            }}>
+              <Bar data={dailyPnlChartData} options={dailyPnlChartOptions} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -851,14 +876,21 @@ const StatsDashboard = ({ tradeData }) => {
           </button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px', width: '100%' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '10px', fontSize: isHalfScreen ? '14px' : '16px' }}>
-            <span style={{ flex: 1, textAlign: 'center' }}>Sun</span>
-            <span style={{ flex: 1, textAlign: 'center' }}>Mon</span>
-            <span style={{ flex: 1, textAlign: 'center' }}>Tue</span>
-            <span style={{ flex: 1, textAlign: 'center' }}>Wed</span>
-            <span style={{ flex: 1, textAlign: 'center' }}>Thu</span>
-            <span style={{ flex: 1, textAlign: 'center' }}>Fri</span>
-            <span style={{ flex: 1, textAlign: 'center' }}>Sat</span>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            color: theme.colors.white, 
+            marginBottom: '10px', 
+            fontSize: isHalfScreen ? '14px' : '12px',
+            gap: isHalfScreen ? '0' : '8px'
+          }}>
+            <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Sun</span>
+            <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Mon</span>
+            <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Tue</span>
+            <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Wed</span>
+            <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Thu</span>
+            <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Fri</span>
+            <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Sat</span>
           </div>
           {renderCalendar(isHalfScreen)}
         </div>
@@ -949,14 +981,21 @@ const Calendar = ({ defaultView, isHalfScreen }) => {
         </button>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px', width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', color: theme.colors.white, marginBottom: '10px', fontSize: isHalfScreen ? '14px' : '16px' }}>
-          <span style={{ flex: 1, textAlign: 'center' }}>Sun</span>
-          <span style={{ flex: 1, textAlign: 'center' }}>Mon</span>
-          <span style={{ flex: 1, textAlign: 'center' }}>Tue</span>
-          <span style={{ flex: 1, textAlign: 'center' }}>Wed</span>
-          <span style={{ flex: 1, textAlign: 'center' }}>Thu</span>
-          <span style={{ flex: 1, textAlign: 'center' }}>Fri</span>
-          <span style={{ flex: 1, textAlign: 'center' }}>Sat</span>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          color: theme.colors.white, 
+          marginBottom: '10px', 
+          fontSize: isHalfScreen ? '14px' : '12px',
+          gap: isHalfScreen ? '0' : '8px'
+        }}>
+          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Sun</span>
+          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Mon</span>
+          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Tue</span>
+          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Wed</span>
+          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Thu</span>
+          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Fri</span>
+          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Sat</span>
         </div>
         {renderCalendar()}
       </div>
