@@ -385,12 +385,14 @@ const StatsDashboard = ({ tradeData }) => {
     let dayCount = 1;
 
     // Adjust size based on screen width
-    const daySize = isHalfScreen ? '10vw' : '6vw'; // Smaller for full-screen
-    const fontSize = isHalfScreen ? '14px' : '12px'; // Adjust font size accordingly
-    const dayInfoFontSize = isHalfScreen ? '12px' : '10px'; // Smaller for trade info in full-screen
+    const daySize = isHalfScreen ? '10vw' : '6vw';
+    const fontSize = isHalfScreen ? '14px' : '12px';
+    const dayInfoFontSize = isHalfScreen ? '12px' : '10px';
 
     for (let i = 0; i < 6; i++) {
       const week = [];
+      let weeklyPnl = 0;
+
       for (let j = 0; j < 7; j++) {
         if ((i === 0 && j < firstDay) || dayCount > daysInMonth) {
           week.push(
@@ -413,6 +415,9 @@ const StatsDashboard = ({ tradeData }) => {
           const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayCount).padStart(2, '0')}`;
           const dailyData = calendarData[dateKey] || { pnl: 0, tradeCount: 0 };
           const hasTrades = dailyData.tradeCount > 0;
+          if (hasTrades) {
+            weeklyPnl += dailyData.pnl;
+          }
           const backgroundColor = hasTrades
             ? dailyData.pnl >= 0
               ? theme.colors.green
@@ -450,6 +455,41 @@ const StatsDashboard = ({ tradeData }) => {
           dayCount++;
         }
       }
+
+      // Add weekly P&L column
+      week.push(
+        <div
+          key="weekly-pnl"
+          style={{
+            width: daySize,
+            height: daySize,
+            backgroundColor: '#1a1a1a',
+            color: theme.colors.white,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '4px',
+            borderRadius: '4px',
+            fontSize,
+            border: '1px solid #333',
+          }}
+        >
+          <div style={{ 
+            fontSize: isHalfScreen ? '14px' : '12px', 
+            marginBottom: '4px',
+            fontWeight: 'bold'
+          }}>Weekly P&L:</div>
+          <div style={{ 
+            fontSize: isHalfScreen ? '16px' : '14px',
+            color: weeklyPnl >= 0 ? theme.colors.green : theme.colors.red,
+            fontWeight: 'bold'
+          }}>
+            ${weeklyPnl.toFixed(1)}
+          </div>
+        </div>
+      );
+
       weeks.push(<div key={i} style={{ display: 'flex', justifyContent: 'center' }}>{week}</div>);
     }
 
@@ -891,6 +931,7 @@ const StatsDashboard = ({ tradeData }) => {
             <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Thu</span>
             <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Fri</span>
             <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Sat</span>
+            <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Weekly P&L</span>
           </div>
           {renderCalendar(isHalfScreen)}
         </div>
