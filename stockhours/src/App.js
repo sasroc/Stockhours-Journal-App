@@ -18,10 +18,23 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './components/auth/Login';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import InvitationManager from './components/admin/InvitationManager';
+import styled from 'styled-components';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-function App() {
+const AppContainer = styled.div`
+  min-height: 100vh;
+  background-color: #000;
+  color: ${theme.colors.white};
+`;
+
+function AppRoutes() {
+  const { currentUser, loading, isAdmin, logout } = useAuth();
   const [tradeData, setTradeData] = useState([]);
   const [filteredTradeData, setFilteredTradeData] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -29,6 +42,7 @@ function App() {
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960);
   const [currentScreen, setCurrentScreen] = useState('Dashboard');
   const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const dashboardButtonRef = useRef(null);
   const dashboardTooltipRef = useRef(null);
@@ -39,6 +53,9 @@ function App() {
   const importsButtonRef = useRef(null);
   const importsTooltipRef = useRef(null);
   const fileInputRef = useRef(null);
+  const profileButtonRef = useRef(null);
+  const profileTooltipRef = useRef(null);
+  const profileMenuRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -82,6 +99,24 @@ function App() {
 
     setFilteredTradeData(filtered);
   }, [tradeData, dateRange]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target) &&
+          profileButtonRef.current && !profileButtonRef.current.contains(event.target)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser && window.location.pathname !== '/') {
+      window.history.replaceState({}, '', '/');
+    }
+  }, [currentUser]);
 
   const generateTransactionKey = (transaction, index) => {
     const execTime = new Date(transaction.ExecTime);
@@ -385,6 +420,31 @@ function App() {
     setCurrentScreen('Imports');
   };
 
+  const handleLogout = async () => {
+    await logout();
+    setIsProfileMenuOpen(false);
+    window.history.replaceState({}, '', '/');
+  };
+
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        backgroundColor: '#000',
+        color: '#fff'
+      }}>
+        Loading...
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <Login />;
+  }
+
   return (
     <div className="App" style={{ backgroundColor: '#000', minHeight: '100vh', color: theme.colors.white }}>
       <header
@@ -434,7 +494,23 @@ function App() {
             {currentScreen}
           </h2>
         </div>
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          {isAdmin && (
+            <button
+              onClick={() => window.location.href = '/admin/invitations'}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: theme.colors.green,
+                color: theme.colors.white,
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+              }}
+            >
+              Manage Invitations
+            </button>
+          )}
           <DateRangePicker onDateChange={handleDateChange} />
         </div>
       </header>
@@ -735,6 +811,110 @@ function App() {
             </span>
           </div>
         </div>
+
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', marginTop: 'auto' }}>
+          <div
+            ref={profileButtonRef}
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            onMouseEnter={(e) => { profileTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { profileTooltipRef.current.style.visibility = 'hidden'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              backgroundColor: theme.colors.green,
+              borderRadius: '50%',
+              cursor: 'pointer',
+              marginBottom: '20px',
+              position: 'relative',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute' }}
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <span
+              ref={profileTooltipRef}
+              className="tooltip"
+              style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
+              }}
+            >
+              Profile
+            </span>
+          </div>
+          {isProfileMenuOpen && (
+            <div
+              ref={profileMenuRef}
+              style={{
+                position: 'absolute',
+                right: '-120px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#1a1a1a',
+                padding: '10px',
+                borderRadius: '4px',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+                zIndex: 1000,
+              }}
+            >
+              <button
+                onClick={handleLogout}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: theme.colors.white,
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  textAlign: 'left',
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div
@@ -749,7 +929,9 @@ function App() {
           transition: 'margin-left 0.3s ease',
         }}
       >
-        {currentScreen === 'Dashboard' ? (
+        {window.location.pathname === '/admin/invitations' ? (
+          <InvitationManager />
+        ) : currentScreen === 'Dashboard' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <h1 style={{ color: theme.colors.white, marginBottom: '20px' }}>Stockhours Journal</h1>
@@ -821,6 +1003,18 @@ function App() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppContainer>
+          <AppRoutes />
+        </AppContainer>
+      </Router>
+    </AuthProvider>
   );
 }
 
