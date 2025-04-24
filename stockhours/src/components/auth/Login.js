@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import logo from '../../assets/clocklogo.PNG';
 
 const LoginContainer = styled.div`
   display: flex;
@@ -9,78 +10,128 @@ const LoginContainer = styled.div`
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+  padding: 2rem;
+`;
+
+const Logo = styled.img`
+  width: 200px;
+  margin-bottom: 2rem;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
 `;
 
 const Form = styled.form`
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(26, 26, 26, 0.8);
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 400px;
   box-sizing: border-box;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  }
 `;
 
 const Title = styled.h2`
   text-align: center;
-  margin-bottom: 1.5rem;
-  color: #333;
+  margin-bottom: 2rem;
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 `;
 
 const InputContainer = styled.div`
   position: relative;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   width: 100%;
   box-sizing: border-box;
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 0.75rem;
+  padding: 1rem;
   padding-right: 2.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
   font-size: 1rem;
+  color: #fff;
   box-sizing: border-box;
+  transition: all 0.3s ease;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  }
 `;
 
 const EyeIcon = styled.button`
   position: absolute;
-  right: 0.75rem;
+  right: 1rem;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 24px;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #fff;
+  }
 `;
 
 const Button = styled.button`
   width: 100%;
-  padding: 0.75rem;
-  background-color: #007bff;
+  padding: 1rem;
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+
   &:hover {
-    background-color: #0056b3;
+    background: linear-gradient(135deg, #0056b3 0%, #003d80 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;
 
 const ErrorMessage = styled.div`
-  color: #dc3545;
+  color: #ff4444;
   margin-bottom: 1rem;
   text-align: center;
+  padding: 0.75rem;
+  background: rgba(255, 68, 68, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 68, 68, 0.2);
 `;
 
 const ToggleButton = styled.button`
@@ -88,10 +139,14 @@ const ToggleButton = styled.button`
   border: none;
   color: #007bff;
   cursor: pointer;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   width: 100%;
   text-align: center;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+
   &:hover {
+    color: #0056b3;
     text-decoration: underline;
   }
 `;
@@ -133,8 +188,9 @@ export default function Login() {
 
   return (
     <LoginContainer>
+      <Logo src={logo} alt="Stock Hours Logo" />
       <Form onSubmit={handleSubmit}>
-        <Title>{isLogin ? 'Login' : 'Sign Up'}</Title>
+        <Title>{isLogin ? 'Welcome Back' : 'Create Account'}</Title>
         {error && <ErrorMessage>{error}</ErrorMessage>}
         <InputContainer>
           <Input
