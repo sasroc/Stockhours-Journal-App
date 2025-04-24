@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 
 const LoginContainer = styled.div`
   display: flex;
@@ -105,12 +106,14 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { login, signup } = useAuth();
+  const navigate = useNavigate();
 
   async function handleSubmit(e) {
     e.preventDefault();
     try {
       if (isLogin) {
         await login(email, password);
+        navigate('/dashboard');
       } else {
         if (!invitationCode) {
           setError('Invitation code is required');
@@ -121,6 +124,7 @@ export default function Login() {
           return;
         }
         await signup(email, password, invitationCode);
+        navigate('/dashboard');
       }
     } catch (err) {
       setError(err.message);

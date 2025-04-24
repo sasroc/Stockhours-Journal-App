@@ -111,32 +111,21 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Function to set up the first admin user
-  async function setupFirstAdmin() {
+  async function login(email, password) {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new Error('No user is currently signed in');
-      }
-
-      // Create or update the user document with admin privileges
-      await setDoc(doc(db, 'users', user.uid), {
-        email: user.email,
-        isAdmin: true,
-        createdAt: new Date()
-      }, { merge: true });
-
-      // Update the local admin state
-      setIsAdmin(true);
-      return true;
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Update last login timestamp
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        lastLogin: serverTimestamp()
+      });
+      
+      return user;
     } catch (error) {
-      console.error('Error setting up admin:', error);
-      return false;
+      throw error;
     }
-  }
-
-  function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
   }
 
   function logout() {
@@ -149,8 +138,7 @@ export function AuthProvider({ children }) {
     loading,
     signup,
     login,
-    logout,
-    setupFirstAdmin
+    logout
   };
 
   return (

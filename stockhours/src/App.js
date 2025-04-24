@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './components/auth/Login';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import InvitationManager from './components/admin/InvitationManager';
 import StatsDashboard from './components/StatsDashboard';
 import ReportsScreen from './components/ReportsScreen';
 import TradesScreen from './components/TradesScreen';
-import DateRangePicker from './components/DateRangePicker';
 import ImportsScreen from './components/ImportsScreen';
+import DateRangePicker from './components/DateRangePicker';
 import { theme } from './theme';
 import logo from './assets/clocklogo.PNG';
 import blackSHlogo from './assets/blackSHlogo.PNG';
@@ -18,11 +23,6 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Login from './components/auth/Login';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import InvitationManager from './components/admin/InvitationManager';
 import styled from 'styled-components';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -35,6 +35,8 @@ const AppContainer = styled.div`
 
 function AppRoutes() {
   const { currentUser, loading, isAdmin, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [tradeData, setTradeData] = useState([]);
   const [filteredTradeData, setFilteredTradeData] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -118,6 +120,21 @@ function AppRoutes() {
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/admin/invitations') {
+      setCurrentScreen('Invitations');
+    } else if (path === '/dashboard') {
+      setCurrentScreen('Dashboard');
+    } else if (path === '/reports') {
+      setCurrentScreen('Reports');
+    } else if (path === '/trades') {
+      setCurrentScreen('Trades');
+    } else if (path === '/imports') {
+      setCurrentScreen('Imports');
+    }
+  }, [location.pathname]);
+
   const generateTransactionKey = (transaction, index) => {
     const execTime = new Date(transaction.ExecTime);
     const normalizedExecTime = new Date(
@@ -192,13 +209,12 @@ function AppRoutes() {
             const seconds = Math.floor((((serialDate % 1) * 24 - hours) * 60 - minutes) * 60);
             execTime = new Date(date.y, date.m - 1, date.d, hours, minutes, seconds).toISOString();
           } else {
-            // Handle string date format like "4/8/25 10:30:51"
             const dateTimeParts = execTime.split(' ');
             const dateParts = dateTimeParts[0].split('/');
             const timeParts = dateTimeParts[1].split(':');
-            const month = parseInt(dateParts[0], 10) - 1; // JS months are 0-based
+            const month = parseInt(dateParts[0], 10) - 1;
             const day = parseInt(dateParts[1], 10);
-            const year = 2000 + parseInt(dateParts[2], 10); // Assuming 20XX
+            const year = 2000 + parseInt(dateParts[2], 10);
             const hours = parseInt(timeParts[0], 10);
             const minutes = parseInt(timeParts[1], 10);
             const seconds = parseInt(timeParts[2], 10);
@@ -230,11 +246,10 @@ function AppRoutes() {
             Price: parseFloat(row['Price']) || 0,
             OrderType: row['Order Type'] || 'N/A',
             PosEffect: posEffect.includes('OPEN') ? 'OPEN' : posEffect.includes('CLOSE') ? 'CLOSE' : 'UNKNOWN',
-            Type: row['Type'] || 'UNKNOWN', // Preserve CALL/PUT
+            Type: row['Type'] || 'UNKNOWN',
           };
         });
 
-        // Group transactions by Symbol, Strike, and Expiration
         const groupedByTrade = transformedData.reduce((acc, trade, index) => {
           const groupKey = generateGroupKey(trade);
           if (!acc[groupKey]) {
@@ -254,12 +269,10 @@ function AppRoutes() {
           fileRefs: value.fileRefs
         }));
 
-        // Deduplicate and update state
         setUploadedFiles(prev => {
           const newFiles = [...prev, { name: file.name, trades: [] }];
           const tradeMap = new Map();
 
-          // Process existing trades
           prev.forEach(file => {
             file.trades.forEach(tradeEntry => {
               const groupKey = generateGroupKey(tradeEntry.trade);
@@ -282,7 +295,6 @@ function AppRoutes() {
             });
           });
 
-          // Process new trades
           newGroupedTrades.forEach(newTrade => {
             const groupKey = generateGroupKey(newTrade);
             if (!tradeMap.has(groupKey)) {
@@ -304,7 +316,6 @@ function AppRoutes() {
             newTrade.fileRefs.forEach(ref => existingTrade.fileRefs.add(ref));
           });
 
-          // Convert transaction Maps back to arrays
           const updatedFiles = newFiles.map(f => ({
             name: f.name,
             trades: Array.from(tradeMap.values())
@@ -405,25 +416,25 @@ function AppRoutes() {
   };
 
   const handleDashboardClick = () => {
-    setCurrentScreen('Dashboard');
+    navigate('/dashboard');
   };
 
   const handleReportsClick = () => {
-    setCurrentScreen('Reports');
+    navigate('/reports');
   };
 
   const handleTradesClick = () => {
-    setCurrentScreen('Trades');
+    navigate('/trades');
   };
 
   const handleImportsClick = () => {
-    setCurrentScreen('Imports');
+    navigate('/imports');
   };
 
   const handleLogout = async () => {
     await logout();
     setIsProfileMenuOpen(false);
-    window.history.replaceState({}, '', '/');
+    navigate('/login', { replace: true });
   };
 
   if (loading) {
@@ -442,7 +453,7 @@ function AppRoutes() {
   }
 
   if (!currentUser) {
-    return <Login />;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -497,7 +508,7 @@ function AppRoutes() {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '20px' }}>
           {isAdmin && (
             <button
-              onClick={() => window.location.href = '/admin/invitations'}
+              onClick={() => navigate('/admin/invitations')}
               style={{
                 padding: '8px 16px',
                 backgroundColor: theme.colors.green,
@@ -929,9 +940,21 @@ function AppRoutes() {
           transition: 'margin-left 0.3s ease',
         }}
       >
-        {window.location.pathname === '/admin/invitations' ? (
-          <InvitationManager />
-        ) : currentScreen === 'Dashboard' ? (
+        {location.pathname === '/admin/invitations' ? (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '1400px',
+              backgroundColor: '#0d0d0d',
+              borderRadius: '8px',
+              padding: '20px',
+              margin: '0 auto',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+            }}
+          >
+            <InvitationManager />
+          </div>
+        ) : location.pathname === '/dashboard' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <h1 style={{ color: theme.colors.white, marginBottom: '20px' }}>Stockhours Journal</h1>
@@ -949,7 +972,7 @@ function AppRoutes() {
               <StatsDashboard tradeData={filteredTradeData} />
             </div>
           </>
-        ) : currentScreen === 'Reports' ? (
+        ) : location.pathname === '/reports' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
@@ -966,7 +989,7 @@ function AppRoutes() {
               <ReportsScreen tradeData={filteredTradeData} />
             </div>
           </>
-        ) : currentScreen === 'Trades' ? (
+        ) : location.pathname === '/trades' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
@@ -983,7 +1006,7 @@ function AppRoutes() {
               <TradesScreen tradeData={filteredTradeData} />
             </div>
           </>
-        ) : currentScreen === 'Imports' ? (
+        ) : location.pathname === '/imports' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
@@ -1006,12 +1029,35 @@ function AppRoutes() {
   );
 }
 
+function AppRoutesWrapper() {
+  const { currentUser } = useAuth();
+  
+  return (
+    <Routes>
+      <Route path="/" element={
+        currentUser ? (
+          <Navigate to="/dashboard" replace />
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      <Route path="/login" element={<Login />} />
+      <Route path="/admin/invitations" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="/trades" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="/imports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <AppContainer>
-          <AppRoutes />
+          <AppRoutesWrapper />
         </AppContainer>
       </Router>
     </AuthProvider>
