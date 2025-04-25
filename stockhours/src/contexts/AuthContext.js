@@ -70,13 +70,16 @@ export function AuthProvider({ children }) {
       userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Create the user document in Firestore
+      // Create the user document in Firestore with trade data fields
       userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
         email: email,
         isAdmin: false,
         createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp()
+        lastLogin: serverTimestamp(),
+        tradeData: [],
+        uploadedFiles: [],
+        lastUpdated: serverTimestamp()
       });
       
       // Mark the invitation code as used
@@ -88,7 +91,6 @@ export function AuthProvider({ children }) {
       });
       
       return user;
-      
     } catch (error) {
       // Cleanup if we created a user but something else failed
       if (userCredential?.user) {
@@ -116,11 +118,19 @@ export function AuthProvider({ children }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Update last login timestamp
+      // Update last login timestamp and ensure trade data fields exist
       const userDocRef = doc(db, 'users', user.uid);
-      await updateDoc(userDocRef, {
-        lastLogin: serverTimestamp()
-      });
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        await updateDoc(userDocRef, {
+          lastLogin: serverTimestamp(),
+          tradeData: userData.tradeData || [],
+          uploadedFiles: userData.uploadedFiles || [],
+          lastUpdated: userData.lastUpdated || serverTimestamp()
+        });
+      }
       
       return user;
     } catch (error) {

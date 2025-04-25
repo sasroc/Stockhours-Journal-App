@@ -24,6 +24,8 @@ import {
   Legend,
 } from 'chart.js';
 import styled from 'styled-components';
+import { db } from './firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -135,6 +137,31 @@ function AppRoutes() {
     }
   }, [location.pathname]);
 
+  useEffect(() => {
+    const loadSavedTradeData = async () => {
+      if (currentUser) {
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.tradeData) {
+              setTradeData(userData.tradeData);
+            }
+            if (userData.uploadedFiles) {
+              setUploadedFiles(userData.uploadedFiles);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading saved trade data:', error);
+        }
+      }
+    };
+
+    loadSavedTradeData();
+  }, [currentUser]);
+
   const generateTransactionKey = (transaction, index) => {
     const execTime = new Date(transaction.ExecTime);
     const normalizedExecTime = new Date(
@@ -152,13 +179,13 @@ function AppRoutes() {
     return `${trade.Symbol}-${trade.Strike}-${trade.Expiration}`;
   };
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
 
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         let data;
         if (file.name.endsWith('.csv')) {
@@ -329,16 +356,30 @@ function AppRoutes() {
               }))
           }));
 
-          setTradeData(Array.from(tradeMap.values()).map(entry => ({
+          const updatedTradeData = Array.from(tradeMap.values()).map(entry => ({
             ...entry.trade,
             Transactions: Array.from(entry.trade.Transactions.values())
-          })));
+          }));
+
+          setTradeData(updatedTradeData);
+
+          if (currentUser) {
+            const userDocRef = doc(db, 'users', currentUser.uid);
+            updateDoc(userDocRef, {
+              tradeData: updatedTradeData,
+              uploadedFiles: updatedFiles,
+              lastUpdated: new Date()
+            }).catch(error => {
+              console.error('Error saving trade data:', error);
+            });
+          }
+
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+
           return updatedFiles;
         });
-
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
       } catch (error) {
         alert('Error parsing file. Please ensure it is a valid Excel or CSV file.');
         console.error('File parsing error:', error);
@@ -385,29 +426,29 @@ function AppRoutes() {
         });
       });
 
-      const updatedFiles = remainingFiles.map(file => ({
-        name: file.name,
-        trades: Array.from(tradeMap.values())
-          .filter(entry => entry.fileRefs.has(file.name))
-          .map(entry => ({
-            trade: {
-              ...entry.trade,
-              Transactions: Array.from(entry.trade.Transactions.values())
-            },
-            fileRefs: Array.from(entry.fileRefs)
-          }))
-      }));
-
-      setTradeData(Array.from(tradeMap.values()).map(entry => ({
+      const updatedTradeData = Array.from(tradeMap.values()).map(entry => ({
         ...entry.trade,
         Transactions: Array.from(entry.trade.Transactions.values())
-      })));
+      }));
+
+      setTradeData(updatedTradeData);
+
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        updateDoc(userDocRef, {
+          tradeData: updatedTradeData,
+          uploadedFiles: remainingFiles,
+          lastUpdated: new Date()
+        }).catch(error => {
+          console.error('Error saving updated trade data:', error);
+        });
+      }
 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
 
-      return updatedFiles;
+      return remainingFiles;
     });
   };
 
