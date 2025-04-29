@@ -635,9 +635,18 @@ const StatsDashboard = ({ tradeData }) => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: isHalfScreen ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
           gap: '20px',
           marginBottom: '20px',
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'visible',
+          '@media (max-width: 768px)': {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            overflow: 'visible',
+          },
         }}
       >
         {/* Net P&L Box */}
@@ -647,6 +656,10 @@ const StatsDashboard = ({ tradeData }) => {
             padding: '15px',
             borderRadius: '8px',
             position: 'relative',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            minHeight: isHalfScreen ? 'auto' : '200px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -684,6 +697,10 @@ const StatsDashboard = ({ tradeData }) => {
             padding: '15px',
             borderRadius: '8px',
             position: 'relative',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            minHeight: isHalfScreen ? 'auto' : '200px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -702,172 +719,404 @@ const StatsDashboard = ({ tradeData }) => {
           </div>
         </div>
 
-        {/* Profit Factor Box */}
-        <div
-          style={{
-            backgroundColor: '#1a1a1a',
-            padding: '15px',
-            borderRadius: '8px',
-            position: 'relative',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', color: '#888' }}>Profit factor</span>
-            <InfoCircle tooltip="Total profits divided by total losses. A profit factor above 1.0 indicates a profitable trading system." />
-          </div>
+        {/* Profit Factor Box - Only show in full screen mode */}
+        {!isHalfScreen && (
           <div
             style={{
-              fontSize: '24px',
-              fontWeight: 'bold',
-              color: '#fff',
-              marginTop: '8px',
-              marginBottom: '12px',
-            }}
-          >
-            {profitFactor.toFixed(2)}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <CircleProgress
-              value={totalProfits}
-              total={totalProfits + totalLosses}
-              color={theme.colors.green}
-              profitValue={totalProfits}
-              lossValue={totalLosses}
-            />
-          </div>
-        </div>
-
-        {/* Trade Win % Box */}
-        <div
-          style={{
-            backgroundColor: '#1a1a1a',
-            padding: '15px',
-            borderRadius: '8px',
-            position: 'relative',
-            width: isHalfScreen ? 'calc(150% - 10px)' : 'auto',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', color: '#888' }}>Trade win %</span>
-            <InfoCircle tooltip="Reflects the percentage of your winning trades out of total trades taken." />
-          </div>
-          <div
-            style={{
-              fontSize: '24px',
-              fontWeight: 'bold',
-              color: '#fff',
-              marginTop: '8px',
-              marginBottom: '12px',
-            }}
-          >
-            {winRate.toFixed(2)}%
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-            <CircleProgress
-              value={winningTrades}
-              total={totalTrades}
-              color={theme.colors.green}
-              isHalfCircle={true}
-            />
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: '12px',
-              color: '#888',
+              backgroundColor: '#1a1a1a',
+              padding: '15px',
+              borderRadius: '8px',
               position: 'relative',
-              top: '-10px',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              minHeight: '200px',
+              overflow: 'visible',
             }}
           >
-            <span style={{ color: theme.colors.green }}>{winningTrades}</span>
-            <span style={{ color: '#888', fontSize: '10px' }}>{neutralTrades}</span>
-            <span style={{ color: theme.colors.red }}>{losingTrades}</span>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: '12px',
-              color: '#888',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <div style={{ width: '8px', height: '8px', backgroundColor: theme.colors.green, borderRadius: '50%' }} />
-              <span>Winning Trades</span>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', color: '#888' }}>Profit factor</span>
+              <InfoCircle tooltip="Total profits divided by total losses. A profit factor above 1.0 indicates a profitable trading system." />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span>Losing Trades</span>
-              <div style={{ width: '8px', height: '8px', backgroundColor: theme.colors.red, borderRadius: '50%' }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Avg Win/Loss Trade Box */}
-        <div
-          style={{
-            backgroundColor: '#1a1a1a',
-            padding: '15px',
-            borderRadius: '8px',
-            position: 'relative',
-            width: isHalfScreen ? 'calc(140% - 10px)' : 'auto',
-            marginLeft: isHalfScreen ? '150px' : '0',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', color: '#888' }}>Avg win/loss trade</span>
-            <InfoCircle tooltip="The average profit on all winning and losing trades." />
-          </div>
-          <div
-            style={{
-              fontSize: '24px',
-              fontWeight: 'bold',
-              color: '#fff',
-              marginTop: '8px',
-            }}
-          >
-            {avgWinLossRatio.toFixed(2)}
-          </div>
-          <div style={{ marginTop: '8px' }}>
             <div
               style={{
-                height: '4px',
-                backgroundColor: '#2a2a2a',
-                borderRadius: '2px',
-                overflow: 'hidden',
-                display: 'flex',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#fff',
+                marginTop: '8px',
+                marginBottom: '12px',
               }}
             >
-              <div
-                style={{
-                  width: `${(avgWinTrade / (avgWinTrade + avgLossTrade)) * 100}%`,
-                  backgroundColor: theme.colors.green,
-                  borderRadius: '2px 0 0 2px',
-                }}
+              {profitFactor.toFixed(2)}
+            </div>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              maxWidth: '100%',
+              overflow: 'visible'
+            }}>
+              <CircleProgress
+                value={totalProfits}
+                total={totalProfits + totalLosses}
+                color={theme.colors.green}
+                profitValue={totalProfits}
+                lossValue={totalLosses}
               />
-              <div
-                style={{
-                  width: `${(avgLossTrade / (avgWinTrade + avgLossTrade)) * 100}%`,
-                  backgroundColor: theme.colors.red,
-                  borderRadius: '0 2px 2px 0',
-                }}
+            </div>
+          </div>
+        )}
+
+        {/* Trade Win % Box - Only show in full screen mode */}
+        {!isHalfScreen && (
+          <div
+            style={{
+              backgroundColor: '#1a1a1a',
+              padding: '15px',
+              borderRadius: '8px',
+              position: 'relative',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              minHeight: '200px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', color: '#888' }}>Trade win %</span>
+              <InfoCircle tooltip="Reflects the percentage of your winning trades out of total trades taken." />
+            </div>
+            <div
+              style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#fff',
+                marginTop: '8px',
+                marginBottom: '12px',
+              }}
+            >
+              {winRate.toFixed(2)}%
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+              <CircleProgress
+                value={winningTrades}
+                total={totalTrades}
+                color={theme.colors.green}
+                isHalfCircle={true}
               />
             </div>
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                marginTop: '4px',
+                alignItems: 'center',
                 fontSize: '12px',
+                color: '#888',
+                position: 'relative',
+                top: '-10px',
               }}
             >
-              <span style={{ color: theme.colors.green }}>${avgWinTrade.toFixed(1)}</span>
-              <span style={{ color: theme.colors.red }}>-${avgLossTrade.toFixed(1)}</span>
+              <span style={{ color: theme.colors.green }}>{winningTrades}</span>
+              <span style={{ color: '#888', fontSize: '10px' }}>{neutralTrades}</span>
+              <span style={{ color: theme.colors.red }}>{losingTrades}</span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '12px',
+                color: '#888',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ width: '8px', height: '8px', backgroundColor: theme.colors.green, borderRadius: '50%' }} />
+                <span>Winning Trades</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>Losing Trades</span>
+                <div style={{ width: '8px', height: '8px', backgroundColor: theme.colors.red, borderRadius: '50%' }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Avg Win/Loss Trade Box - Only show in full screen mode */}
+        {!isHalfScreen && (
+          <div
+            style={{
+              backgroundColor: '#1a1a1a',
+              padding: '15px',
+              borderRadius: '8px',
+              position: 'relative',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              minHeight: '200px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', color: '#888' }}>Avg win/loss trade</span>
+              <InfoCircle tooltip="The average profit on all winning and losing trades." />
+            </div>
+            <div
+              style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#fff',
+                marginTop: '8px',
+              }}
+            >
+              {avgWinLossRatio.toFixed(2)}
+            </div>
+            <div style={{ marginTop: '8px' }}>
+              <div
+                style={{
+                  height: '4px',
+                  backgroundColor: '#2a2a2a',
+                  borderRadius: '2px',
+                  overflow: 'hidden',
+                  display: 'flex',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${(avgWinTrade / (avgWinTrade + avgLossTrade)) * 100}%`,
+                    backgroundColor: theme.colors.green,
+                    borderRadius: '2px 0 0 2px',
+                  }}
+                />
+                <div
+                  style={{
+                    width: `${(avgLossTrade / (avgWinTrade + avgLossTrade)) * 100}%`,
+                    backgroundColor: theme.colors.red,
+                    borderRadius: '0 2px 2px 0',
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginTop: '4px',
+                  fontSize: '12px',
+                }}
+              >
+                <span style={{ color: theme.colors.green }}>${avgWinTrade.toFixed(1)}</span>
+                <span style={{ color: theme.colors.red }}>-${avgLossTrade.toFixed(1)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Second row for half screen mode */}
+      {isHalfScreen && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '20px',
+            marginBottom: '20px',
+            width: '100%',
+            maxWidth: '100%',
+            overflow: 'visible',
+          }}
+        >
+          {/* Profit Factor Box for half screen mode */}
+          <div
+            style={{
+              backgroundColor: '#1a1a1a',
+              padding: '15px',
+              borderRadius: '8px',
+              position: 'relative',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              minHeight: '200px',
+              overflow: 'visible',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', color: '#888' }}>Profit factor</span>
+              <InfoCircle tooltip="Total profits divided by total losses. A profit factor above 1.0 indicates a profitable trading system." />
+            </div>
+            <div
+              style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#fff',
+                marginTop: '8px',
+                marginBottom: '12px',
+              }}
+            >
+              {profitFactor.toFixed(2)}
+            </div>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              maxWidth: '100%',
+              overflow: 'visible'
+            }}>
+              <CircleProgress
+                value={totalProfits}
+                total={totalProfits + totalLosses}
+                color={theme.colors.green}
+                profitValue={totalProfits}
+                lossValue={totalLosses}
+              />
+            </div>
+          </div>
+
+          {/* Trade Win % Box */}
+          <div
+            style={{
+              backgroundColor: '#1a1a1a',
+              padding: '15px',
+              borderRadius: '8px',
+              position: 'relative',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              minHeight: '200px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', color: '#888' }}>Trade win %</span>
+              <InfoCircle tooltip="Reflects the percentage of your winning trades out of total trades taken." />
+            </div>
+            <div
+              style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#fff',
+                marginTop: '8px',
+                marginBottom: '12px',
+              }}
+            >
+              {winRate.toFixed(2)}%
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+              <CircleProgress
+                value={winningTrades}
+                total={totalTrades}
+                color={theme.colors.green}
+                isHalfCircle={true}
+              />
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '12px',
+                color: '#888',
+                position: 'relative',
+                top: '-10px',
+              }}
+            >
+              <span style={{ color: theme.colors.green }}>{winningTrades}</span>
+              <span style={{ color: '#888', fontSize: '10px' }}>{neutralTrades}</span>
+              <span style={{ color: theme.colors.red }}>{losingTrades}</span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '12px',
+                color: '#888',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ width: '8px', height: '8px', backgroundColor: theme.colors.green, borderRadius: '50%' }} />
+                <span>Winning Trades</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>Losing Trades</span>
+                <div style={{ width: '8px', height: '8px', backgroundColor: theme.colors.red, borderRadius: '50%' }} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Third row for half screen mode */}
+      {isHalfScreen && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '20px',
+            marginBottom: '20px',
+            width: '100%',
+            maxWidth: '100%',
+            overflow: 'visible',
+          }}
+        >
+          {/* Avg Win/Loss Trade Box */}
+          <div
+            style={{
+              backgroundColor: '#1a1a1a',
+              padding: '15px',
+              borderRadius: '8px',
+              position: 'relative',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              minHeight: '200px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', color: '#888' }}>Avg win/loss trade</span>
+              <InfoCircle tooltip="The average profit on all winning and losing trades." />
+            </div>
+            <div
+              style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#fff',
+                marginTop: '8px',
+              }}
+            >
+              {avgWinLossRatio.toFixed(2)}
+            </div>
+            <div style={{ marginTop: '8px' }}>
+              <div
+                style={{
+                  height: '4px',
+                  backgroundColor: '#2a2a2a',
+                  borderRadius: '2px',
+                  overflow: 'hidden',
+                  display: 'flex',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${(avgWinTrade / (avgWinTrade + avgLossTrade)) * 100}%`,
+                    backgroundColor: theme.colors.green,
+                    borderRadius: '2px 0 0 2px',
+                  }}
+                />
+                <div
+                  style={{
+                    width: `${(avgLossTrade / (avgWinTrade + avgLossTrade)) * 100}%`,
+                    backgroundColor: theme.colors.red,
+                    borderRadius: '0 2px 2px 0',
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginTop: '4px',
+                  fontSize: '12px',
+                }}
+              >
+                <span style={{ color: theme.colors.green }}>${avgWinTrade.toFixed(1)}</span>
+                <span style={{ color: theme.colors.red }}>-${avgLossTrade.toFixed(1)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Charts Section */}
       <div style={{ marginTop: '40px' }}>
@@ -877,27 +1126,37 @@ const StatsDashboard = ({ tradeData }) => {
           flexDirection: isHalfScreen ? 'column' : 'row',
           marginBottom: '40px' 
         }}>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <h3 style={{ color: theme.colors.white, marginBottom: '20px', textAlign: 'center' }}>Cumulative Daily P&L</h3>
             <div style={{ 
               height: '300px', 
               backgroundColor: '#1a1a1a', 
               padding: '20px', 
-              borderRadius: '8px'
+              borderRadius: '8px',
+              overflow: 'hidden'
             }}>
-              <Line data={cumulativePnlChartData} options={cumulativePnlChartOptions} />
+              <Line data={cumulativePnlChartData} options={{
+                ...cumulativePnlChartOptions,
+                maintainAspectRatio: false,
+                responsive: true
+              }} />
             </div>
           </div>
 
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <h3 style={{ color: theme.colors.white, marginBottom: '20px', textAlign: 'center' }}>Daily P&L</h3>
             <div style={{ 
               height: '300px', 
               backgroundColor: '#1a1a1a', 
               padding: '20px', 
-              borderRadius: '8px'
+              borderRadius: '8px',
+              overflow: 'hidden'
             }}>
-              <Bar data={dailyPnlChartData} options={dailyPnlChartOptions} />
+              <Bar data={dailyPnlChartData} options={{
+                ...dailyPnlChartOptions,
+                maintainAspectRatio: false,
+                responsive: true
+              }} />
             </div>
           </div>
         </div>

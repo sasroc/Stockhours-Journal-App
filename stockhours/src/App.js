@@ -575,12 +575,14 @@ function AppRoutes() {
           width: '50px',
           height: 'calc(100% - 71px)',
           backgroundColor: '#1a1a1a',
-          display: (isHalfScreen && !isSidebarOpen) ? 'none' : 'block',
+          display: (isHalfScreen && !isSidebarOpen) ? 'none' : 'flex',
           padding: '20px 0',
           boxSizing: 'border-box',
           zIndex: 900,
+          flexDirection: 'column',
         }}
       >
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <label
             htmlFor="sidebar-file-upload"
@@ -861,10 +863,11 @@ function AppRoutes() {
             >
               Imports
             </span>
+            </div>
           </div>
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', marginTop: 'auto' }}>
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', marginTop: 'auto', paddingBottom: '0' }}>
           <div
             ref={profileButtonRef}
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -879,7 +882,7 @@ function AppRoutes() {
               backgroundColor: theme.colors.green,
               borderRadius: '50%',
               cursor: 'pointer',
-              marginBottom: '20px',
+              marginBottom: '0',
               position: 'relative',
             }}
           >
