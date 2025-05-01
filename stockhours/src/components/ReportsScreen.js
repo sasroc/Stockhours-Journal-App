@@ -15,7 +15,10 @@ const ReportsScreen = ({ tradeData }) => {
   const chartContainerRef = useRef(null);
 
   useEffect(() => {
-    const handleResize = () => setIsHalfScreen(window.innerWidth <= 960);
+    const handleResize = () => {
+      // Adjust the breakpoint to maintain side-by-side columns longer
+      setIsHalfScreen(window.innerWidth <= 600);
+    };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -963,6 +966,150 @@ const ReportsScreen = ({ tradeData }) => {
 
   const renderContent = () => {
     if (selectedReport === 'Overview') {
+      // Calculate additional statistics from processedTrades
+      const totalPnL = processedTrades.reduce((sum, trade) => sum + trade.profitLoss, 0);
+      
+      // Calculate average daily volume (contracts)
+      const volumeByDay = processedTrades.reduce((acc, trade) => {
+        const date = new Date(trade.FirstBuyExecTime).toDateString();
+        if (!acc[date]) {
+          acc[date] = 0;
+        }
+        acc[date] += trade.totalVolume;
+        return acc;
+      }, {});
+      const avgDailyVolume = Object.values(volumeByDay).reduce((sum, volume) => sum + volume, 0) / Object.keys(volumeByDay).length;
+      
+      const winningTrades = processedTrades.filter(trade => trade.profitLoss > 0);
+      const losingTrades = processedTrades.filter(trade => trade.profitLoss < 0);
+      const breakEvenTrades = processedTrades.filter(trade => trade.profitLoss === 0);
+      
+      const avgWinningTrade = winningTrades.length > 0 ? winningTrades.reduce((sum, trade) => sum + trade.profitLoss, 0) / winningTrades.length : 0;
+      const avgLosingTrade = losingTrades.length > 0 ? losingTrades.reduce((sum, trade) => sum + trade.profitLoss, 0) / losingTrades.length : 0;
+
+      // Calculate average hold times
+      const avgHoldTimeAll = processedTrades.reduce((sum, trade) => {
+        const duration = (new Date(trade.ExitTime) - new Date(trade.FirstBuyExecTime)) / (1000 * 60); // in minutes
+        return sum + duration;
+      }, 0) / (processedTrades.length || 1);
+
+      const avgHoldTimeWinning = winningTrades.reduce((sum, trade) => {
+        const duration = (new Date(trade.ExitTime) - new Date(trade.FirstBuyExecTime)) / (1000 * 60);
+        return sum + duration;
+      }, 0) / (winningTrades.length || 1);
+
+      const avgHoldTimeLoosing = losingTrades.reduce((sum, trade) => {
+        const duration = (new Date(trade.ExitTime) - new Date(trade.FirstBuyExecTime)) / (1000 * 60);
+        return sum + duration;
+      }, 0) / (losingTrades.length || 1);
+
+      // Calculate average trade P&L
+      const avgTradePnL = totalPnL / (processedTrades.length || 1);
+
+      // Calculate profit factor
+      const grossProfit = winningTrades.reduce((sum, trade) => sum + trade.profitLoss, 0);
+      const grossLoss = Math.abs(losingTrades.reduce((sum, trade) => sum + trade.profitLoss, 0));
+      const profitFactor = grossLoss !== 0 ? grossProfit / grossLoss : 0;
+
+      // Calculate consecutive trade streaks
+      let currentTradeStreak = 0;
+      let maxConsecutiveWins = 0;
+      let maxConsecutiveLosses = 0;
+      let prevTradeWasWin = null;
+
+      processedTrades.forEach(trade => {
+        const isWin = trade.profitLoss > 0;
+        if (prevTradeWasWin === null) {
+          currentTradeStreak = 1;
+        } else if (prevTradeWasWin === isWin) {
+          currentTradeStreak++;
+        } else {
+          currentTradeStreak = 1;
+        }
+        
+        if (isWin) {
+          maxConsecutiveWins = Math.max(maxConsecutiveWins, currentTradeStreak);
+        } else {
+          maxConsecutiveLosses = Math.max(maxConsecutiveLosses, currentTradeStreak);
+        }
+        
+        prevTradeWasWin = isWin;
+      });
+
+      // Calculate largest individual trade profit/loss
+      const profitableTrades = processedTrades.filter(trade => trade.profitLoss > 0);
+      const largestIndividualProfit = profitableTrades.length > 0 
+        ? Math.max(...profitableTrades.map(trade => trade.profitLoss))
+        : 'N/A';
+      const largestIndividualLoss = Math.min(...processedTrades.map(trade => trade.profitLoss));
+
+      // Group trades by day for daily statistics
+      const tradesByDay = processedTrades.reduce((acc, trade) => {
+        const date = new Date(trade.FirstBuyExecTime).toDateString();
+        if (!acc[date]) {
+          acc[date] = {
+            trades: [],
+            pnl: 0
+          };
+        }
+        acc[date].trades.push(trade);
+        acc[date].pnl += trade.profitLoss;
+        return acc;
+      }, {});
+
+      const tradingDays = Object.keys(tradesByDay).length;
+      const winningDays = Object.values(tradesByDay).filter(day => day.pnl > 0).length;
+      const losingDays = Object.values(tradesByDay).filter(day => day.pnl < 0).length;
+      const breakEvenDays = Object.values(tradesByDay).filter(day => day.pnl === 0).length;
+      
+      // Calculate consecutive day streaks
+      let currentDayStreak = 0;
+      let maxWinningDays = 0;
+      let maxLosingDays = 0;
+      let prevDayWasWin = null;
+      
+      const sortedDays = Object.entries(tradesByDay)
+        .sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB));
+      
+      sortedDays.forEach(([, dayData]) => {
+        const isDayWin = dayData.pnl > 0;
+        if (prevDayWasWin === null) {
+          currentDayStreak = 1;
+        } else if (prevDayWasWin === isDayWin) {
+          currentDayStreak++;
+        } else {
+          currentDayStreak = 1;
+        }
+        
+        if (isDayWin) {
+          maxWinningDays = Math.max(maxWinningDays, currentDayStreak);
+        } else {
+          maxLosingDays = Math.max(maxLosingDays, currentDayStreak);
+        }
+        
+        prevDayWasWin = isDayWin;
+      });
+
+      // Calculate daily P&L stats
+      const avgDailyPnL = totalPnL / tradingDays;
+      const avgWinningDayPnL = Object.values(tradesByDay)
+        .filter(day => day.pnl > 0)
+        .reduce((sum, day) => sum + day.pnl, 0) / winningDays;
+      const avgLosingDayPnL = Object.values(tradesByDay)
+        .filter(day => day.pnl < 0)
+        .reduce((sum, day) => sum + day.pnl, 0) / losingDays;
+      
+      // Calculate largest daily P&L
+      const profitableDays = Object.values(tradesByDay).filter(day => day.pnl > 0);
+      const largestProfitableDay = profitableDays.length > 0 
+        ? Math.max(...profitableDays.map(day => day.pnl))
+        : 'N/A';
+      const largestLosingDay = Math.min(...Object.values(tradesByDay).map(day => day.pnl));
+
+      // Calculate trade expectancy
+      const tradeExpectancy = (avgWinningTrade * (winningTrades.length / processedTrades.length)) +
+                             (avgLosingTrade * (losingTrades.length / processedTrades.length));
+
       return (
         <div>
           <div style={{ marginBottom: '40px' }}>
@@ -988,6 +1135,168 @@ const ReportsScreen = ({ tradeData }) => {
                   ${averagePnl.toFixed(2)}
                 </div>
                 <div style={{ color: '#B0B0B0', fontSize: '12px', marginTop: '4px' }}>Per month</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: isHalfScreen ? '1fr' : '1fr 1fr', 
+            gap: '10px',
+            color: theme.colors.white,
+            fontSize: '14px',
+            width: '100%', // Ensure full width
+            maxWidth: '100%', // Prevent overflow
+            overflowX: 'hidden' // Hide horizontal scroll
+          }}>
+            <div style={{ 
+              display: 'grid', 
+              gap: '8px',
+              minWidth: '0', // Prevents overflow
+              overflow: 'hidden', // Ensures content stays within container
+              width: '100%' // Ensure full width
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Total P&L</span>
+                <span style={{ color: totalPnL >= 0 ? theme.colors.green : theme.colors.red }}>${totalPnL.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average daily volume</span>
+                <span>{Math.round(avgDailyVolume)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average winning trade</span>
+                <span style={{ color: theme.colors.green }}>${avgWinningTrade.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average losing trade</span>
+                <span style={{ color: theme.colors.red }}>${avgLosingTrade.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Total number of trades</span>
+                <span>{processedTrades.length}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Number of winning trades</span>
+                <span>{winningTrades.length}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Number of losing trades</span>
+                <span>{losingTrades.length}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Number of break even trades</span>
+                <span>{breakEvenTrades.length}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Max consecutive wins</span>
+                <span>{maxConsecutiveWins}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Max consecutive losses</span>
+                <span>{maxConsecutiveLosses}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Largest profit</span>
+                <span style={{ color: theme.colors.green }}>
+                  {largestIndividualProfit === 'N/A' 
+                    ? 'N/A' 
+                    : `$${largestIndividualProfit.toFixed(2)}`}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Largest loss</span>
+                <span style={{ color: theme.colors.red }}>${largestIndividualLoss.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average hold time (All trades)</span>
+                <span>{Math.round(avgHoldTimeAll)} minutes</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average hold time (Winning trades)</span>
+                <span>{Math.round(avgHoldTimeWinning)} minutes</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average hold time (Losing trades)</span>
+                <span>{Math.round(avgHoldTimeLoosing)} minutes</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average trade P&L</span>
+                <span style={{ color: avgTradePnL >= 0 ? theme.colors.green : theme.colors.red }}>${avgTradePnL.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Profit factor</span>
+                <span>{profitFactor.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div style={{ 
+              display: 'grid', 
+              gap: '8px',
+              minWidth: '0', // Prevents overflow
+              overflow: 'hidden', // Ensures content stays within container
+              marginTop: isHalfScreen ? '20px' : '0', // Add margin when stacked
+              width: '100%' // Ensure full width
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Open trades</span>
+                <span>0</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Total trading days</span>
+                <span>{tradingDays}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Winning days</span>
+                <span>{winningDays}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Losing days</span>
+                <span>{losingDays}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Breakeven days</span>
+                <span>{breakEvenDays}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Logged days</span>
+                <span>{tradingDays}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Max consecutive winning days</span>
+                <span>{maxWinningDays}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Max consecutive losing days</span>
+                <span>{maxLosingDays}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average daily P&L</span>
+                <span style={{ color: avgDailyPnL >= 0 ? theme.colors.green : theme.colors.red }}>${avgDailyPnL.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average winning day P&L</span>
+                <span style={{ color: theme.colors.green }}>${avgWinningDayPnL.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Average losing day P&L</span>
+                <span style={{ color: theme.colors.red }}>${avgLosingDayPnL.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Largest profitable day (Profits)</span>
+                <span style={{ color: theme.colors.green }}>
+                  {largestProfitableDay === 'N/A' 
+                    ? 'N/A' 
+                    : `$${largestProfitableDay.toFixed(2)}`}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Largest losing day (Losses)</span>
+                <span style={{ color: theme.colors.red }}>${largestLosingDay.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Trade expectancy</span>
+                <span style={{ color: tradeExpectancy >= 0 ? theme.colors.green : theme.colors.red }}>${tradeExpectancy.toFixed(2)}</span>
               </div>
             </div>
           </div>
