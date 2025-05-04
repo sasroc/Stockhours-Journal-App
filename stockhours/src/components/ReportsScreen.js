@@ -1,7 +1,77 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { theme } from '../theme';
 import { startOfWeek, endOfWeek, eachWeekOfInterval, getMonth, getHours, differenceInDays } from 'date-fns';
+
+// ChartContainer component for robust responsive chart rendering
+function ChartContainer({ data, options, layout, title }) {
+  const chartRef = useRef(null);
+  const containerRef = useRef(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    // Defer rendering to next tick to ensure layout is stable
+    const id = setTimeout(() => setReady(true), 0);
+    return () => clearTimeout(id);
+  }, []);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new window.ResizeObserver(() => {
+      if (chartRef.current && chartRef.current.resize) {
+        chartRef.current.resize();
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Set minHeight based on layout
+  const minHeight = layout === 'column' ? 300 : 400;
+
+  // Adjust style for small screens (column layout)
+  const containerStyle = layout === 'column'
+    ? {
+        minWidth: 0,
+        minHeight,
+        height: '400px',
+        width: '100%',
+        position: 'relative',
+        backgroundColor: '#1a1a1a',
+        padding: '10px 0', // Remove left/right padding
+        borderRadius: '8px',
+        marginBottom: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        marginLeft: 0,
+        marginRight: 0,
+      }
+    : {
+        minWidth: 0,
+        minHeight,
+        height: '400px',
+        width: '100%',
+        position: 'relative',
+        backgroundColor: '#1a1a1a',
+        padding: '20px',
+        borderRadius: '8px',
+        marginBottom: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+      };
+
+  return (
+    <div
+      ref={containerRef}
+      style={containerStyle}
+    >
+      {title && <h3 style={{ color: '#fff', marginBottom: '20px', paddingLeft: layout === 'column' ? '10px' : 0 }}>{title}</h3>}
+      <div style={{ flex: 1, width: '100%', minWidth: '200px', overflow: 'visible', position: 'relative' }}>
+        {ready && <Bar ref={chartRef} data={data} options={options} />}
+      </div>
+    </div>
+  );
+}
 
 const ReportsScreen = ({ tradeData }) => {
   const [selectedReport, setSelectedReport] = useState('Overview');
@@ -15,8 +85,7 @@ const ReportsScreen = ({ tradeData }) => {
 
   useEffect(() => {
     const handleResize = () => {
-      // Adjust the breakpoint to stack charts at half screen width
-      setIsHalfScreen(window.innerWidth <= 960); // Changed to 960px for half screen width
+      setIsHalfScreen(window.innerWidth <= 960);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -1385,54 +1454,22 @@ const ReportsScreen = ({ tradeData }) => {
           gap: '20px', 
           marginTop: '20px',
           width: '100%',
+          minWidth: '300px',
           maxWidth: '100%',
-          overflow: 'visible'
+          overflow: 'auto'
         }}>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Performance by Symbol</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={chartData} options={chartOptions} />
-            </div>
-          </div>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            marginTop: isHalfScreen ? '40px' : '0',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades per Symbol</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={tradesChartData} options={tradesChartOptions} />
-            </div>
-          </div>
+          <ChartContainer
+            data={chartData}
+            options={chartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Performance by Symbol"
+          />
+          <ChartContainer
+            data={tradesChartData}
+            options={tradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades per Symbol"
+          />
         </div>
       );
     } else if (selectedReport === 'Days') {
@@ -1443,54 +1480,22 @@ const ReportsScreen = ({ tradeData }) => {
           gap: '20px', 
           marginTop: '20px',
           width: '100%',
+          minWidth: '300px', // Add minimum width
           maxWidth: '100%',
-          overflow: 'visible'
+          overflow: 'auto' // Change to auto
         }}>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L per Day of the Week</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={daysPnlChartData} options={daysPnlChartOptions} />
-            </div>
-          </div>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            marginTop: isHalfScreen ? '40px' : '0',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades per Day of the Week</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={daysTradesChartData} options={daysTradesChartOptions} />
-            </div>
-          </div>
+          <ChartContainer
+            data={daysPnlChartData}
+            options={daysPnlChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L per Day of the Week"
+          />
+          <ChartContainer
+            data={daysTradesChartData}
+            options={daysTradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades per Day of the Week"
+          />
         </div>
       );
     } else if (selectedReport === 'Weeks') {
@@ -1504,51 +1509,18 @@ const ReportsScreen = ({ tradeData }) => {
           maxWidth: '100%',
           overflow: 'visible'
         }}>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L per Week</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={weeksPnlChartData} options={weeksPnlChartOptions} />
-            </div>
-          </div>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            marginTop: isHalfScreen ? '40px' : '0',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades per Week</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={weeksTradesChartData} options={weeksTradesChartOptions} />
-            </div>
-          </div>
+          <ChartContainer
+            data={weeksPnlChartData}
+            options={weeksPnlChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L per Week"
+          />
+          <ChartContainer
+            data={weeksTradesChartData}
+            options={weeksTradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades per Week"
+          />
         </div>
       );
     } else if (selectedReport === 'Months') {
@@ -1562,51 +1534,18 @@ const ReportsScreen = ({ tradeData }) => {
           maxWidth: '100%',
           overflow: 'visible'
         }}>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L per Month</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={monthsPnlChartData} options={monthsPnlChartOptions} />
-            </div>
-          </div>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            marginTop: isHalfScreen ? '40px' : '0',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades per Month</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={monthsTradesChartData} options={monthsTradesChartOptions} />
-            </div>
-          </div>
+          <ChartContainer
+            data={monthsPnlChartData}
+            options={monthsPnlChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L per Month"
+          />
+          <ChartContainer
+            data={monthsTradesChartData}
+            options={monthsTradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades per Month"
+          />
         </div>
       );
     } else if (selectedReport === 'Trade time') {
@@ -1620,51 +1559,18 @@ const ReportsScreen = ({ tradeData }) => {
           maxWidth: '100%',
           overflow: 'visible'
         }}>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '450px', 
-            position: 'relative',
-            overflow: 'visible',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Exit Hour</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={tradeTimePnlChartData} options={tradeTimePnlChartOptions} />
-            </div>
-          </div>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '450px', 
-            position: 'relative',
-            overflow: 'visible',
-            marginTop: isHalfScreen ? '40px' : '0',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Exit Hour</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={tradeTimeTradesChartData} options={tradeTimeTradesChartOptions} />
-            </div>
-          </div>
+          <ChartContainer
+            data={tradeTimePnlChartData}
+            options={tradeTimePnlChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L by Exit Hour"
+          />
+          <ChartContainer
+            data={tradeTimeTradesChartData}
+            options={tradeTimeTradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades by Exit Hour"
+          />
         </div>
       );
     } else if (selectedReport === 'Trade duration') {
@@ -1678,51 +1584,18 @@ const ReportsScreen = ({ tradeData }) => {
           maxWidth: '100%',
           overflow: 'visible'
         }}>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Trade Duration</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={tradeDurationPnlChartData} options={tradeDurationPnlChartOptions} />
-            </div>
-          </div>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            marginTop: isHalfScreen ? '40px' : '0',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Trade Duration</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={tradeDurationTradesChartData} options={tradeDurationTradesChartOptions} />
-            </div>
-          </div>
+          <ChartContainer
+            data={tradeDurationPnlChartData}
+            options={tradeDurationPnlChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L by Trade Duration"
+          />
+          <ChartContainer
+            data={tradeDurationTradesChartData}
+            options={tradeDurationTradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades by Trade Duration"
+          />
         </div>
       );
     } else if (selectedReport === 'Volume') {
@@ -1736,51 +1609,18 @@ const ReportsScreen = ({ tradeData }) => {
           maxWidth: '100%',
           overflow: 'visible'
         }}>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Volume</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={volumePnlChartData} options={volumePnlChartOptions} />
-            </div>
-          </div>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            marginTop: isHalfScreen ? '40px' : '0',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Volume</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={volumeTradesChartData} options={volumeTradesChartOptions} />
-            </div>
-          </div>
+          <ChartContainer
+            data={volumePnlChartData}
+            options={volumePnlChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L by Volume"
+          />
+          <ChartContainer
+            data={volumeTradesChartData}
+            options={volumeTradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades by Volume"
+          />
         </div>
       );
     } else if (selectedReport === 'Price') {
@@ -1794,51 +1634,18 @@ const ReportsScreen = ({ tradeData }) => {
           maxWidth: '100%',
           overflow: 'visible'
         }}>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Contract Price</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={pricePnlChartData} options={pricePnlChartOptions} />
-            </div>
-          </div>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            marginTop: isHalfScreen ? '40px' : '0',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Contract Price</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={priceTradesChartData} options={priceTradesChartOptions} />
-            </div>
-          </div>
+          <ChartContainer
+            data={pricePnlChartData}
+            options={pricePnlChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L by Contract Price"
+          />
+          <ChartContainer
+            data={priceTradesChartData}
+            options={priceTradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades by Contract Price"
+          />
         </div>
       );
     } else if (selectedReport === 'Days till expiration') {
@@ -1852,51 +1659,18 @@ const ReportsScreen = ({ tradeData }) => {
           maxWidth: '100%',
           overflow: 'visible'
         }}>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>P&L by Days till Expiration</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={daysTillExpirationPnlChartData} options={daysTillExpirationPnlChartOptions} />
-            </div>
-          </div>
-          <div style={{ 
-            flex: 1, 
-            minWidth: isHalfScreen ? '200px' : '300px', 
-            height: '400px', 
-            position: 'relative',
-            overflow: 'visible',
-            marginTop: isHalfScreen ? '40px' : '0',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px'
-          }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px' }}>Trades by Days till Expiration</h3>
-            <div style={{ 
-              flex: 1,
-              width: '100%',
-              overflow: 'visible',
-              position: 'relative'
-            }}>
-              <Bar data={daysTillExpirationTradesChartData} options={daysTillExpirationTradesChartOptions} />
-            </div>
-          </div>
+          <ChartContainer
+            data={daysTillExpirationPnlChartData}
+            options={daysTillExpirationPnlChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L by Days till Expiration"
+          />
+          <ChartContainer
+            data={daysTillExpirationTradesChartData}
+            options={daysTillExpirationTradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades by Days till Expiration"
+          />
         </div>
       );
     } else {
@@ -1909,9 +1683,29 @@ const ReportsScreen = ({ tradeData }) => {
   };
 
   return (
-    <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}>
-        <div style={{ width: isHalfScreen ? '150px' : '200px', backgroundColor: '#1a1a1a', padding: '10px', borderRadius: '8px', marginRight: '20px', flexShrink: 0 }}>
+    <div style={{ 
+      padding: '20px', 
+      backgroundColor: theme.colors.black,
+      minWidth: '300px', // Add minimum width
+      width: '100%',
+      overflow: 'auto' // Add overflow handling
+    }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: isHalfScreen ? 'column' : 'row', 
+        alignItems: 'flex-start',
+        minWidth: '300px', // Add minimum width
+        width: '100%'
+      }}>
+        <div style={{ 
+          width: isHalfScreen ? '100%' : '200px', 
+          backgroundColor: '#1a1a1a', 
+          padding: '10px', 
+          borderRadius: '8px', 
+          marginRight: '20px', 
+          flexShrink: 0,
+          minWidth: '200px' // Add minimum width
+        }}>
           <ul style={{ listStyle: 'none', padding: '0' }}>
             <li
               onClick={() => handleReportSelect('Overview')}
@@ -1999,7 +1793,14 @@ const ReportsScreen = ({ tradeData }) => {
             ))}
           </ul>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>{renderContent()}</div>
+        <div style={{ 
+          flex: 1, 
+          minWidth: '300px', // Add minimum width
+          width: '100%',
+          overflow: 'auto' // Add overflow handling
+        }}>
+          {renderContent()}
+        </div>
       </div>
     </div>
   );
