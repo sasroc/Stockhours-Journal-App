@@ -3,7 +3,8 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
@@ -142,13 +143,23 @@ export function AuthProvider({ children }) {
     return signOut(auth);
   }
 
+  async function resetPassword(email) {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   const value = {
     currentUser,
     isAdmin,
     loading,
     signup,
     login,
-    logout
+    logout,
+    resetPassword
   };
 
   return (

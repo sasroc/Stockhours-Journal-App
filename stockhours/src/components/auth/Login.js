@@ -151,20 +151,51 @@ const ToggleButton = styled.button`
   }
 `;
 
+const ForgotPasswordLink = styled.button`
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  width: 100%;
+  text-align: center;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  padding: 0;
+
+  &:hover {
+    color: #0056b3;
+    text-decoration: underline;
+  }
+`;
+
+const SuccessMessage = styled.div`
+  color: #28a745;
+  margin-bottom: 1rem;
+  text-align: center;
+  padding: 0.75rem;
+  background: rgba(40, 167, 69, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(40, 167, 69, 0.2);
+`;
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [invitationCode, setInvitationCode] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { login, signup } = useAuth();
+  const { login, signup, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     try {
       if (isLogin) {
         await login(email, password);
@@ -186,12 +217,32 @@ export default function Login() {
     }
   }
 
+  async function handleForgotPassword() {
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+    setError('');
+    setSuccess('');
+    try {
+      await resetPassword(email);
+      setSuccess('Password reset email sent. Please check your inbox.');
+    } catch (err) {
+      if (err.code === 'auth/user-not-found') {
+        setError('No account found with this email address');
+      } else {
+        setError(err.message);
+      }
+    }
+  }
+
   return (
     <LoginContainer>
       <Logo src={logo} alt="Stock Hours Logo" />
       <Form onSubmit={handleSubmit}>
         <Title>{isLogin ? 'Welcome Back' : 'Create Account'}</Title>
         {error && <ErrorMessage>{error}</ErrorMessage>}
+        {success && <SuccessMessage>{success}</SuccessMessage>}
         <InputContainer>
           <Input
             type="email"
@@ -217,6 +268,11 @@ export default function Login() {
             {showPassword ? "👁️" : "👁️‍🗨️"}
           </EyeIcon>
         </InputContainer>
+        {isLogin && (
+          <ForgotPasswordLink type="button" onClick={handleForgotPassword}>
+            Forgot Password?
+          </ForgotPasswordLink>
+        )}
         {!isLogin && (
           <>
             <InputContainer>
