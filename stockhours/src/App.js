@@ -44,6 +44,7 @@ function AppRoutes() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [currentScreen, setCurrentScreen] = useState('Dashboard');
   const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -74,6 +75,16 @@ function AppRoutes() {
     handleResize();
 
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const checkMobileDevice = () => {
+      const userAgent = window.navigator.userAgent;
+      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+      setIsMobileDevice(mobileRegex.test(userAgent));
+    };
+
+    checkMobileDevice();
   }, []);
 
   useEffect(() => {
@@ -537,12 +548,19 @@ function AppRoutes() {
               <div style={{ width: '20px', height: '3px', backgroundColor: theme.colors.white, margin: '2px 0' }} />
             </button>
           )}
-          <img
-            src={blackSHlogo}
-            alt="Stock Hours Trading Logo"
-            style={{ height: '50px', marginRight: '15px' }}
-          />
-          <h2 style={{ margin: 0, fontSize: '24px', color: theme.colors.white }}>
+          {!isMobileDevice && (
+            <img
+              src={blackSHlogo}
+              alt="Stock Hours Trading Logo"
+              style={{ height: '50px', marginRight: '15px' }}
+            />
+          )}
+          <h2 style={{ 
+            margin: 0, 
+            fontSize: isMobileDevice ? '18px' : '24px', 
+            color: theme.colors.white,
+            paddingRight: isMobileDevice ? '10px' : '0'
+          }}>
             {currentScreen}
           </h2>
         </div>
@@ -1013,7 +1031,7 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <StatsDashboard tradeData={filteredTradeData} />
+              <StatsDashboard tradeData={filteredTradeData} isMobileDevice={isMobileDevice} isHalfScreen={isHalfScreen} />
             </div>
           </>
         ) : location.pathname === '/reports' ? (
