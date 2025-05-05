@@ -188,6 +188,8 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
 const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState({});
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [isDayPopupOpen, setIsDayPopupOpen] = useState(false);
 
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
@@ -261,6 +263,9 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             TradeDate: buyRecordsForCycle[0].tradeDate,
             FirstBuyExecTime: buyRecordsForCycle[0].execTime,
             profitLoss,
+            Type: transaction.Type,
+            Quantity: totalBuyQuantity,
+            Price: buyRecordsForCycle[0].price,
           });
 
           position.totalQuantity = 0;
@@ -346,10 +351,11 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
         const tradeDate = new Date(trade.FirstBuyExecTime);
         const dateKey = tradeDate.toISOString().split('T')[0];
         if (!dailyPnl[dateKey]) {
-          dailyPnl[dateKey] = { pnl: 0, tradeCount: 0 };
+          dailyPnl[dateKey] = { pnl: 0, tradeCount: 0, trades: [] };
         }
         dailyPnl[dateKey].pnl += trade.profitLoss;
         dailyPnl[dateKey].tradeCount++;
+        dailyPnl[dateKey].trades.push(trade);
       });
       setCalendarData(dailyPnl);
     }
@@ -375,6 +381,224 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
 
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+  const DayTradesPopup = ({ dayData, onClose }) => {
+    if (!dayData) return null;
+
+    const trades = dayData.trades || [];
+    const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
+    const winningTrades = trades.filter(trade => trade.profitLoss > 0).length;
+    const losingTrades = trades.filter(trade => trade.profitLoss < 0).length;
+    const totalProfits = trades
+      .filter(trade => trade.profitLoss > 0)
+      .reduce((sum, trade) => sum + trade.profitLoss, 0);
+    const totalLosses = Math.abs(
+      trades
+        .filter(trade => trade.profitLoss < 0)
+        .reduce((sum, trade) => sum + trade.profitLoss, 0)
+    );
+    const profitFactor = totalLosses === 0 ? (totalProfits > 0 ? '—' : '—') : (totalProfits / totalLosses).toFixed(2);
+
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+        }}
+        onClick={onClose}
+      >
+        <div
+          style={{
+            backgroundColor: '#1a1a1a',
+            padding: '20px',
+            borderRadius: '8px',
+            maxWidth: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ margin: 0, color: '#fff' }}>
+              Trades for {new Date(dayData.date.split('-').join('/')).toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </h2>
+            <button
+              onClick={onClose}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#fff',
+                fontSize: '24px',
+                cursor: 'pointer',
+                padding: '0 8px',
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* P&L Line Graph */}
+          <div
+            style={{
+              height: '100px',
+              marginBottom: '20px',
+              backgroundColor: '#0d0d0d',
+              borderRadius: '8px',
+              padding: '10px',
+            }}
+          >
+            <Line
+              data={{
+                labels: ['Start', ...trades.map((_, index) => `Trade ${index + 1}`)],
+                datasets: [
+                  {
+                    label: 'Cumulative P&L',
+                    data: [0, ...trades.reduce((acc, trade) => {
+                      const lastPnl = acc.length > 0 ? acc[acc.length - 1] : 0;
+                      acc.push(lastPnl + trade.profitLoss);
+                      return acc;
+                    }, [])],
+                    borderColor: theme.colors.green,
+                    backgroundColor: theme.colors.green,
+                    fill: true,
+                    tension: 0.1,
+                    segment: {
+                      borderColor: ctx => {
+                        const currentValue = ctx.p1.parsed.y;
+                        return currentValue < 0 ? theme.colors.red : theme.colors.green;
+                      },
+                      backgroundColor: ctx => {
+                        const currentValue = ctx.p1.parsed.y;
+                        return currentValue < 0 ? theme.colors.red : theme.colors.green;
+                      },
+                    },
+                    pointBackgroundColor: [0, ...trades.reduce((acc, trade) => {
+                      const lastPnl = acc.length > 0 ? acc[acc.length - 1] : 0;
+                      acc.push(lastPnl + trade.profitLoss);
+                      return acc;
+                    }, [])].map(value => (value < 0 ? theme.colors.red : theme.colors.green)),
+                    pointBorderColor: [0, ...trades.reduce((acc, trade) => {
+                      const lastPnl = acc.length > 0 ? acc[acc.length - 1] : 0;
+                      acc.push(lastPnl + trade.profitLoss);
+                      return acc;
+                    }, [])].map(value => (value < 0 ? theme.colors.red : theme.colors.green)),
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { enabled: true },
+                },
+                scales: {
+                  x: { display: false },
+                  y: {
+                    beginAtZero: true,
+                    grid: { color: '#333' },
+                    ticks: { color: '#888' },
+                  },
+                },
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
+              <div style={{ color: '#888', fontSize: '14px' }}>Total Trades</div>
+              <div style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold' }}>{trades.length}</div>
+            </div>
+            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
+              <div style={{ color: '#888', fontSize: '14px' }}>Winners</div>
+              <div style={{ color: theme.colors.green, fontSize: '24px', fontWeight: 'bold' }}>{winningTrades}</div>
+            </div>
+            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
+              <div style={{ color: '#888', fontSize: '14px' }}>Losers</div>
+              <div style={{ color: theme.colors.red, fontSize: '24px', fontWeight: 'bold' }}>{losingTrades}</div>
+            </div>
+            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
+              <div style={{ color: '#888', fontSize: '14px' }}>Gross P&L</div>
+              <div style={{ color: totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red, fontSize: '24px', fontWeight: 'bold' }}>
+                ${totalProfitLoss.toFixed(2)}
+              </div>
+            </div>
+            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
+              <div style={{ color: '#888', fontSize: '14px' }}>Profit Factor</div>
+              <div style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold' }}>{profitFactor}</div>
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #333' }}>
+                  <th style={{ padding: '8px', textAlign: 'left', color: '#888' }}>Time</th>
+                  <th style={{ padding: '8px', textAlign: 'left', color: '#888' }}>Symbol</th>
+                  <th style={{ padding: '8px', textAlign: 'left', color: '#888' }}>Side</th>
+                  <th style={{ padding: '8px', textAlign: 'left', color: '#888' }}>Instrument</th>
+                  <th style={{ padding: '8px', textAlign: 'right', color: '#888' }}>P&L</th>
+                  <th style={{ padding: '8px', textAlign: 'right', color: '#888' }}>ROI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trades.map((trade, index) => {
+                  const openTime = new Date(trade.FirstBuyExecTime).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  });
+                  const optionType = trade.Type || 'CALL';
+                  const instrument = `${trade.Expiration} ${trade.Strike} ${optionType}`;
+                  const netROI = (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100;
+                  return (
+                    <tr key={index} style={{ borderBottom: '1px solid #333' }}>
+                      <td style={{ padding: '8px' }}>{openTime}</td>
+                      <td style={{ padding: '8px' }}>{trade.Symbol}</td>
+                      <td style={{ padding: '8px' }}>{optionType}</td>
+                      <td style={{ padding: '8px' }}>{instrument}</td>
+                      <td
+                        style={{
+                          padding: '8px',
+                          textAlign: 'right',
+                          color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red,
+                        }}
+                      >
+                        ${trade.profitLoss.toFixed(2)}
+                      </td>
+                      <td
+                        style={{
+                          padding: '8px',
+                          textAlign: 'right',
+                          color: netROI >= 0 ? theme.colors.green : theme.colors.red,
+                        }}
+                      >
+                        {netROI.toFixed(2)}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderCalendar = (isMobileDevice) => {
     const year = currentDate.getFullYear();
@@ -428,6 +652,12 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           week.push(
             <div
               key={j}
+              onClick={() => {
+                if (hasTrades) {
+                  setSelectedDay({ ...dailyData, date: dateKey });
+                  setIsDayPopupOpen(true);
+                }
+              }}
               style={{
                 width: daySize,
                 height: daySize,
@@ -442,6 +672,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                 fontSize,
                 padding: '2px',
                 boxSizing: 'border-box',
+                cursor: hasTrades ? 'pointer' : 'default',
               }}
             >
               <div style={{ fontSize: isMobileDevice ? '10px' : '16px' }}>{dayCount}</div>
@@ -977,11 +1208,19 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Thu</span>
             <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Fri</span>
             <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Sat</span>
-            <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Weekly P&L</span>
           </div>
           {renderCalendar(isMobileDevice || isHalfScreen)}
         </div>
       </div>
+      {isDayPopupOpen && (
+        <DayTradesPopup
+          dayData={selectedDay}
+          onClose={() => {
+            setIsDayPopupOpen(false);
+            setSelectedDay(null);
+          }}
+        />
+      )}
     </div>
   );
 };

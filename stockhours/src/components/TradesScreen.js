@@ -60,6 +60,7 @@ const TradesScreen = ({ tradeData }) => {
           symbol: transaction.Symbol,
           expiration: transaction.Expiration,
           strike: transaction.Strike,
+          type: transaction.Type,
         });
       } else if (transaction.PosEffect === 'CLOSE' && transaction.Side === 'SELL') {
         position.sellRecords.push({
@@ -102,6 +103,7 @@ const TradesScreen = ({ tradeData }) => {
             Expiration: buyRecordsForCycle[0].expiration,
             TradeDate: buyRecordsForCycle[0].tradeDate,
             FirstBuyExecTime: buyRecordsForCycle[0].execTime,
+            Type: buyRecordsForCycle[0].type,
             profitLoss,
             netROI,
             buyRecords: buyRecordsForCycle,
@@ -410,12 +412,13 @@ const TradesScreen = ({ tradeData }) => {
                           minute: '2-digit',
                           second: '2-digit',
                         });
-                        const instrument = `${trade.Expiration} ${trade.Strike} CALL`;
+                        const optionType = trade.Type || 'CALL'; // Use the actual option type, default to CALL if not specified
+                        const instrument = `${trade.Expiration} ${trade.Strike} ${optionType}`;
                         return (
                           <tr key={index} style={{ borderBottom: '1px solid #333' }}>
                             <td style={{ padding: '8px' }}>{openTime}</td>
                             <td style={{ padding: '8px' }}>{trade.Symbol}</td>
-                            <td style={{ padding: '8px' }}>CALL</td>
+                            <td style={{ padding: '8px' }}>{optionType}</td>
                             <td style={{ padding: '8px' }}>{instrument}</td>
                             <td
                               style={{
