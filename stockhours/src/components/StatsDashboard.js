@@ -376,7 +376,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
-  const renderCalendar = (isHalfScreen) => {
+  const renderCalendar = (isMobileDevice) => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
@@ -385,9 +385,10 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     let dayCount = 1;
 
     // Adjust size based on screen width
-    const daySize = isHalfScreen ? '10vw' : '6vw';
-    const fontSize = isHalfScreen ? '14px' : '12px';
-    const dayInfoFontSize = isHalfScreen ? '12px' : '10px';
+    const daySize = isMobileDevice ? '10vw' : '6vw';
+    const fontSize = isMobileDevice ? '8px' : '12px';
+    const dayInfoFontSize = isMobileDevice ? '7px' : '10px';
+    const weeklyPnlFontSize = isMobileDevice ? '8px' : '14px';
 
     for (let i = 0; i < 6; i++) {
       const week = [];
@@ -439,11 +440,19 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                 margin: '4px',
                 borderRadius: '4px',
                 fontSize,
+                padding: '2px',
+                boxSizing: 'border-box',
               }}
             >
-              <div>{dayCount}</div>
+              <div style={{ fontSize: isMobileDevice ? '10px' : '16px' }}>{dayCount}</div>
               {hasTrades && (
-                <div>
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center',
+                  gap: '1px',
+                  marginTop: '1px'
+                }}>
                   <div style={{ fontSize: dayInfoFontSize }}>${dailyData.pnl.toFixed(1)}</div>
                   <div style={{ fontSize: dayInfoFontSize }}>
                     {dailyData.tradeCount} trade{dailyData.tradeCount !== 1 ? 's' : ''}
@@ -471,17 +480,19 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             justifyContent: 'center',
             margin: '4px',
             borderRadius: '4px',
-            fontSize,
+            fontSize: weeklyPnlFontSize,
             border: '1px solid #333',
+            padding: '4px',
+            boxSizing: 'border-box',
           }}
         >
           <div style={{ 
-            fontSize: isHalfScreen ? '14px' : '12px', 
-            marginBottom: '4px',
+            fontSize: isMobileDevice ? '8px' : '14px', 
+            marginBottom: '2px',
             fontWeight: 'bold'
           }}>Weekly P&L:</div>
           <div style={{ 
-            fontSize: isHalfScreen ? '16px' : '14px',
+            fontSize: isMobileDevice ? '10px' : '16px',
             color: weeklyPnl >= 0 ? theme.colors.green : theme.colors.red,
             fontWeight: 'bold'
           }}>
