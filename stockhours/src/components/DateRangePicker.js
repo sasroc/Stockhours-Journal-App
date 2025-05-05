@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DateRange } from 'react-date-range';
 import 'react-date-range/dist/styles.css'; // Main style file
 import 'react-date-range/dist/theme/default.css'; // Theme CSS file
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter, startOfYear } from 'date-fns';
 import { theme } from '../theme';
 
 const DateRangePicker = ({ onDateChange }) => {
@@ -84,6 +84,59 @@ const DateRangePicker = ({ onDateChange }) => {
     setIsOpen(false);
   };
 
+  // Quick date selection handlers
+  const handleQuickSelect = (type) => {
+    const today = new Date();
+    let startDate, endDate;
+
+    switch (type) {
+      case 'today':
+        startDate = new Date(today);
+        endDate = new Date(today);
+        break;
+      case 'thisweek':
+        startDate = startOfWeek(today, { weekStartsOn: 0 });
+        endDate = endOfWeek(today, { weekStartsOn: 0 });
+        break;
+      case 'thismonth':
+        startDate = startOfMonth(today);
+        endDate = endOfMonth(today);
+        break;
+      case 'last30days':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 29); // 29 to include today
+        endDate = new Date(today);
+        break;
+      case 'lastmonth':
+        startDate = startOfMonth(subMonths(today, 1));
+        endDate = endOfMonth(subMonths(today, 1));
+        break;
+      case 'thisquarter':
+        startDate = startOfQuarter(today);
+        endDate = endOfQuarter(today);
+        break;
+      case 'yeartodate':
+        startDate = startOfYear(today);
+        endDate = new Date(today);
+        break;
+      default:
+        return;
+    }
+
+    // Ensure we're working with new Date objects
+    startDate = new Date(startDate);
+    endDate = new Date(endDate);
+
+    // Set the time to start and end of day
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    const newRange = [{ startDate, endDate, key: 'selection' }];
+    setDateRange(newRange);
+    onDateChange(startDate, endDate);
+    setIsOpen(false);
+  };
+
   return (
     <div style={{ position: 'relative' }} ref={pickerRef}>
       {/* Date Range Display Button */}
@@ -143,24 +196,80 @@ const DateRangePicker = ({ onDateChange }) => {
             borderRadius: '8px',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
             padding: '10px',
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: '10px',
             width: isMobile ? '300px' : 'auto',
           }}
         >
-          <DateRange
-            onChange={handleSelect}
-            moveRangeOnFirstSelection={false}
-            ranges={dateRange}
-            months={isMobile ? 1 : 2}
-            direction={isMobile ? 'vertical' : 'horizontal'}
-            rangeColors={[theme.colors.green]}
-            color={theme.colors.green}
-            showDateDisplay={false}
-            minDate={new Date(2000, 0, 1)}
-            maxDate={new Date()}
-            showMonthAndYearPickers={true}
-            monthDisplayFormat="MMM yyyy"
-            className="dark-date-range"
-          />
+          <div style={{ flex: 1 }}>
+            <DateRange
+              onChange={handleSelect}
+              moveRangeOnFirstSelection={false}
+              ranges={dateRange}
+              months={isMobile ? 1 : 2}
+              direction={isMobile ? 'vertical' : 'horizontal'}
+              rangeColors={[theme.colors.green]}
+              color={theme.colors.green}
+              showDateDisplay={false}
+              minDate={new Date(2000, 0, 1)}
+              maxDate={new Date()}
+              showMonthAndYearPickers={true}
+              monthDisplayFormat="MMM yyyy"
+              className="dark-date-range"
+            />
+          </div>
+          
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              padding: '10px',
+              borderLeft: isMobile ? 'none' : '1px solid #333',
+              borderTop: isMobile ? '1px solid #333' : 'none',
+              marginTop: isMobile ? '10px' : '0',
+              paddingTop: isMobile ? '10px' : '0',
+            }}
+          >
+            <h4 style={{ color: theme.colors.white, margin: '0 0 10px 0', fontSize: '14px' }}>Quick Select</h4>
+            {[
+              { label: 'Today', value: 'today' },
+              { label: 'This Week', value: 'thisweek' },
+              { label: 'This Month', value: 'thismonth' },
+              { label: 'Last 30 Days', value: 'last30days' },
+              { label: 'Last Month', value: 'lastmonth' },
+              { label: 'This Quarter', value: 'thisquarter' },
+              { label: 'Year to Date', value: 'yeartodate' }
+            ].map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleQuickSelect(option.value)}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: '1px solid #333',
+                  color: theme.colors.white,
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#333';
+                  e.target.style.borderColor = theme.colors.green;
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.borderColor = '#333';
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
