@@ -1,4 +1,4 @@
-// StockHours-Journal-App/stockhours/src/components/TradesScreen.js
+// StockHours-Journal-App/stockhours/src/components/DailyStatsScreen.js
 
 import React, { useState, useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
@@ -17,7 +17,7 @@ import ShareModal from './ShareModal';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const TradesScreen = ({ tradeData }) => {
+const DailyStatsScreen = ({ tradeData }) => {
   const [expandedDays, setExpandedDays] = useState({}); // Track which days are expanded
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedDayStats, setSelectedDayStats] = useState(null);
@@ -452,4 +452,4 @@ const TradesScreen = ({ tradeData }) => {
   );
 };
 
-export default TradesScreen;
+export default DailyStatsScreen;

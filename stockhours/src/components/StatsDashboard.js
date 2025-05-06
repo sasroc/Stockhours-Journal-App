@@ -389,15 +389,11 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
     const winningTrades = trades.filter(trade => trade.profitLoss > 0).length;
     const losingTrades = trades.filter(trade => trade.profitLoss < 0).length;
-    const totalProfits = trades
-      .filter(trade => trade.profitLoss > 0)
-      .reduce((sum, trade) => sum + trade.profitLoss, 0);
-    const totalLosses = Math.abs(
-      trades
-        .filter(trade => trade.profitLoss < 0)
-        .reduce((sum, trade) => sum + trade.profitLoss, 0)
-    );
-    const profitFactor = totalLosses === 0 ? (totalProfits > 0 ? '—' : '—') : (totalProfits / totalLosses).toFixed(2);
+    const totalProfits = trades.filter(trade => trade.profitLoss > 0).reduce((sum, trade) => sum + trade.profitLoss, 0);
+    const totalLosses = Math.abs(trades.filter(trade => trade.profitLoss < 0).reduce((sum, trade) => sum + trade.profitLoss, 0));
+    const profitFactor = totalLosses === 0 ? (totalProfits > 0 ? '--' : '--') : (totalProfits / totalLosses).toFixed(2);
+    const volume = trades.reduce((sum, trade) => sum + (trade.Quantity || 0), 0);
+    const winrate = trades.length > 0 ? ((winningTrades / trades.length) * 100).toFixed(0) : '--';
 
     return (
       <div
@@ -409,56 +405,61 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
           display: 'flex',
-          justifyContent: 'center',
           alignItems: 'center',
+          justifyContent: 'center',
           zIndex: 1000,
         }}
         onClick={onClose}
       >
         <div
           style={{
-            backgroundColor: '#1a1a1a',
-            padding: '20px',
-            borderRadius: '8px',
-            maxWidth: '90%',
+            backgroundColor: '#111',
+            padding: '32px 32px 24px 32px',
+            borderRadius: '16px',
+            maxWidth: '900px',
+            width: '100%',
             maxHeight: '90vh',
             overflow: 'auto',
             position: 'relative',
+            boxShadow: '0 4px 32px 0 #000a',
           }}
           onClick={e => e.stopPropagation()}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ margin: 0, color: '#fff' }}>
-              Trades for {new Date(dayData.date.split('-').join('/')).toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric'
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 24, color: '#fff', fontWeight: 600 }}>
+              {new Date(dayData.date.split('-').join('/')).toLocaleDateString('en-US', {
+                weekday: 'short', month: 'long', day: '2-digit', year: 'numeric'
               })}
-            </h2>
+            </span>
+            <span style={{ fontSize: 24, fontWeight: 600, marginLeft: 16, color: totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
+              • Net P&L ${totalProfitLoss.toFixed(2)}
+            </span>
             <button
               onClick={onClose}
               style={{
-                backgroundColor: 'transparent',
+                marginLeft: 'auto',
+                background: 'none',
                 border: 'none',
-                color: '#fff',
-                fontSize: '24px',
+                color: '#888',
+                fontSize: 28,
                 cursor: 'pointer',
-                padding: '0 8px',
+                padding: 0,
               }}
+              aria-label="Close"
             >
               ×
             </button>
           </div>
 
-          {/* P&L Line Graph */}
+          {/* Chart */}
           <div
             style={{
-              height: '100px',
-              marginBottom: '20px',
-              backgroundColor: '#0d0d0d',
-              borderRadius: '8px',
-              padding: '10px',
+              height: '180px',
+              margin: '24px 0 16px 0',
+              backgroundColor: '#181818',
+              borderRadius: '12px',
+              padding: '12px',
             }}
           >
             <Line
@@ -510,7 +511,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                   x: { display: false },
                   y: {
                     beginAtZero: true,
-                    grid: { color: '#333' },
+                    grid: { color: '#222' },
                     ticks: { color: '#888' },
                   },
                 },
@@ -518,41 +519,27 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
-              <div style={{ color: '#888', fontSize: '14px' }}>Total Trades</div>
-              <div style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold' }}>{trades.length}</div>
-            </div>
-            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
-              <div style={{ color: '#888', fontSize: '14px' }}>Winners</div>
-              <div style={{ color: theme.colors.green, fontSize: '24px', fontWeight: 'bold' }}>{winningTrades}</div>
-            </div>
-            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
-              <div style={{ color: '#888', fontSize: '14px' }}>Losers</div>
-              <div style={{ color: theme.colors.red, fontSize: '24px', fontWeight: 'bold' }}>{losingTrades}</div>
-            </div>
-            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
-              <div style={{ color: '#888', fontSize: '14px' }}>Gross P&L</div>
-              <div style={{ color: totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red, fontSize: '24px', fontWeight: 'bold' }}>
-                ${totalProfitLoss.toFixed(2)}
-              </div>
-            </div>
-            <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px' }}>
-              <div style={{ color: '#888', fontSize: '14px' }}>Profit Factor</div>
-              <div style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold' }}>{profitFactor}</div>
-            </div>
+          {/* Stats Row */}
+          <div style={{ display: 'flex', gap: 32, margin: '24px 0 16px 0', flexWrap: 'wrap' }}>
+            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Total trades<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{trades.length}</span></div>
+            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Winners<br /><span style={{ color: theme.colors.green, fontWeight: 600, fontSize: 20 }}>{winningTrades}</span></div>
+            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Losers<br /><span style={{ color: theme.colors.red, fontWeight: 600, fontSize: 20 }}>{losingTrades}</span></div>
+            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Winrate<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{winrate}%</span></div>
+            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Volume<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{volume}</span></div>
+            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Profit factor<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{profitFactor}</span></div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          {/* Trade Table */}
+          <div style={{ overflowX: 'auto', marginTop: 16 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', background: 'none' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #333' }}>
-                  <th style={{ padding: '8px', textAlign: 'left', color: '#888' }}>Time</th>
-                  <th style={{ padding: '8px', textAlign: 'left', color: '#888' }}>Symbol</th>
-                  <th style={{ padding: '8px', textAlign: 'left', color: '#888' }}>Side</th>
-                  <th style={{ padding: '8px', textAlign: 'left', color: '#888' }}>Instrument</th>
-                  <th style={{ padding: '8px', textAlign: 'right', color: '#888' }}>P&L</th>
-                  <th style={{ padding: '8px', textAlign: 'right', color: '#888' }}>ROI</th>
+                <tr style={{ borderBottom: '1px solid #222' }}>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', color: '#b3b3c6', fontWeight: 500, fontSize: 15 }}>Open time</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', color: '#b3b3c6', fontWeight: 500, fontSize: 15 }}>Ticker</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', color: '#b3b3c6', fontWeight: 500, fontSize: 15 }}>Side</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', color: '#b3b3c6', fontWeight: 500, fontSize: 15 }}>Instrument</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', color: '#b3b3c6', fontWeight: 500, fontSize: 15 }}>Net P&L</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', color: '#b3b3c6', fontWeight: 500, fontSize: 15 }}>Net ROI</th>
                 </tr>
               </thead>
               <tbody>
@@ -566,34 +553,47 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                   const instrument = `${trade.Expiration} ${trade.Strike} ${optionType}`;
                   const netROI = (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100;
                   return (
-                    <tr key={index} style={{ borderBottom: '1px solid #333' }}>
-                      <td style={{ padding: '8px' }}>{openTime}</td>
-                      <td style={{ padding: '8px' }}>{trade.Symbol}</td>
-                      <td style={{ padding: '8px' }}>{optionType}</td>
-                      <td style={{ padding: '8px' }}>{instrument}</td>
-                      <td
-                        style={{
-                          padding: '8px',
-                          textAlign: 'right',
-                          color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red,
-                        }}
-                      >
-                        ${trade.profitLoss.toFixed(2)}
+                    <tr key={index} style={{ borderBottom: '1px solid #222', background: 'none' }}>
+                      <td style={{ padding: '12px 8px', color: '#fff', fontSize: 15 }}>{openTime}</td>
+                      <td style={{ padding: '12px 8px' }}>
+                        <span style={{
+                          background: '#23233a',
+                          color: '#b3b3c6',
+                          borderRadius: '16px',
+                          padding: '4px 14px',
+                          fontWeight: 600,
+                          fontSize: 15,
+                          display: 'inline-block',
+                        }}>{trade.Symbol}</span>
                       </td>
-                      <td
-                        style={{
-                          padding: '8px',
-                          textAlign: 'right',
-                          color: netROI >= 0 ? theme.colors.green : theme.colors.red,
-                        }}
-                      >
-                        {netROI.toFixed(2)}%
-                      </td>
+                      <td style={{ padding: '12px 8px', color: '#fff', fontSize: 15 }}>{optionType}</td>
+                      <td style={{ padding: '12px 8px', color: '#fff', fontSize: 15 }}>{instrument}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'right', color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red, fontWeight: 600, fontSize: 15 }}>${trade.profitLoss.toFixed(2)}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'right', color: netROI >= 0 ? theme.colors.green : theme.colors.red, fontWeight: 600, fontSize: 15 }}>{netROI.toFixed(2)}%</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+
+          <div style={{ marginTop: 32, textAlign: 'center' }}>
+            <button
+              onClick={onClose}
+              style={{
+                backgroundColor: theme.colors.green,
+                color: theme.colors.white,
+                border: 'none',
+                borderRadius: '6px',
+                padding: '10px 32px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 600,
+                marginTop: 8,
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </div>

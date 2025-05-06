@@ -6,7 +6,6 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import InvitationManager from './components/admin/InvitationManager';
 import StatsDashboard from './components/StatsDashboard';
 import ReportsScreen from './components/ReportsScreen';
-import TradesScreen from './components/TradesScreen';
 import ImportsScreen from './components/ImportsScreen';
 import DateRangePicker from './components/DateRangePicker';
 import { theme } from './theme';
@@ -26,6 +25,7 @@ import {
 import styled from 'styled-components';
 import { db } from './firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import DailyStatsScreen from './components/DailyStatsScreen';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -53,14 +53,14 @@ function AppRoutes() {
   const dashboardTooltipRef = useRef(null);
   const reportsButtonRef = useRef(null);
   const reportsTooltipRef = useRef(null);
-  const tradesButtonRef = useRef(null);
-  const tradesTooltipRef = useRef(null);
   const importsButtonRef = useRef(null);
   const importsTooltipRef = useRef(null);
   const fileInputRef = useRef(null);
   const profileButtonRef = useRef(null);
   const profileTooltipRef = useRef(null);
   const profileMenuRef = useRef(null);
+  const dailyStatsButtonRef = useRef(null);
+  const dailyStatsTooltipRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -141,10 +141,10 @@ function AppRoutes() {
       setCurrentScreen('Dashboard');
     } else if (path === '/reports') {
       setCurrentScreen('Reports');
-    } else if (path === '/trades') {
-      setCurrentScreen('Trades');
     } else if (path === '/imports') {
       setCurrentScreen('Imports');
+    } else if (path === '/dailystats') {
+      setCurrentScreen('Daily Stats');
     }
   }, [location.pathname]);
 
@@ -475,12 +475,12 @@ function AppRoutes() {
     navigate('/reports');
   };
 
-  const handleTradesClick = () => {
-    navigate('/trades');
-  };
-
   const handleImportsClick = () => {
     navigate('/imports');
+  };
+
+  const handleDailyStatsClick = () => {
+    navigate('/dailystats');
   };
 
   const handleLogout = async () => {
@@ -712,6 +712,66 @@ function AppRoutes() {
 
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div
+            ref={dailyStatsButtonRef}
+            onClick={handleDailyStatsClick}
+            onMouseEnter={(e) => { dailyStatsTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { dailyStatsTooltipRef.current.style.visibility = 'hidden'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              backgroundColor: theme.colors.green,
+              borderRadius: '50%',
+              cursor: 'pointer',
+              marginBottom: '20px',
+              position: 'relative',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute' }}
+            >
+              <line x1="8" y1="4" x2="8" y2="8" />
+              <rect x="6" y="8" width="4" height="8" />
+              <line x1="8" y1="16" x2="8" y2="20" />
+              <line x1="16" y1="6" x2="16" y2="9" />
+              <rect x="14" y="9" width="4" height="6" />
+              <line x1="16" y1="15" x2="16" y2="18" />
+            </svg>
+            <span
+              ref={dailyStatsTooltipRef}
+              className="tooltip"
+              style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
+              }}
+            >
+              Daily Stats
+            </span>
+          </div>
+        </div>
+
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+          <div
             ref={reportsButtonRef}
             onClick={handleReportsClick}
             onMouseEnter={(e) => { reportsTooltipRef.current.style.visibility = 'visible'; }}
@@ -763,66 +823,6 @@ function AppRoutes() {
               }}
             >
               Reports
-            </span>
-          </div>
-        </div>
-
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-          <div
-            ref={tradesButtonRef}
-            onClick={handleTradesClick}
-            onMouseEnter={(e) => { tradesTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { tradesTooltipRef.current.style.visibility = 'hidden'; }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              backgroundColor: theme.colors.green,
-              borderRadius: '50%',
-              cursor: 'pointer',
-              marginBottom: '20px',
-              position: 'relative',
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ position: 'absolute' }}
-            >
-              <line x1="8" y1="4" x2="8" y2="8" />
-              <rect x="6" y="8" width="4" height="8" />
-              <line x1="8" y1="16" x2="8" y2="20" />
-              <line x1="16" y1="6" x2="16" y2="9" />
-              <rect x="14" y="9" width="4" height="6" />
-              <line x1="16" y1="15" x2="16" y2="18" />
-            </svg>
-            <span
-              ref={tradesTooltipRef}
-              className="tooltip"
-              style={{
-                visibility: 'hidden',
-                position: 'absolute',
-                left: '50px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                backgroundColor: '#333',
-                color: theme.colors.white,
-                padding: '5px 10px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                whiteSpace: 'nowrap',
-                zIndex: 1001,
-              }}
-            >
-              Trades
             </span>
           </div>
         </div>
@@ -1051,23 +1051,6 @@ function AppRoutes() {
               <ReportsScreen tradeData={filteredTradeData} />
             </div>
           </>
-        ) : location.pathname === '/trades' ? (
-          <>
-            <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
-            <div
-              style={{
-                width: '100%',
-                maxWidth: '1400px',
-                backgroundColor: '#0d0d0d',
-                borderRadius: '8px',
-                padding: '20px',
-                margin: '0 auto',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
-              }}
-            >
-              <TradesScreen tradeData={filteredTradeData} />
-            </div>
-          </>
         ) : location.pathname === '/imports' ? (
           <>
             <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
@@ -1083,6 +1066,23 @@ function AppRoutes() {
               }}
             >
               <ImportsScreen uploadedFiles={uploadedFiles} onDeleteFile={handleDeleteFile} />
+            </div>
+          </>
+        ) : location.pathname === '/dailystats' ? (
+          <>
+            <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '1400px',
+                backgroundColor: '#0d0d0d',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '0 auto',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              <DailyStatsScreen tradeData={filteredTradeData} />
             </div>
           </>
         ) : null}
@@ -1107,8 +1107,8 @@ function AppRoutesWrapper() {
       <Route path="/admin/invitations" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
-      <Route path="/trades" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/imports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="/dailystats" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
