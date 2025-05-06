@@ -26,6 +26,7 @@ import styled from 'styled-components';
 import { db } from './firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import DailyStatsScreen from './components/DailyStatsScreen';
+import AllTradesScreen from './components/AllTradesScreen';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -61,6 +62,8 @@ function AppRoutes() {
   const profileMenuRef = useRef(null);
   const dailyStatsButtonRef = useRef(null);
   const dailyStatsTooltipRef = useRef(null);
+  const allTradesButtonRef = useRef(null);
+  const allTradesTooltipRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -145,6 +148,8 @@ function AppRoutes() {
       setCurrentScreen('Imports');
     } else if (path === '/dailystats') {
       setCurrentScreen('Daily Stats');
+    } else if (path === '/alltrades') {
+      setCurrentScreen('All Trades');
     }
   }, [location.pathname]);
 
@@ -483,6 +488,10 @@ function AppRoutes() {
     navigate('/dailystats');
   };
 
+  const handleAllTradesClick = () => {
+    navigate('/alltrades');
+  };
+
   const handleLogout = async () => {
     await logout();
     setIsProfileMenuOpen(false);
@@ -766,6 +775,65 @@ function AppRoutes() {
               }}
             >
               Daily Stats
+            </span>
+          </div>
+        </div>
+
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+          <div
+            ref={allTradesButtonRef}
+            onClick={handleAllTradesClick}
+            onMouseEnter={(e) => { allTradesTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { allTradesTooltipRef.current.style.visibility = 'hidden'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              backgroundColor: theme.colors.green,
+              borderRadius: '50%',
+              cursor: 'pointer',
+              marginBottom: '20px',
+              position: 'relative',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute' }}
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+            <span
+              ref={allTradesTooltipRef}
+              className="tooltip"
+              style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#333',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
+              }}
+            >
+              All Trades
             </span>
           </div>
         </div>
@@ -1085,6 +1153,23 @@ function AppRoutes() {
               <DailyStatsScreen tradeData={filteredTradeData} />
             </div>
           </>
+        ) : location.pathname === '/alltrades' ? (
+          <>
+            <img src={logo} alt="Clock Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '1400px',
+                backgroundColor: '#0d0d0d',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '0 auto',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              <AllTradesScreen tradeData={filteredTradeData} />
+            </div>
+          </>
         ) : null}
       </div>
     </div>
@@ -1109,6 +1194,7 @@ function AppRoutesWrapper() {
       <Route path="/reports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/imports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/dailystats" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="/alltrades" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
