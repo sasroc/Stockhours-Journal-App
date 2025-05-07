@@ -99,34 +99,112 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Restore original position-tracking logic for processedTrades
   const processedTrades = useMemo(() => {
     if (!tradeData.length) return [];
-    // For each trade, look up its tags in tradeRatings using getTradeKey
-    // We'll use similar logic as AllTradesScreen to flatten trades
+    const allTransactions = tradeData.flatMap(trade => trade.Transactions);
+    const sortedTransactions = allTransactions.sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
+    const trades = [];
+    const positions = new Map();
+    const CONTRACT_MULTIPLIER = 100;
+
+    sortedTransactions.forEach(transaction => {
+      const key = `${transaction.Symbol}-${transaction.Strike}-${transaction.Expiration}`;
+      if (!positions.has(key)) {
+        positions.set(key, {
+          totalQuantity: 0,
+          currentQuantity: 0,
+          buyRecords: [],
+          sellRecords: [],
+        });
+      }
+      const position = positions.get(key);
+
+      if (transaction.PosEffect === 'OPEN' && transaction.Side === 'BUY') {
+        position.totalQuantity += transaction.Quantity;
+        position.currentQuantity += transaction.Quantity;
+        position.buyRecords.push({
+          quantity: transaction.Quantity,
+          price: transaction.Price,
+          tradeDate: transaction.TradeDate,
+          execTime: transaction.ExecTime,
+        });
+      } else if (transaction.PosEffect === 'CLOSE' && transaction.Side === 'SELL') {
+        position.sellRecords.push({
+          quantity: Math.abs(transaction.Quantity),
+          price: transaction.Price,
+          execTime: transaction.ExecTime,
+        });
+        position.currentQuantity -= Math.abs(transaction.Quantity);
+
+        if (position.currentQuantity === 0) {
+          let totalBuyQuantity = 0;
+          let totalBuyCost = 0;
+          const buyRecordsForCycle = [];
+          while (position.buyRecords.length > 0 && totalBuyQuantity < position.totalQuantity) {
+            const buyRecord = position.buyRecords.shift();
+            buyRecordsForCycle.push(buyRecord);
+            totalBuyQuantity += buyRecord.quantity;
+            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
+          }
+
+          let totalSellQuantity = 0;
+          let totalSellProceeds = 0;
+          const sellRecordsForCycle = [];
+          while (position.sellRecords.length > 0 && totalSellQuantity < totalBuyQuantity) {
+            const sellRecord = position.sellRecords.shift();
+            sellRecordsForCycle.push(sellRecord);
+            totalSellQuantity += sellRecord.quantity;
+            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
+          }
+
+          const profitLoss = totalSellProceeds - totalBuyCost;
+          const exitTime = sellRecordsForCycle[sellRecordsForCycle.length - 1].execTime;
+          const totalVolume = totalBuyQuantity;
+          const firstBuyPrice = buyRecordsForCycle[0].price;
+
+          trades.push({
+            Symbol: transaction.Symbol,
+            Strike: transaction.Strike,
+            Expiration: transaction.Expiration,
+            TradeDate: buyRecordsForCycle[0].tradeDate,
+            FirstBuyExecTime: buyRecordsForCycle[0].execTime,
+            ExitTime: exitTime,
+            profitLoss,
+            totalVolume,
+            firstBuyPrice,
+          });
+
+          position.totalQuantity = 0;
+          position.currentQuantity = 0;
+        }
+      }
+    });
+    return trades;
+  }, [tradeData]);
+
+  // Create a new tagProcessedTrades array for tag charts only
+  const tagProcessedTrades = useMemo(() => {
+    if (!tradeData.length) return [];
     const trades = [];
     tradeData.forEach(trade => {
-      // Sort transactions by ExecTime
       const sorted = [...trade.Transactions].sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
       let openTx = null;
       sorted.forEach(tx => {
         if (tx.PosEffect === 'OPEN' && tx.Side === 'BUY') {
           openTx = tx;
         } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'SELL' && openTx) {
-          // Compose trade object for key
           const entryPrice = openTx.Price;
           const exitPrice = tx.Price;
           const quantity = openTx.Quantity;
           const contractMultiplier = 100;
           const netPL = (exitPrice - entryPrice) * quantity * contractMultiplier * (openTx.Side === 'BUY' ? 1 : -1);
-          const netROI = entryPrice > 0 ? ((exitPrice - entryPrice) / entryPrice) * 100 * (openTx.Side === 'BUY' ? 1 : -1) : 0;
           const tradeObj = {
             openDate: openTx.TradeDate,
             closeDate: tx.TradeDate,
             symbol: openTx.Symbol,
             entryPrice,
             exitPrice,
-            netPL,
-            netROI,
             open: openTx,
             close: tx,
             TradeDate: openTx.TradeDate,
@@ -1094,14 +1172,10 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
   // Add new useMemo hooks for tag statistics
   const setupTagStats = useMemo(() => {
     const tagMap = new Map();
-
-    // Initialize all custom tags with zero values
     setupsTags.forEach(tag => {
       tagMap.set(tag, { totalPnl: 0, tradeCount: 0 });
     });
-
-    // Update stats for tags that have trades
-    processedTrades.forEach(trade => {
+    tagProcessedTrades.forEach(trade => {
       trade.setupTags.forEach(tag => {
         if (tagMap.has(tag)) {
           const stats = tagMap.get(tag);
@@ -1110,7 +1184,6 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
         }
       });
     });
-
     return Array.from(tagMap.entries())
       .sort((a, b) => b[1].totalPnl - a[1].totalPnl)
       .map(([tag, stats]) => ({
@@ -1118,18 +1191,14 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
         totalPnl: stats.totalPnl,
         tradeCount: stats.tradeCount
       }));
-  }, [processedTrades, setupsTags]);
+  }, [tagProcessedTrades, setupsTags]);
 
   const mistakeTagStats = useMemo(() => {
     const tagMap = new Map();
-
-    // Initialize all custom tags with zero values
     mistakesTags.forEach(tag => {
       tagMap.set(tag, { totalPnl: 0, tradeCount: 0 });
     });
-
-    // Update stats for tags that have trades
-    processedTrades.forEach(trade => {
+    tagProcessedTrades.forEach(trade => {
       trade.mistakeTags.forEach(tag => {
         if (tagMap.has(tag)) {
           const stats = tagMap.get(tag);
@@ -1138,7 +1207,6 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
         }
       });
     });
-
     return Array.from(tagMap.entries())
       .sort((a, b) => b[1].totalPnl - a[1].totalPnl)
       .map(([tag, stats]) => ({
@@ -1146,7 +1214,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
         totalPnl: stats.totalPnl,
         tradeCount: stats.tradeCount
       }));
-  }, [processedTrades, mistakesTags]);
+  }, [tagProcessedTrades, mistakesTags]);
 
   // Add chart data for setup tags
   const setupTagPnlChartData = {
