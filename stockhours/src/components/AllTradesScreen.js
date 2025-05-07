@@ -5,6 +5,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { FaCheck, FaEllipsisH } from 'react-icons/fa';
 import TradingViewChart from './TradingViewChart';
+import { useLocation } from 'react-router-dom';
 
 const ROWS_PER_PAGE = 50;
 
@@ -345,6 +346,67 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
 }
 
 const AllTradesScreen = ({ tradeData }) => {
+  const location = useLocation();
+  const [selectedTrade, setSelectedTrade] = useState(null);
+  
+  // Check for selected trade from navigation state
+  useEffect(() => {
+    if (location.state?.selectedTrade) {
+      // Find the matching trade in allTrades to ensure we have the complete trade data
+      const allTrades = tradeData.flatMap(trade => {
+        const sorted = [...trade.Transactions].sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
+        const positions = [];
+        let openTx = null;
+        sorted.forEach(tx => {
+          if (tx.PosEffect === 'OPEN' && tx.Side === 'BUY') {
+            openTx = tx;
+          } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'SELL' && openTx) {
+            positions.push({ open: openTx, close: tx });
+            openTx = null;
+          }
+        });
+        return positions.map(pos => {
+          const entryPrice = pos.open.Price;
+          const exitPrice = pos.close.Price;
+          const quantity = pos.open.Quantity;
+          const contractMultiplier = 100;
+          const netPL = (exitPrice - entryPrice) * quantity * contractMultiplier * (pos.open.Side === 'BUY' ? 1 : -1);
+          const netROI = entryPrice > 0 ? ((exitPrice - entryPrice) / entryPrice) * 100 * (pos.open.Side === 'BUY' ? 1 : -1) : 0;
+          return {
+            openDate: pos.open.TradeDate,
+            closeDate: pos.close.TradeDate,
+            symbol: pos.open.Symbol,
+            entryPrice,
+            exitPrice,
+            netPL,
+            netROI,
+            status: getStatusAndColors(netPL).status,
+            statusColor: getStatusAndColors(netPL).color,
+            open: pos.open,
+            close: pos.close,
+          };
+        });
+      });
+
+      // Find the matching trade by comparing key properties
+      const matchingTrade = allTrades.find(trade => 
+        trade.symbol === location.state.selectedTrade.symbol &&
+        trade.openDate === location.state.selectedTrade.openDate &&
+        trade.entryPrice === location.state.selectedTrade.entryPrice
+      );
+
+      if (matchingTrade) {
+        setSelectedTrade(matchingTrade);
+      } else {
+        // If no exact match found, use the transformed trade from navigation state
+        setSelectedTrade(location.state.selectedTrade);
+      }
+
+      // Clear the state to prevent reopening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, tradeData]);
+
   // Flatten all trades
   const allTrades = useMemo(() => {
     if (!tradeData || !tradeData.length) return [];
@@ -433,9 +495,6 @@ const AllTradesScreen = ({ tradeData }) => {
       localStorage.setItem('tradeRatings', JSON.stringify(ratings));
     }
   }, [ratings, currentUser, ratingsLoaded]);
-
-  // Selected trade for detail view
-  const [selectedTrade, setSelectedTrade] = useState(null);
 
   // Tag lists (per user)
   const [setupsTags, setSetupsTags] = useState([]);

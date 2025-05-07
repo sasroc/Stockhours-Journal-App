@@ -27,6 +27,7 @@ import { db } from './firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import DailyStatsScreen from './components/DailyStatsScreen';
 import AllTradesScreen from './components/AllTradesScreen';
+import ScrollToTopWrapper from './components/ScrollToTopWrapper';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -64,6 +65,16 @@ function AppRoutes() {
   const dailyStatsTooltipRef = useRef(null);
   const allTradesButtonRef = useRef(null);
   const allTradesTooltipRef = useRef(null);
+
+  // Tag lists (per user)
+  const [setupsTags, setSetupsTags] = useState([]);
+  const [mistakesTags, setMistakesTags] = useState([]);
+  // Track if tag lists are loaded
+  const [tagsLoaded, setTagsLoaded] = useState(false);
+
+  // Add ratings state and loading logic
+  const [ratings, setRatings] = useState({});
+  const [ratingsLoaded, setRatingsLoaded] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -177,6 +188,77 @@ function AppRoutes() {
 
     loadSavedTradeData();
   }, [currentUser]);
+
+  // Fetch tag lists from Firestore on mount (if logged in)
+  useEffect(() => {
+    const fetchTags = async () => {
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.setupsTags) setSetupsTags(data.setupsTags);
+          if (data.mistakesTags) setMistakesTags(data.mistakesTags);
+        }
+      } else {
+        const setups = localStorage.getItem('setupsTags');
+        const mistakes = localStorage.getItem('mistakesTags');
+        if (setups) setSetupsTags(JSON.parse(setups));
+        if (mistakes) setMistakesTags(JSON.parse(mistakes));
+      }
+      setTagsLoaded(true);
+    };
+    fetchTags();
+  }, [currentUser]);
+
+  // Save tag lists to Firestore/localStorage
+  useEffect(() => {
+    if (!tagsLoaded) return;
+    if (currentUser) {
+      const save = async () => {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userDocRef, { setupsTags, mistakesTags });
+      };
+      save();
+    } else {
+      localStorage.setItem('setupsTags', JSON.stringify(setupsTags));
+      localStorage.setItem('mistakesTags', JSON.stringify(mistakesTags));
+    }
+  }, [setupsTags, mistakesTags, currentUser, tagsLoaded]);
+
+  useEffect(() => {
+    const fetchRatings = async () => {
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.tradeRatings) {
+            setRatings(data.tradeRatings);
+          }
+        }
+      } else {
+        // Optionally, load from localStorage for guests
+        const local = localStorage.getItem('tradeRatings');
+        if (local) setRatings(JSON.parse(local));
+      }
+      setRatingsLoaded(true);
+    };
+    fetchRatings();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!ratingsLoaded) return;
+    if (currentUser) {
+      const save = async () => {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userDocRef, { tradeRatings: ratings });
+      };
+      save();
+    } else {
+      localStorage.setItem('tradeRatings', JSON.stringify(ratings));
+    }
+  }, [ratings, currentUser, ratingsLoaded]);
 
   const generateTransactionKey = (transaction, index) => {
     const execTime = new Date(transaction.ExecTime);
@@ -1116,7 +1198,12 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <ReportsScreen tradeData={filteredTradeData} />
+              <ReportsScreen 
+                tradeData={filteredTradeData} 
+                setupsTags={setupsTags}
+                mistakesTags={mistakesTags}
+                tradeRatings={ratings}
+              />
             </div>
           </>
         ) : location.pathname === '/imports' ? (
@@ -1167,7 +1254,11 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <AllTradesScreen tradeData={filteredTradeData} />
+              <AllTradesScreen 
+                tradeData={filteredTradeData}
+                ratings={ratings}
+                setRatings={setRatings}
+              />
             </div>
           </>
         ) : null}
@@ -1204,9 +1295,11 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <AppContainer>
-          <AppRoutesWrapper />
-        </AppContainer>
+        <ScrollToTopWrapper>
+          <AppContainer>
+            <AppRoutesWrapper />
+          </AppContainer>
+        </ScrollToTopWrapper>
       </Router>
     </AuthProvider>
   );

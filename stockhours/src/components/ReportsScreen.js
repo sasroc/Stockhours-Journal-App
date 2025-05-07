@@ -73,13 +73,20 @@ function ChartContainer({ data, options, layout, title }) {
   );
 }
 
-const ReportsScreen = ({ tradeData }) => {
+// Add getTradeKey function (copied from AllTradesScreen)
+const getTradeKey = (trade) => {
+  // Use symbol, open/close date, and strike as a unique key
+  return `${trade.symbol || trade.Symbol}_${trade.openDate || (trade.open && trade.open.TradeDate) || trade.TradeDate}_${trade.closeDate || (trade.close && trade.close.TradeDate) || trade.TradeDate}_${trade.entryPrice || (trade.open && trade.open.Price)}_${trade.exitPrice || (trade.close && trade.close.Price)}`;
+};
+
+const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRatings = {} }) => {
   const [selectedReport, setSelectedReport] = useState('Overview');
   const [hoveredReport, setHoveredReport] = useState(null);
   const [expandedCategories, setExpandedCategories] = useState({
     'Date & Time': true,
     'Price & Quantity': true,
     'Options': true,
+    'Tags': true,
   });
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960);
 
@@ -94,71 +101,56 @@ const ReportsScreen = ({ tradeData }) => {
 
   const processedTrades = useMemo(() => {
     if (!tradeData.length) return [];
-    const allTransactions = tradeData.flatMap(trade => trade.Transactions);
-    const sortedTransactions = allTransactions.sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
+    // For each trade, look up its tags in tradeRatings using getTradeKey
+    // We'll use similar logic as AllTradesScreen to flatten trades
     const trades = [];
-    const positions = new Map();
-    const CONTRACT_MULTIPLIER = 100;
-
-    sortedTransactions.forEach(transaction => {
-      const key = `${transaction.Symbol}-${transaction.Strike}-${transaction.Expiration}`;
-      if (!positions.has(key)) {
-        positions.set(key, { totalQuantity: 0, currentQuantity: 0, buyRecords: [], sellRecords: [] });
-      }
-      const position = positions.get(key);
-
-      if (transaction.PosEffect === 'OPEN' && transaction.Side === 'BUY') {
-        position.totalQuantity += transaction.Quantity;
-        position.currentQuantity += transaction.Quantity;
-        position.buyRecords.push({ quantity: transaction.Quantity, price: transaction.Price, tradeDate: transaction.TradeDate, execTime: transaction.ExecTime });
-      } else if (transaction.PosEffect === 'CLOSE' && transaction.Side === 'SELL') {
-        position.sellRecords.push({ quantity: Math.abs(transaction.Quantity), price: transaction.Price, execTime: transaction.ExecTime });
-        position.currentQuantity -= Math.abs(transaction.Quantity);
-
-        if (position.currentQuantity === 0) {
-          let totalBuyQuantity = 0;
-          let totalBuyCost = 0;
-          const buyRecordsForCycle = [];
-          while (position.buyRecords.length > 0 && totalBuyQuantity < position.totalQuantity) {
-            const buyRecord = position.buyRecords.shift();
-            buyRecordsForCycle.push(buyRecord);
-            totalBuyQuantity += buyRecord.quantity;
-            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
-          }
-
-          let totalSellQuantity = 0;
-          let totalSellProceeds = 0;
-          const sellRecordsForCycle = [];
-          while (position.sellRecords.length > 0 && totalSellQuantity < totalBuyQuantity) {
-            const sellRecord = position.sellRecords.shift();
-            sellRecordsForCycle.push(sellRecord);
-            totalSellQuantity += sellRecord.quantity;
-            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
-          }
-
-          const profitLoss = totalSellProceeds - totalBuyCost;
-          const exitTime = sellRecordsForCycle[sellRecordsForCycle.length - 1].execTime;
-          const totalVolume = totalBuyQuantity;
-          const firstBuyPrice = buyRecordsForCycle[0].price;
+    tradeData.forEach(trade => {
+      // Sort transactions by ExecTime
+      const sorted = [...trade.Transactions].sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
+      let openTx = null;
+      sorted.forEach(tx => {
+        if (tx.PosEffect === 'OPEN' && tx.Side === 'BUY') {
+          openTx = tx;
+        } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'SELL' && openTx) {
+          // Compose trade object for key
+          const entryPrice = openTx.Price;
+          const exitPrice = tx.Price;
+          const quantity = openTx.Quantity;
+          const contractMultiplier = 100;
+          const netPL = (exitPrice - entryPrice) * quantity * contractMultiplier * (openTx.Side === 'BUY' ? 1 : -1);
+          const netROI = entryPrice > 0 ? ((exitPrice - entryPrice) / entryPrice) * 100 * (openTx.Side === 'BUY' ? 1 : -1) : 0;
+          const tradeObj = {
+            openDate: openTx.TradeDate,
+            closeDate: tx.TradeDate,
+            symbol: openTx.Symbol,
+            entryPrice,
+            exitPrice,
+            netPL,
+            netROI,
+            open: openTx,
+            close: tx,
+            TradeDate: openTx.TradeDate,
+            FirstBuyExecTime: openTx.ExecTime,
+            ExitTime: tx.ExecTime,
+            profitLoss: netPL,
+            totalVolume: quantity,
+            firstBuyPrice: entryPrice,
+            Strike: openTx.Strike,
+            Expiration: openTx.Expiration,
+          };
+          const key = getTradeKey(tradeObj);
+          const meta = tradeRatings[key] || {};
           trades.push({
-            Symbol: transaction.Symbol,
-            Strike: transaction.Strike,
-            Expiration: transaction.Expiration,
-            TradeDate: buyRecordsForCycle[0].tradeDate,
-            FirstBuyExecTime: buyRecordsForCycle[0].execTime,
-            ExitTime: exitTime,
-            profitLoss,
-            totalVolume,
-            firstBuyPrice,
+            ...tradeObj,
+            setupTags: meta.setups || [],
+            mistakeTags: meta.mistakes || [],
           });
-
-          position.totalQuantity = 0;
-          position.currentQuantity = 0;
+          openTx = null;
         }
-      }
+      });
     });
     return trades;
-  }, [tradeData]);
+  }, [tradeData, tradeRatings]);
 
   const monthlyStats = processedTrades.reduce((acc, trade) => {
     const execTime = new Date(trade.FirstBuyExecTime);
@@ -1099,10 +1091,114 @@ const ReportsScreen = ({ tradeData }) => {
     },
   };
 
+  // Add new useMemo hooks for tag statistics
+  const setupTagStats = useMemo(() => {
+    const tagMap = new Map();
+
+    // Initialize all custom tags with zero values
+    setupsTags.forEach(tag => {
+      tagMap.set(tag, { totalPnl: 0, tradeCount: 0 });
+    });
+
+    // Update stats for tags that have trades
+    processedTrades.forEach(trade => {
+      trade.setupTags.forEach(tag => {
+        if (tagMap.has(tag)) {
+          const stats = tagMap.get(tag);
+          stats.totalPnl += trade.profitLoss;
+          stats.tradeCount += 1;
+        }
+      });
+    });
+
+    return Array.from(tagMap.entries())
+      .sort((a, b) => b[1].totalPnl - a[1].totalPnl)
+      .map(([tag, stats]) => ({
+        tag,
+        totalPnl: stats.totalPnl,
+        tradeCount: stats.tradeCount
+      }));
+  }, [processedTrades, setupsTags]);
+
+  const mistakeTagStats = useMemo(() => {
+    const tagMap = new Map();
+
+    // Initialize all custom tags with zero values
+    mistakesTags.forEach(tag => {
+      tagMap.set(tag, { totalPnl: 0, tradeCount: 0 });
+    });
+
+    // Update stats for tags that have trades
+    processedTrades.forEach(trade => {
+      trade.mistakeTags.forEach(tag => {
+        if (tagMap.has(tag)) {
+          const stats = tagMap.get(tag);
+          stats.totalPnl += trade.profitLoss;
+          stats.tradeCount += 1;
+        }
+      });
+    });
+
+    return Array.from(tagMap.entries())
+      .sort((a, b) => b[1].totalPnl - a[1].totalPnl)
+      .map(([tag, stats]) => ({
+        tag,
+        totalPnl: stats.totalPnl,
+        tradeCount: stats.tradeCount
+      }));
+  }, [processedTrades, mistakesTags]);
+
+  // Add chart data for setup tags
+  const setupTagPnlChartData = {
+    labels: setupTagStats.map(stats => stats.tag),
+    datasets: [{
+      label: 'Profit/Loss ($)',
+      data: setupTagStats.map(stats => stats.totalPnl),
+      backgroundColor: setupTagStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderColor: setupTagStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderWidth: 1,
+    }],
+  };
+
+  const setupTagTradesChartData = {
+    labels: setupTagStats.map(stats => stats.tag),
+    datasets: [{
+      label: 'Number of Trades',
+      data: setupTagStats.map(stats => stats.tradeCount),
+      backgroundColor: '#1890ff',
+      borderColor: '#1890ff',
+      borderWidth: 1,
+    }],
+  };
+
+  // Add chart data for mistake tags
+  const mistakeTagPnlChartData = {
+    labels: mistakeTagStats.map(stats => stats.tag),
+    datasets: [{
+      label: 'Profit/Loss ($)',
+      data: mistakeTagStats.map(stats => stats.totalPnl),
+      backgroundColor: mistakeTagStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderColor: mistakeTagStats.map(stats => stats.totalPnl >= 0 ? theme.colors.green : theme.colors.red),
+      borderWidth: 1,
+    }],
+  };
+
+  const mistakeTagTradesChartData = {
+    labels: mistakeTagStats.map(stats => stats.tag),
+    datasets: [{
+      label: 'Number of Trades',
+      data: mistakeTagStats.map(stats => stats.tradeCount),
+      backgroundColor: '#1890ff',
+      borderColor: '#1890ff',
+      borderWidth: 1,
+    }],
+  };
+
   const reportCategories = {
     'Date & Time': ['Days', 'Weeks', 'Months', 'Trade time', 'Trade duration'],
     'Price & Quantity': ['Volume', 'Price', 'Instrument'],
     'Options': ['Days till expiration'],
+    'Tags': ['Setups', 'Mistakes'],
   };
 
   const handleReportSelect = (report) => setSelectedReport(report);
@@ -1673,6 +1769,56 @@ const ReportsScreen = ({ tradeData }) => {
           />
         </div>
       );
+    } else if (selectedReport === 'Setups') {
+      return (
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: isHalfScreen ? 'column' : 'row', 
+          gap: '20px', 
+          marginTop: '20px',
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'visible'
+        }}>
+          <ChartContainer
+            data={setupTagPnlChartData}
+            options={chartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L by Setup Type"
+          />
+          <ChartContainer
+            data={setupTagTradesChartData}
+            options={tradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades by Setup Type"
+          />
+        </div>
+      );
+    } else if (selectedReport === 'Mistakes') {
+      return (
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: isHalfScreen ? 'column' : 'row', 
+          gap: '20px', 
+          marginTop: '20px',
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'visible'
+        }}>
+          <ChartContainer
+            data={mistakeTagPnlChartData}
+            options={chartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="P&L by Mistake Type"
+          />
+          <ChartContainer
+            data={mistakeTagTradesChartData}
+            options={tradesChartOptions}
+            layout={isHalfScreen ? 'column' : 'row'}
+            title="Trades by Mistake Type"
+          />
+        </div>
+      );
     } else {
       return (
         <div style={{ color: theme.colors.white, marginTop: '20px' }}>
@@ -1759,6 +1905,12 @@ const ReportsScreen = ({ tradeData }) => {
                         <line x1="12" y1="22" x2="12" y2="20" />
                         <line x1="4" y1="12" x2="2" y2="12" />
                         <line x1="22" y1="12" x2="20" y2="12" />
+                      </svg>
+                    )}
+                    {category === 'Tags' && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={theme.colors.white} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                        <line x1="7" y1="7" x2="7.01" y2="7" />
                       </svg>
                     )}
                   </span>

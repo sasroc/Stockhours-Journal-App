@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { theme } from '../theme';
+import { useNavigate } from 'react-router-dom';
 
 const InfoCircle = ({ tooltip }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -190,6 +191,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const [calendarData, setCalendarData] = useState({});
   const [selectedDay, setSelectedDay] = useState(null);
   const [isDayPopupOpen, setIsDayPopupOpen] = useState(false);
+  const navigate = useNavigate();
 
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
@@ -383,6 +385,8 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
   const DayTradesPopup = ({ dayData, onClose }) => {
+    const [hoveredTrade, setHoveredTrade] = useState(null);
+
     if (!dayData) return null;
 
     const trades = dayData.trades || [];
@@ -394,6 +398,35 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     const profitFactor = totalLosses === 0 ? (totalProfits > 0 ? '--' : '--') : (totalProfits / totalLosses).toFixed(2);
     const volume = trades.reduce((sum, trade) => sum + (trade.Quantity || 0), 0);
     const winrate = trades.length > 0 ? ((winningTrades / trades.length) * 100).toFixed(0) : '--';
+
+    const handleTradeClick = (trade) => {
+      // Transform the trade object to match the expected structure
+      const transformedTrade = {
+        symbol: trade.Symbol,
+        openDate: trade.TradeDate,
+        closeDate: trade.TradeDate, // Using same date since we don't have close date in dashboard
+        entryPrice: trade.Price,
+        exitPrice: trade.Price + (trade.profitLoss / (trade.Quantity * 100)), // Calculate exit price from P&L
+        netPL: trade.profitLoss,
+        netROI: (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100,
+        open: {
+          Quantity: trade.Quantity,
+          ExecTime: trade.FirstBuyExecTime,
+          TradeDate: trade.TradeDate,
+          Type: trade.Type,
+          Strike: trade.Strike,
+          Expiration: trade.Expiration
+        },
+        close: {
+          ExecTime: trade.FirstBuyExecTime, // Using same time since we don't have close time in dashboard
+          Quantity: trade.Quantity
+        }
+      };
+      
+      // Navigate to all trades screen with the transformed trade
+      navigate('/alltrades', { state: { selectedTrade: transformedTrade } });
+      onClose();
+    };
 
     return (
       <div
@@ -552,8 +585,21 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                   const optionType = trade.Type || 'CALL';
                   const instrument = `${trade.Expiration} ${trade.Strike} ${optionType}`;
                   const netROI = (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100;
+                  const isHovered = hoveredTrade === index;
+                  
                   return (
-                    <tr key={index} style={{ borderBottom: '1px solid #222', background: 'none' }}>
+                    <tr 
+                      key={index} 
+                      style={{ 
+                        borderBottom: '1px solid #222', 
+                        background: isHovered ? '#23242a' : 'none',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s ease',
+                      }}
+                      onMouseEnter={() => setHoveredTrade(index)}
+                      onMouseLeave={() => setHoveredTrade(null)}
+                      onClick={() => handleTradeClick(trade)}
+                    >
                       <td style={{ padding: '12px 8px', color: '#fff', fontSize: 15 }}>{openTime}</td>
                       <td style={{ padding: '12px 8px' }}>
                         <span style={{
