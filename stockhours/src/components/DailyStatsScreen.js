@@ -1,6 +1,6 @@
 // StockHours-Journal-App/stockhours/src/components/DailyStatsScreen.js
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -14,6 +14,10 @@ import {
 } from 'chart.js';
 import { theme } from '../theme';
 import ShareModal from './ShareModal';
+import TagSelectionModal from './TagSelectionModal';
+import { useAuth } from '../contexts/AuthContext';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -21,6 +25,82 @@ const DailyStatsScreen = ({ tradeData }) => {
   const [expandedDays, setExpandedDays] = useState({}); // Track which days are expanded
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedDayStats, setSelectedDayStats] = useState(null);
+  const [tagModalOpen, setTagModalOpen] = useState(false);
+  const [selectedTrade, setSelectedTrade] = useState(null);
+  const [setupsTags, setSetupsTags] = useState([]);
+  const [mistakesTags, setMistakesTags] = useState([]);
+  const [tagsLoaded, setTagsLoaded] = useState(false);
+  const [ratings, setRatings] = useState({});
+  const { currentUser } = useAuth();
+
+  // Fetch tag lists and ratings from Firestore on mount
+  useEffect(() => {
+    const fetchTags = async () => {
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.setupsTags) setSetupsTags(data.setupsTags);
+          if (data.mistakesTags) setMistakesTags(data.mistakesTags);
+          if (data.tradeRatings) {
+            // Ensure tradeRatings is properly structured
+            const formattedRatings = {};
+            Object.entries(data.tradeRatings).forEach(([key, value]) => {
+              formattedRatings[key] = {
+                setups: value.setups || [],
+                mistakes: value.mistakes || [],
+                rating: value.rating || 0
+              };
+            });
+            setRatings(formattedRatings);
+          }
+        }
+      } else {
+        const setups = localStorage.getItem('setupsTags');
+        const mistakes = localStorage.getItem('mistakesTags');
+        const localRatings = localStorage.getItem('tradeRatings');
+        if (setups) setSetupsTags(JSON.parse(setups));
+        if (mistakes) setMistakesTags(JSON.parse(mistakes));
+        if (localRatings) {
+          // Ensure localRatings is properly structured
+          const formattedRatings = {};
+          Object.entries(JSON.parse(localRatings)).forEach(([key, value]) => {
+            formattedRatings[key] = {
+              setups: value.setups || [],
+              mistakes: value.mistakes || [],
+              rating: value.rating || 0
+            };
+          });
+          setRatings(formattedRatings);
+        }
+      }
+      setTagsLoaded(true);
+    };
+    fetchTags();
+  }, [currentUser]);
+
+  // Save ratings to Firestore/localStorage
+  useEffect(() => {
+    if (!tagsLoaded) return;
+    
+    const saveRatings = async () => {
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userDocRef, { 
+          tradeRatings: ratings,
+          setupsTags,
+          mistakesTags
+        });
+      } else {
+        localStorage.setItem('tradeRatings', JSON.stringify(ratings));
+        localStorage.setItem('setupsTags', JSON.stringify(setupsTags));
+        localStorage.setItem('mistakesTags', JSON.stringify(mistakesTags));
+      }
+    };
+    
+    saveRatings();
+  }, [ratings, setupsTags, mistakesTags, currentUser, tagsLoaded]);
 
   // Process trades and group by day
   const dailyTrades = useMemo(() => {
@@ -150,6 +230,65 @@ const DailyStatsScreen = ({ tradeData }) => {
     const [month, day, year] = dateStr.split('/');
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Helper function to get trade key
+  const getTradeKey = (trade) => {
+    // Match the format used in AllTradesScreen
+    return `${trade.Symbol}-${trade.Strike}-${trade.Expiration}-${trade.FirstBuyExecTime}`;
+  };
+
+  // Handler to set tags for a trade
+  const handleSetTradeTags = (trade, tags) => {
+    const key = getTradeKey(trade);
+    setRatings(prev => {
+      const newRatings = {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          setups: tags.setups || [],
+          mistakes: tags.mistakes || [],
+          rating: prev[key]?.rating || 0
+        }
+      };
+      
+      // Save to Firebase/localStorage immediately
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        updateDoc(userDocRef, { tradeRatings: newRatings });
+      } else {
+        localStorage.setItem('tradeRatings', JSON.stringify(newRatings));
+      }
+      
+      return newRatings;
+    });
+  };
+
+  // Handler to add a new tag
+  const handleAddNewTag = (type, newTag) => {
+    if (type === 'setup') {
+      setSetupsTags(prev => {
+        const newTags = [...prev, newTag];
+        if (currentUser) {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          updateDoc(userDocRef, { setupsTags: newTags });
+        } else {
+          localStorage.setItem('setupsTags', JSON.stringify(newTags));
+        }
+        return newTags;
+      });
+    } else {
+      setMistakesTags(prev => {
+        const newTags = [...prev, newTag];
+        if (currentUser) {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          updateDoc(userDocRef, { mistakesTags: newTags });
+        } else {
+          localStorage.setItem('mistakesTags', JSON.stringify(newTags));
+        }
+        return newTags;
+      });
+    }
   };
 
   // Calculate metrics and render each day's box
@@ -403,6 +542,7 @@ const DailyStatsScreen = ({ tradeData }) => {
                         <th style={{ padding: '8px', textAlign: 'left' }}>Net P&L</th>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Net ROI</th>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Realized R-Multip</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Tags</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -412,8 +552,9 @@ const DailyStatsScreen = ({ tradeData }) => {
                           minute: '2-digit',
                           second: '2-digit',
                         });
-                        const optionType = trade.Type || 'CALL'; // Use the actual option type, default to CALL if not specified
+                        const optionType = trade.Type || 'CALL';
                         const instrument = `${trade.Expiration} ${trade.Strike} ${optionType}`;
+
                         return (
                           <tr key={index} style={{ borderBottom: '1px solid #333' }}>
                             <td style={{ padding: '8px' }}>{openTime}</td>
@@ -430,6 +571,179 @@ const DailyStatsScreen = ({ tradeData }) => {
                             </td>
                             <td style={{ padding: '8px' }}>{trade.netROI.toFixed(2)}%</td>
                             <td style={{ padding: '8px' }}>—</td>
+                            <td style={{ padding: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button
+                                  onClick={() => {
+                                    setSelectedTrade(trade);
+                                    setTagModalOpen(true);
+                                  }}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: theme.colors.white,
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    borderRadius: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    position: 'relative'
+                                  }}
+                                  title="Add tags"
+                                >
+                                  <div style={{
+                                    position: 'absolute',
+                                    bottom: '100%',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    color: theme.colors.white,
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    whiteSpace: 'nowrap',
+                                    opacity: 0,
+                                    transition: 'opacity 0.2s',
+                                    pointerEvents: 'none'
+                                  }}>
+                                    Add tags
+                                  </div>
+                                  <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.parentElement.querySelector('div').style.opacity = '1';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.parentElement.querySelector('div').style.opacity = '0';
+                                    }}
+                                  >
+                                    <path d="M12 5v14M5 12h14" />
+                                  </svg>
+                                </button>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                  {ratings[getTradeKey(trade)]?.setups?.map(tag => (
+                                    <span
+                                      key={`setup-${tag}`}
+                                      style={{
+                                        background: theme.colors.green,
+                                        color: theme.colors.white,
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        fontSize: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                    >
+                                      {tag}
+                                      <span
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const key = getTradeKey(trade);
+                                          setRatings(prev => {
+                                            const newRatings = {
+                                              ...prev,
+                                              [key]: {
+                                                ...prev[key],
+                                                setups: prev[key]?.setups?.filter(t => t !== tag) || [],
+                                                mistakes: prev[key]?.mistakes || [],
+                                                rating: prev[key]?.rating || 0
+                                              }
+                                            };
+                                            
+                                            // Save to Firebase/localStorage immediately
+                                            if (currentUser) {
+                                              const userDocRef = doc(db, 'users', currentUser.uid);
+                                              updateDoc(userDocRef, { tradeRatings: newRatings });
+                                            } else {
+                                              localStorage.setItem('tradeRatings', JSON.stringify(newRatings));
+                                            }
+                                            
+                                            return newRatings;
+                                          });
+                                        }}
+                                        style={{
+                                          cursor: 'pointer',
+                                          marginLeft: '2px',
+                                          fontSize: '14px',
+                                          lineHeight: '1',
+                                          opacity: '0.8',
+                                          transition: 'opacity 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                        onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+                                      >
+                                        ×
+                                      </span>
+                                    </span>
+                                  ))}
+                                  {ratings[getTradeKey(trade)]?.mistakes?.map(tag => (
+                                    <span
+                                      key={`mistake-${tag}`}
+                                      style={{
+                                        background: theme.colors.red,
+                                        color: theme.colors.white,
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        fontSize: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                    >
+                                      {tag}
+                                      <span
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const key = getTradeKey(trade);
+                                          setRatings(prev => {
+                                            const newRatings = {
+                                              ...prev,
+                                              [key]: {
+                                                ...prev[key],
+                                                setups: prev[key]?.setups || [],
+                                                mistakes: prev[key]?.mistakes?.filter(t => t !== tag) || [],
+                                                rating: prev[key]?.rating || 0
+                                              }
+                                            };
+                                            
+                                            // Save to Firebase/localStorage immediately
+                                            if (currentUser) {
+                                              const userDocRef = doc(db, 'users', currentUser.uid);
+                                              updateDoc(userDocRef, { tradeRatings: newRatings });
+                                            } else {
+                                              localStorage.setItem('tradeRatings', JSON.stringify(newRatings));
+                                            }
+                                            
+                                            return newRatings;
+                                          });
+                                        }}
+                                        style={{
+                                          cursor: 'pointer',
+                                          marginLeft: '2px',
+                                          fontSize: '14px',
+                                          lineHeight: '1',
+                                          opacity: '0.8',
+                                          transition: 'opacity 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                        onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+                                      >
+                                        ×
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })}
@@ -446,6 +760,22 @@ const DailyStatsScreen = ({ tradeData }) => {
           isOpen={shareModalOpen}
           onClose={() => setShareModalOpen(false)}
           dayStats={selectedDayStats}
+        />
+      )}
+
+      {tagModalOpen && selectedTrade && (
+        <TagSelectionModal
+          isOpen={tagModalOpen}
+          onClose={() => {
+            setTagModalOpen(false);
+            setSelectedTrade(null);
+          }}
+          onSave={(tags) => handleSetTradeTags(selectedTrade, tags)}
+          onAddNewTag={handleAddNewTag}
+          setupsTags={setupsTags}
+          mistakesTags={mistakesTags}
+          selectedSetups={ratings[getTradeKey(selectedTrade)]?.setups || []}
+          selectedMistakes={ratings[getTradeKey(selectedTrade)]?.mistakes || []}
         />
       )}
     </div>

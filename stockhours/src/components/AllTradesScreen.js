@@ -16,8 +16,8 @@ function getStatusAndColors(pnl) {
 }
 
 const getTradeKey = (trade) => {
-  // Use symbol, open/close date, and strike as a unique key
-  return `${trade.symbol}_${trade.openDate}_${trade.closeDate}_${trade.entryPrice}_${trade.exitPrice}`;
+  // Match the format used in DailyStatsScreen
+  return `${trade.symbol || trade.Symbol}-${trade.open.Strike || trade.Strike}-${trade.open.Expiration || trade.Expiration}-${trade.open.ExecTime || trade.FirstBuyExecTime}`;
 };
 
 // Placeholder for the detailed view

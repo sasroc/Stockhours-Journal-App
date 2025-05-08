@@ -75,8 +75,8 @@ function ChartContainer({ data, options, layout, title }) {
 
 // Add getTradeKey function (copied from AllTradesScreen)
 const getTradeKey = (trade) => {
-  // Use symbol, open/close date, and strike as a unique key
-  return `${trade.symbol || trade.Symbol}_${trade.openDate || (trade.open && trade.open.TradeDate) || trade.TradeDate}_${trade.closeDate || (trade.close && trade.close.TradeDate) || trade.TradeDate}_${trade.entryPrice || (trade.open && trade.open.Price)}_${trade.exitPrice || (trade.close && trade.close.Price)}`;
+  // Match the format used in DailyStatsScreen
+  return `${trade.Symbol}-${trade.Strike}-${trade.Expiration}-${trade.FirstBuyExecTime}`;
 };
 
 const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRatings = {} }) => {
@@ -200,21 +200,15 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
           const contractMultiplier = 100;
           const netPL = (exitPrice - entryPrice) * quantity * contractMultiplier * (openTx.Side === 'BUY' ? 1 : -1);
           const tradeObj = {
-            openDate: openTx.TradeDate,
-            closeDate: tx.TradeDate,
-            symbol: openTx.Symbol,
-            entryPrice,
-            exitPrice,
-            open: openTx,
-            close: tx,
-            TradeDate: openTx.TradeDate,
+            Symbol: openTx.Symbol,
+            Strike: openTx.Strike,
+            Expiration: openTx.Expiration,
             FirstBuyExecTime: openTx.ExecTime,
             ExitTime: tx.ExecTime,
+            TradeDate: openTx.TradeDate,
             profitLoss: netPL,
             totalVolume: quantity,
             firstBuyPrice: entryPrice,
-            Strike: openTx.Strike,
-            Expiration: openTx.Expiration,
           };
           const key = getTradeKey(tradeObj);
           const meta = tradeRatings[key] || {};
@@ -1176,13 +1170,15 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       tagMap.set(tag, { totalPnl: 0, tradeCount: 0 });
     });
     tagProcessedTrades.forEach(trade => {
-      trade.setupTags.forEach(tag => {
-        if (tagMap.has(tag)) {
-          const stats = tagMap.get(tag);
-          stats.totalPnl += trade.profitLoss;
-          stats.tradeCount += 1;
-        }
-      });
+      if (trade.setupTags && trade.setupTags.length > 0) {
+        trade.setupTags.forEach(tag => {
+          if (tagMap.has(tag)) {
+            const stats = tagMap.get(tag);
+            stats.totalPnl += trade.profitLoss;
+            stats.tradeCount += 1;
+          }
+        });
+      }
     });
     return Array.from(tagMap.entries())
       .sort((a, b) => b[1].totalPnl - a[1].totalPnl)
@@ -1199,13 +1195,15 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       tagMap.set(tag, { totalPnl: 0, tradeCount: 0 });
     });
     tagProcessedTrades.forEach(trade => {
-      trade.mistakeTags.forEach(tag => {
-        if (tagMap.has(tag)) {
-          const stats = tagMap.get(tag);
-          stats.totalPnl += trade.profitLoss;
-          stats.tradeCount += 1;
-        }
-      });
+      if (trade.mistakeTags && trade.mistakeTags.length > 0) {
+        trade.mistakeTags.forEach(tag => {
+          if (tagMap.has(tag)) {
+            const stats = tagMap.get(tag);
+            stats.totalPnl += trade.profitLoss;
+            stats.tradeCount += 1;
+          }
+        });
+      }
     });
     return Array.from(tagMap.entries())
       .sort((a, b) => b[1].totalPnl - a[1].totalPnl)
