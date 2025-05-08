@@ -410,43 +410,66 @@ const AllTradesScreen = ({ tradeData }) => {
   // Flatten all trades
   const allTrades = useMemo(() => {
     if (!tradeData || !tradeData.length) return [];
-    // Each tradeData item has Transactions array
-    return tradeData.flatMap(trade => {
-      // Group by closing event (CLOSE/SELL)
-      // We'll use similar logic as in StatsDashboard
-      const sorted = [...trade.Transactions].sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
-      const positions = [];
+    
+    // First, collect all transactions across all trades
+    const allTransactions = tradeData.flatMap(trade => 
+      trade.Transactions.map(tx => ({
+        ...tx,
+        groupKey: `${trade.Symbol}-${trade.Strike}-${trade.Expiration}`
+      }))
+    );
+
+    // Sort all transactions by date
+    const sortedTransactions = allTransactions.sort((a, b) => 
+      new Date(a.ExecTime) - new Date(b.ExecTime)
+    );
+
+    // Group transactions by their unique trade identifier
+    const tradeGroups = new Map();
+    sortedTransactions.forEach(tx => {
+      if (!tradeGroups.has(tx.groupKey)) {
+        tradeGroups.set(tx.groupKey, []);
+      }
+      tradeGroups.get(tx.groupKey).push(tx);
+    });
+
+    // Process each group to find OPEN/CLOSE pairs
+    const processedTrades = [];
+    tradeGroups.forEach((transactions, groupKey) => {
       let openTx = null;
-      sorted.forEach(tx => {
+      transactions.forEach(tx => {
         if (tx.PosEffect === 'OPEN' && tx.Side === 'BUY') {
           openTx = tx;
         } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'SELL' && openTx) {
-          positions.push({ open: openTx, close: tx });
+          const entryPrice = openTx.Price;
+          const exitPrice = tx.Price;
+          const quantity = openTx.Quantity;
+          const contractMultiplier = 100;
+          const netPL = (exitPrice - entryPrice) * quantity * contractMultiplier * (openTx.Side === 'BUY' ? 1 : -1);
+          const netROI = entryPrice > 0 ? ((exitPrice - entryPrice) / entryPrice) * 100 * (openTx.Side === 'BUY' ? 1 : -1) : 0;
+          
+          processedTrades.push({
+            openDate: openTx.TradeDate,
+            closeDate: tx.TradeDate,
+            symbol: openTx.Symbol,
+            entryPrice,
+            exitPrice,
+            netPL,
+            netROI,
+            status: getStatusAndColors(netPL).status,
+            statusColor: getStatusAndColors(netPL).color,
+            open: openTx,
+            close: tx,
+          });
           openTx = null;
         }
       });
-      return positions.map(pos => {
-        const entryPrice = pos.open.Price;
-        const exitPrice = pos.close.Price;
-        const quantity = pos.open.Quantity;
-        const contractMultiplier = 100;
-        const netPL = (exitPrice - entryPrice) * quantity * contractMultiplier * (pos.open.Side === 'BUY' ? 1 : -1);
-        const netROI = entryPrice > 0 ? ((exitPrice - entryPrice) / entryPrice) * 100 * (pos.open.Side === 'BUY' ? 1 : -1) : 0;
-        return {
-          openDate: pos.open.TradeDate,
-          closeDate: pos.close.TradeDate,
-          symbol: pos.open.Symbol,
-          entryPrice,
-          exitPrice,
-          netPL,
-          netROI,
-          status: getStatusAndColors(netPL).status,
-          statusColor: getStatusAndColors(netPL).color,
-          open: pos.open,
-          close: pos.close,
-        };
-      });
     });
+
+    // Sort trades by close date (most recent first)
+    return processedTrades.sort((a, b) => 
+      new Date(b.closeDate) - new Date(a.closeDate)
+    );
   }, [tradeData]);
 
   // Pagination
