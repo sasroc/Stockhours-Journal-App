@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { theme } from '../theme';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useNotes } from '../contexts/NotesContext';
 
 const InfoCircle = ({ tooltip }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -192,6 +194,8 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [isDayPopupOpen, setIsDayPopupOpen] = useState(false);
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const { notes, saveNote, getNote, hasNote } = useNotes();
 
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
@@ -384,8 +388,26 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
-  const DayTradesPopup = ({ dayData, onClose }) => {
-    const [hoveredTrade, setHoveredTrade] = useState(null);
+  const DayTradesPopup = ({ isOpen, onClose, dayData }) => {
+    const [note, setNote] = useState('');
+    const [isEditingNote, setIsEditingNote] = useState(false);
+    const { saveNote, getNote, hasNote } = useNotes();
+
+    useEffect(() => {
+      if (dayData) {
+        const existingNote = getNote(dayData.date);
+        setNote(existingNote);
+      }
+    }, [dayData, getNote]);
+
+    const handleSaveNote = async () => {
+      if (dayData) {
+        const success = await saveNote(dayData.date, note);
+        if (success) {
+          setIsEditingNote(false);
+        }
+      }
+    };
 
     if (!dayData) return null;
 
@@ -483,6 +505,111 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             >
               ×
             </button>
+          </div>
+
+          {/* Note Section */}
+          <div style={{ marginTop: 16, marginBottom: 24 }}>
+            {isEditingNote ? (
+              <div>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Add your notes for this trading day..."
+                  style={{
+                    width: '100%',
+                    minHeight: '150px',
+                    padding: '12px',
+                    backgroundColor: '#181818',
+                    border: '1px solid #333',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '16px',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                  }}
+                />
+                <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end', marginTop: 16 }}>
+                  <button
+                    onClick={() => {
+                      setIsEditingNote(false);
+                      setNote(getNote(dayData.date));
+                    }}
+                    style={{
+                      backgroundColor: '#333',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '10px 24px',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveNote}
+                    style={{
+                      backgroundColor: theme.colors.green,
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '10px 24px',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <button
+                  onClick={() => setIsEditingNote(true)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: theme.colors.white,
+                    border: '1px solid #333',
+                    borderRadius: '4px',
+                    padding: '5px 10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '14px',
+                  }}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  {hasNote(dayData.date) ? 'View Note' : 'Add Note'}
+                </button>
+                {hasNote(dayData.date) && (
+                  <div style={{ 
+                    color: '#b3b3c6', 
+                    fontSize: '14px',
+                    flex: 1,
+                    whiteSpace: 'pre-wrap',
+                    backgroundColor: '#181818',
+                    padding: '12px',
+                    borderRadius: '8px',
+                  }}>
+                    {getNote(dayData.date)}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Chart */}
@@ -585,7 +712,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                   const optionType = trade.Type || 'CALL';
                   const instrument = `${trade.Expiration} ${trade.Strike} ${optionType}`;
                   const netROI = (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100;
-                  const isHovered = hoveredTrade === index;
+                  const isHovered = selectedDay === index;
                   
                   return (
                     <tr 
@@ -596,9 +723,10 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                         cursor: 'pointer',
                         transition: 'background-color 0.2s ease',
                       }}
-                      onMouseEnter={() => setHoveredTrade(index)}
-                      onMouseLeave={() => setHoveredTrade(null)}
-                      onClick={() => handleTradeClick(trade)}
+                      onClick={() => {
+                        setSelectedDay(trade);
+                        setIsDayPopupOpen(true);
+                      }}
                     >
                       <td style={{ padding: '12px 8px', color: '#fff', fontSize: 15 }}>{openTime}</td>
                       <td style={{ padding: '12px 8px' }}>
@@ -1260,11 +1388,12 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
       </div>
       {isDayPopupOpen && (
         <DayTradesPopup
-          dayData={selectedDay}
+          isOpen={isDayPopupOpen}
           onClose={() => {
             setIsDayPopupOpen(false);
             setSelectedDay(null);
           }}
+          dayData={selectedDay}
         />
       )}
     </div>

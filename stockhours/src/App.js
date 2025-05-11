@@ -28,6 +28,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import DailyStatsScreen from './components/DailyStatsScreen';
 import AllTradesScreen from './components/AllTradesScreen';
 import ScrollToTopWrapper from './components/ScrollToTopWrapper';
+import { NotesProvider } from './contexts/NotesContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -1294,6 +1295,7 @@ function AppRoutesWrapper() {
 function App() {
   return (
     <AuthProvider>
+      <NotesProvider>
       <Router>
         <ScrollToTopWrapper>
           <AppContainer>
@@ -1301,6 +1303,7 @@ function App() {
           </AppContainer>
         </ScrollToTopWrapper>
       </Router>
+      </NotesProvider>
     </AuthProvider>
   );
 }
