@@ -229,6 +229,8 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
         position.sellRecords.push({
           quantity: Math.abs(transaction.Quantity),
           price: transaction.Price,
+          execTime: transaction.ExecTime,
+          tradeDate: transaction.TradeDate,
         });
 
         position.currentQuantity -= Math.abs(transaction.Quantity);
@@ -257,6 +259,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           }
 
           const profitLoss = totalSellProceeds - totalBuyCost;
+          const lastSellRecord = sellRecordsForCycle[sellRecordsForCycle.length - 1];
 
           processedTrades.push({
             Symbol: transaction.Symbol,
@@ -264,6 +267,8 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             Expiration: transaction.Expiration,
             TradeDate: buyRecordsForCycle[0].tradeDate,
             FirstBuyExecTime: buyRecordsForCycle[0].execTime,
+            LastSellExecTime: lastSellRecord.execTime,
+            LastSellTradeDate: lastSellRecord.tradeDate,
             profitLoss,
             Type: transaction.Type,
             Quantity: totalBuyQuantity,
@@ -400,20 +405,13 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     const winrate = trades.length > 0 ? ((winningTrades / trades.length) * 100).toFixed(0) : '--';
 
     const handleTradeClick = (trade) => {
-      // Find the last sell transaction for this trade
-      const lastSellTx = tradeData
-        .find(t => t.Symbol === trade.Symbol && t.Strike === trade.Strike && t.Expiration === trade.Expiration)
-        ?.Transactions
-        .filter(tx => tx.PosEffect === 'CLOSE' && tx.Side === 'SELL')
-        .sort((a, b) => new Date(b.ExecTime) - new Date(a.ExecTime))[0];
-
       // Transform the trade object to match the expected structure
       const transformedTrade = {
         symbol: trade.Symbol,
         openDate: trade.TradeDate,
-        closeDate: trade.TradeDate,
+        closeDate: trade.LastSellTradeDate || trade.TradeDate,
         entryPrice: trade.Price,
-        exitPrice: trade.Price + (trade.profitLoss / (trade.Quantity * 100)),
+        exitPrice: trade.Price + (trade.profitLoss / (trade.Quantity * 100)), // Calculate exit price from P&L
         netPL: trade.profitLoss,
         netROI: (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100,
         open: {
@@ -428,7 +426,8 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           PosEffect: 'OPEN'
         },
         close: {
-          ExecTime: lastSellTx?.ExecTime || trade.FirstBuyExecTime, // Use last sell time if available
+          ExecTime: trade.LastSellExecTime,
+          TradeDate: trade.LastSellTradeDate || trade.TradeDate,
           Quantity: trade.Quantity,
           Price: trade.Price + (trade.profitLoss / (trade.Quantity * 100)),
           Side: 'SELL',
