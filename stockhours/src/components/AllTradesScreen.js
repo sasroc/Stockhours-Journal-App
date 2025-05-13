@@ -352,60 +352,13 @@ const AllTradesScreen = ({ tradeData }) => {
   // Check for selected trade from navigation state
   useEffect(() => {
     if (location.state?.selectedTrade) {
-      // Find the matching trade in allTrades to ensure we have the complete trade data
-      const allTrades = tradeData.flatMap(trade => {
-        const sorted = [...trade.Transactions].sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
-        const positions = [];
-        let openTx = null;
-        sorted.forEach(tx => {
-          if (tx.PosEffect === 'OPEN' && tx.Side === 'BUY') {
-            openTx = tx;
-          } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'SELL' && openTx) {
-            positions.push({ open: openTx, close: tx });
-            openTx = null;
-          }
-        });
-        return positions.map(pos => {
-          const entryPrice = pos.open.Price;
-          const exitPrice = pos.close.Price;
-          const quantity = pos.open.Quantity;
-          const contractMultiplier = 100;
-          const netPL = (exitPrice - entryPrice) * quantity * contractMultiplier * (pos.open.Side === 'BUY' ? 1 : -1);
-          const netROI = entryPrice > 0 ? ((exitPrice - entryPrice) / entryPrice) * 100 * (pos.open.Side === 'BUY' ? 1 : -1) : 0;
-          return {
-            openDate: pos.open.TradeDate,
-            closeDate: pos.close.TradeDate,
-            symbol: pos.open.Symbol,
-            entryPrice,
-            exitPrice,
-            netPL,
-            netROI,
-            status: getStatusAndColors(netPL).status,
-            statusColor: getStatusAndColors(netPL).color,
-            open: pos.open,
-            close: pos.close,
-          };
-        });
-      });
-
-      // Find the matching trade by comparing key properties
-      const matchingTrade = allTrades.find(trade => 
-        trade.symbol === location.state.selectedTrade.symbol &&
-        trade.openDate === location.state.selectedTrade.openDate &&
-        trade.entryPrice === location.state.selectedTrade.entryPrice
-      );
-
-      if (matchingTrade) {
-        setSelectedTrade(matchingTrade);
-      } else {
-        // If no exact match found, use the transformed trade from navigation state
-        setSelectedTrade(location.state.selectedTrade);
-      }
+      // The trade is already transformed with correct P&L calculations
+      setSelectedTrade(location.state.selectedTrade);
 
       // Clear the state to prevent reopening on refresh
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, tradeData]);
+  }, [location.state]);
 
   // Flatten all trades
   const allTrades = useMemo(() => {
@@ -437,31 +390,46 @@ const AllTradesScreen = ({ tradeData }) => {
     const processedTrades = [];
     tradeGroups.forEach((transactions, groupKey) => {
       let openTx = null;
+      let totalBuyQuantity = 0;
+      let totalBuyCost = 0;
+      let totalSellQuantity = 0;
+      let totalSellProceeds = 0;
+      const CONTRACT_MULTIPLIER = 100;
+
       transactions.forEach(tx => {
         if (tx.PosEffect === 'OPEN' && tx.Side === 'BUY') {
           openTx = tx;
+          totalBuyQuantity += tx.Quantity;
+          totalBuyCost += tx.Quantity * tx.Price * CONTRACT_MULTIPLIER;
         } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'SELL' && openTx) {
-          const entryPrice = openTx.Price;
-          const exitPrice = tx.Price;
-          const quantity = openTx.Quantity;
-          const contractMultiplier = 100;
-          const netPL = (exitPrice - entryPrice) * quantity * contractMultiplier * (openTx.Side === 'BUY' ? 1 : -1);
-          const netROI = entryPrice > 0 ? ((exitPrice - entryPrice) / entryPrice) * 100 * (openTx.Side === 'BUY' ? 1 : -1) : 0;
-          
-          processedTrades.push({
-            openDate: openTx.TradeDate,
-            closeDate: tx.TradeDate,
-            symbol: openTx.Symbol,
-            entryPrice,
-            exitPrice,
-            netPL,
-            netROI,
-            status: getStatusAndColors(netPL).status,
-            statusColor: getStatusAndColors(netPL).color,
-            open: openTx,
-            close: tx,
-          });
-          openTx = null;
+          totalSellQuantity += Math.abs(tx.Quantity);
+          totalSellProceeds += Math.abs(tx.Quantity) * tx.Price * CONTRACT_MULTIPLIER;
+
+          if (totalSellQuantity >= totalBuyQuantity) {
+            const profitLoss = totalSellProceeds - totalBuyCost;
+            const netROI = totalBuyCost > 0 ? (profitLoss / totalBuyCost) * 100 : 0;
+            
+            processedTrades.push({
+              openDate: openTx.TradeDate,
+              closeDate: tx.TradeDate,
+              symbol: openTx.Symbol,
+              entryPrice: openTx.Price,
+              exitPrice: tx.Price,
+              netPL: profitLoss,
+              netROI,
+              status: getStatusAndColors(profitLoss).status,
+              statusColor: getStatusAndColors(profitLoss).color,
+              open: openTx,
+              close: tx,
+            });
+
+            // Reset for next trade
+            openTx = null;
+            totalBuyQuantity = 0;
+            totalBuyCost = 0;
+            totalSellQuantity = 0;
+            totalSellProceeds = 0;
+          }
         }
       });
     });

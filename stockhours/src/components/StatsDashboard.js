@@ -400,13 +400,20 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     const winrate = trades.length > 0 ? ((winningTrades / trades.length) * 100).toFixed(0) : '--';
 
     const handleTradeClick = (trade) => {
+      // Find the last sell transaction for this trade
+      const lastSellTx = tradeData
+        .find(t => t.Symbol === trade.Symbol && t.Strike === trade.Strike && t.Expiration === trade.Expiration)
+        ?.Transactions
+        .filter(tx => tx.PosEffect === 'CLOSE' && tx.Side === 'SELL')
+        .sort((a, b) => new Date(b.ExecTime) - new Date(a.ExecTime))[0];
+
       // Transform the trade object to match the expected structure
       const transformedTrade = {
         symbol: trade.Symbol,
         openDate: trade.TradeDate,
-        closeDate: trade.TradeDate, // Using same date since we don't have close date in dashboard
+        closeDate: trade.TradeDate,
         entryPrice: trade.Price,
-        exitPrice: trade.Price + (trade.profitLoss / (trade.Quantity * 100)), // Calculate exit price from P&L
+        exitPrice: trade.Price + (trade.profitLoss / (trade.Quantity * 100)),
         netPL: trade.profitLoss,
         netROI: (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100,
         open: {
@@ -415,11 +422,17 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           TradeDate: trade.TradeDate,
           Type: trade.Type,
           Strike: trade.Strike,
-          Expiration: trade.Expiration
+          Expiration: trade.Expiration,
+          Price: trade.Price,
+          Side: 'BUY',
+          PosEffect: 'OPEN'
         },
         close: {
-          ExecTime: trade.FirstBuyExecTime, // Using same time since we don't have close time in dashboard
-          Quantity: trade.Quantity
+          ExecTime: lastSellTx?.ExecTime || trade.FirstBuyExecTime, // Use last sell time if available
+          Quantity: trade.Quantity,
+          Price: trade.Price + (trade.profitLoss / (trade.Quantity * 100)),
+          Side: 'SELL',
+          PosEffect: 'CLOSE'
         }
       };
       
