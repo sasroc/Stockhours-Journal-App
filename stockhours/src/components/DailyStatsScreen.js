@@ -1,6 +1,6 @@
 // StockHours-Journal-App/stockhours/src/components/DailyStatsScreen.js
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -16,10 +16,8 @@ import { theme } from '../theme';
 import ShareModal from './ShareModal';
 import TagSelectionModal from './TagSelectionModal';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotes } from '../contexts/NotesContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useNavigate } from 'react-router-dom';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -33,12 +31,7 @@ const DailyStatsScreen = ({ tradeData }) => {
   const [mistakesTags, setMistakesTags] = useState([]);
   const [tagsLoaded, setTagsLoaded] = useState(false);
   const [ratings, setRatings] = useState({});
-  const [notes, setNotes] = useState({});
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const { currentUser } = useAuth();
-  const { saveNote, getNote, hasNote } = useNotes();
-  const navigate = useNavigate();
 
   // Fetch tag lists and ratings from Firestore on mount
   useEffect(() => {
@@ -62,15 +55,11 @@ const DailyStatsScreen = ({ tradeData }) => {
             });
             setRatings(formattedRatings);
           }
-          if (data.tradeNotes) {
-            setNotes(data.tradeNotes);
-          }
         }
       } else {
         const setups = localStorage.getItem('setupsTags');
         const mistakes = localStorage.getItem('mistakesTags');
         const localRatings = localStorage.getItem('tradeRatings');
-        const localNotes = localStorage.getItem('tradeNotes');
         if (setups) setSetupsTags(JSON.parse(setups));
         if (mistakes) setMistakesTags(JSON.parse(mistakes));
         if (localRatings) {
@@ -85,38 +74,33 @@ const DailyStatsScreen = ({ tradeData }) => {
           });
           setRatings(formattedRatings);
         }
-        if (localNotes) {
-          setNotes(JSON.parse(localNotes));
-        }
       }
       setTagsLoaded(true);
     };
     fetchTags();
   }, [currentUser]);
 
-  // Save ratings and notes to Firestore/localStorage
+  // Save ratings to Firestore/localStorage
   useEffect(() => {
     if (!tagsLoaded) return;
     
-    const saveData = async () => {
+    const saveRatings = async () => {
       if (currentUser) {
         const userDocRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userDocRef, { 
           tradeRatings: ratings,
           setupsTags,
-          mistakesTags,
-          tradeNotes: notes
+          mistakesTags
         });
       } else {
         localStorage.setItem('tradeRatings', JSON.stringify(ratings));
         localStorage.setItem('setupsTags', JSON.stringify(setupsTags));
         localStorage.setItem('mistakesTags', JSON.stringify(mistakesTags));
-        localStorage.setItem('tradeNotes', JSON.stringify(notes));
       }
     };
     
-    saveData();
-  }, [ratings, setupsTags, mistakesTags, notes, currentUser, tagsLoaded]);
+    saveRatings();
+  }, [ratings, setupsTags, mistakesTags, currentUser, tagsLoaded]);
 
   // Process trades and group by day
   const dailyTrades = useMemo(() => {
@@ -307,225 +291,6 @@ const DailyStatsScreen = ({ tradeData }) => {
     }
   };
 
-  // Restore original NoteModal
-  const NoteModal = ({ isOpen, onClose, dayData }) => {
-    const [note, setNote] = useState('');
-    const { saveNote, getNote } = useNotes();
-
-    useEffect(() => {
-      if (dayData) {
-        setNote(getNote(dayData.date));
-      }
-    }, [dayData, getNote]);
-
-    if (!isOpen || !dayData) return null;
-
-    const trades = dayData.trades || [];
-    const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
-    const winningTrades = trades.filter(trade => trade.profitLoss > 0).length;
-    const losingTrades = trades.filter(trade => trade.profitLoss < 0).length;
-    const totalProfits = trades.filter(trade => trade.profitLoss > 0).reduce((sum, trade) => sum + trade.profitLoss, 0);
-    const totalLosses = Math.abs(trades.filter(trade => trade.profitLoss < 0).reduce((sum, trade) => sum + trade.profitLoss, 0));
-    const profitFactor = totalLosses === 0 ? (totalProfits > 0 ? '--' : '--') : (totalProfits / totalLosses).toFixed(2);
-    const volume = trades.reduce((sum, trade) => sum + (trade.Quantity || 0), 0);
-    const winrate = trades.length > 0 ? ((winningTrades / trades.length) * 100).toFixed(0) : '--';
-
-    // Prepare data for the P&L line graph
-    const pnlData = [0, ...trades.reduce((acc, trade) => {
-      const lastPnl = acc.length > 0 ? acc[acc.length - 1] : 0;
-      acc.push(lastPnl + trade.profitLoss);
-      return acc;
-    }, [])];
-
-    const lineData = {
-      labels: ['Start', ...trades.map((_, index) => `Trade ${index + 1}`)],
-      datasets: [
-        {
-          label: 'Cumulative P&L',
-          data: pnlData,
-          borderColor: theme.colors.green,
-          backgroundColor: theme.colors.green,
-          fill: true,
-          tension: 0.1,
-          segment: {
-            borderColor: ctx => {
-              const currentValue = ctx.p1.parsed.y;
-              return currentValue < 0 ? theme.colors.red : theme.colors.green;
-            },
-            backgroundColor: ctx => {
-              const currentValue = ctx.p1.parsed.y;
-              return currentValue < 0 ? theme.colors.red : theme.colors.green;
-            },
-          },
-          pointBackgroundColor: pnlData.map(value => (value < 0 ? theme.colors.red : theme.colors.green)),
-          pointBorderColor: pnlData.map(value => (value < 0 ? theme.colors.red : theme.colors.green)),
-        },
-      ],
-    };
-
-    const lineOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: true },
-      },
-      scales: {
-        x: { display: false },
-        y: {
-          beginAtZero: true,
-          grid: { color: '#222' },
-          ticks: { color: '#888' },
-        },
-      },
-    };
-
-    const handleSave = async () => {
-      if (dayData) {
-        const success = await saveNote(dayData.date, note);
-        if (success) onClose();
-      }
-    };
-
-    return (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }}
-        onClick={onClose}
-      >
-        <div
-          style={{
-            backgroundColor: '#111',
-            padding: '32px 32px 24px 32px',
-            borderRadius: '16px',
-            maxWidth: '900px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            position: 'relative',
-            boxShadow: '0 4px 32px 0 #000a',
-          }}
-          onClick={e => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: 24, color: '#fff', fontWeight: 600 }}>
-              {new Date(dayData.date.split('/').join('-')).toLocaleDateString('en-US', {
-                weekday: 'short', month: 'long', day: '2-digit', year: 'numeric'
-              })}
-            </span>
-            <span style={{ fontSize: 24, fontWeight: 600, marginLeft: 16, color: totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red }}>
-              • Net P&L ${totalProfitLoss.toFixed(2)}
-            </span>
-            <button
-              onClick={onClose}
-              style={{
-                marginLeft: 'auto',
-                background: 'none',
-                border: 'none',
-                color: '#888',
-                fontSize: 28,
-                cursor: 'pointer',
-                padding: 0,
-              }}
-              aria-label="Close"
-            >
-              ×
-            </button>
-          </div>
-
-          {/* P&L Line Graph */}
-          <div
-            style={{
-              height: '180px',
-              margin: '24px 0 16px 0',
-              backgroundColor: '#181818',
-              borderRadius: '12px',
-              padding: '12px',
-            }}
-          >
-            <Line data={lineData} options={lineOptions} />
-          </div>
-
-          {/* Stats Row */}
-          <div style={{ display: 'flex', gap: 32, margin: '24px 0 16px 0', flexWrap: 'wrap' }}>
-            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Total trades<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{trades.length}</span></div>
-            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Winners<br /><span style={{ color: theme.colors.green, fontWeight: 600, fontSize: 20 }}>{winningTrades}</span></div>
-            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Losers<br /><span style={{ color: theme.colors.red, fontWeight: 600, fontSize: 20 }}>{losingTrades}</span></div>
-            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Winrate<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{winrate}%</span></div>
-            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Volume<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{volume}</span></div>
-            <div style={{ color: '#b3b3c6', fontSize: 16 }}>Profit factor<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{profitFactor}</span></div>
-          </div>
-
-          {/* Note Text Area */}
-          <div style={{ marginTop: 24 }}>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Add your notes for this trading day..."
-              style={{
-                width: '100%',
-                minHeight: '150px',
-                padding: '12px',
-                backgroundColor: '#181818',
-                border: '1px solid #333',
-                borderRadius: '8px',
-                color: '#fff',
-                fontSize: '16px',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-              }}
-            />
-          </div>
-
-          {/* Buttons */}
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end', marginTop: 24 }}>
-            <button
-              onClick={onClose}
-              style={{
-                backgroundColor: '#333',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '10px 24px',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 600,
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              style={{
-                backgroundColor: theme.colors.green,
-                color: '#fff',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '10px 24px',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 600,
-              }}
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // Calculate metrics and render each day's box
   return (
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
@@ -657,43 +422,6 @@ const DailyStatsScreen = ({ tradeData }) => {
                     ${totalProfitLoss.toFixed(2)}
                   </span>
                 </span>
-                <button
-                  onClick={() => {
-                    setSelectedDate({
-                      date,
-                      trades,
-                      totalProfitLoss,
-                    });
-                    setIsNoteModalOpen(true);
-                  }}
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: theme.colors.white,
-                    border: '1px solid #333',
-                    borderRadius: '4px',
-                    padding: '5px 10px',
-                    cursor: 'pointer',
-                    marginRight: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '14px',
-                  }}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  {hasNote(date) ? 'View Note' : 'Add Note'}
-                </button>
                 <button
                   onClick={() => {
                     setSelectedDayStats({
@@ -1026,17 +754,6 @@ const DailyStatsScreen = ({ tradeData }) => {
             </div>
           );
         })}
-
-      {isNoteModalOpen && selectedDate && (
-        <NoteModal
-          isOpen={isNoteModalOpen}
-          onClose={() => {
-            setIsNoteModalOpen(false);
-            setSelectedDate(null);
-          }}
-          dayData={selectedDate}
-        />
-      )}
 
       {shareModalOpen && selectedDayStats && (
         <ShareModal
