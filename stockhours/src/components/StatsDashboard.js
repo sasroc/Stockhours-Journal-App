@@ -2,6 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { theme } from '../theme';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import NoteModal from './NoteModal';
 
 const InfoCircle = ({ tooltip }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -191,7 +195,11 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const [calendarData, setCalendarData] = useState({});
   const [selectedDay, setSelectedDay] = useState(null);
   const [isDayPopupOpen, setIsDayPopupOpen] = useState(false);
+  const [notes, setNotes] = useState({});
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
@@ -368,6 +376,23 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     }
   }, [tradeData, trades]);
 
+  useEffect(() => {
+    const fetchNotes = async () => {
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.notes) setNotes(data.notes);
+        }
+      } else {
+        const storedNotes = localStorage.getItem('tradeNotes');
+        if (storedNotes) setNotes(JSON.parse(storedNotes));
+      }
+    };
+    fetchNotes();
+  }, [currentUser]);
+
   const totalTrades = trades.length;
   const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
   const tradeExpectancy = totalTrades > 0 ? totalProfitLoss / totalTrades : 0;
@@ -481,9 +506,27 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
               • Net P&L ${totalProfitLoss.toFixed(2)}
             </span>
             <button
+              onClick={() => {
+                setSelectedDate(dayData.date);
+                setNoteModalOpen(true);
+              }}
+              style={{
+                backgroundColor: notes[dayData.date] ? '#444' : theme.colors.green,
+                color: theme.colors.white,
+                border: 'none',
+                borderRadius: '4px',
+                padding: '5px 10px',
+                cursor: 'pointer',
+                marginLeft: 'auto',
+                marginRight: '10px',
+              }}
+            >
+              {notes[dayData.date] ? 'View Note' : 'Add Note'}
+            </button>
+            <button
               onClick={onClose}
               style={{
-                marginLeft: 'auto',
+                marginLeft: '10px',
                 background: 'none',
                 border: 'none',
                 color: '#888',
@@ -919,6 +962,10 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     },
   };
 
+  const handleNoteSaved = (updatedNotes) => {
+    setNotes(updatedNotes);
+  };
+
   if (!tradeData.length) {
     return (
       <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
@@ -1277,6 +1324,19 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             setIsDayPopupOpen(false);
             setSelectedDay(null);
           }}
+        />
+      )}
+
+      {noteModalOpen && selectedDate && (
+        <NoteModal
+          isOpen={noteModalOpen}
+          onClose={() => {
+            setNoteModalOpen(false);
+            setSelectedDate(null);
+          }}
+          date={selectedDate}
+          existingNote={notes[selectedDate] || ''}
+          onNoteSaved={handleNoteSaved}
         />
       )}
     </div>

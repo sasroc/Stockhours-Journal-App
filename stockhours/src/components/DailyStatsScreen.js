@@ -18,6 +18,7 @@ import TagSelectionModal from './TagSelectionModal';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import NoteModal from './NoteModal';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -31,6 +32,9 @@ const DailyStatsScreen = ({ tradeData }) => {
   const [mistakesTags, setMistakesTags] = useState([]);
   const [tagsLoaded, setTagsLoaded] = useState(false);
   const [ratings, setRatings] = useState({});
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [notes, setNotes] = useState({});
   const { currentUser } = useAuth();
 
   // Fetch tag lists and ratings from Firestore on mount
@@ -101,6 +105,24 @@ const DailyStatsScreen = ({ tradeData }) => {
     
     saveRatings();
   }, [ratings, setupsTags, mistakesTags, currentUser, tagsLoaded]);
+
+  // Fetch notes from Firestore/localStorage on mount
+  useEffect(() => {
+    const fetchNotes = async () => {
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.notes) setNotes(data.notes);
+        }
+      } else {
+        const storedNotes = localStorage.getItem('tradeNotes');
+        if (storedNotes) setNotes(JSON.parse(storedNotes));
+      }
+    };
+    fetchNotes();
+  }, [currentUser]);
 
   // Process trades and group by day
   const dailyTrades = useMemo(() => {
@@ -209,6 +231,16 @@ const DailyStatsScreen = ({ tradeData }) => {
     return groupedByDate;
   }, [tradeData]);
 
+  // Helper function to standardize date format
+  const standardizeDate = (dateStr) => {
+    const [month, day, year] = dateStr.split('/');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  };
+
+  const handleNoteSaved = (updatedNotes) => {
+    setNotes(updatedNotes);
+  };
+
   if (!tradeData.length || Object.keys(dailyTrades).length === 0) {
     return (
       <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
@@ -297,6 +329,7 @@ const DailyStatsScreen = ({ tradeData }) => {
       {Object.keys(dailyTrades)
         .sort((a, b) => new Date(b) - new Date(a)) // Sort by date descending
         .map(date => {
+          const standardizedDate = standardizeDate(date);
           const trades = dailyTrades[date];
           const totalTrades = trades.length;
           const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
@@ -422,6 +455,23 @@ const DailyStatsScreen = ({ tradeData }) => {
                     ${totalProfitLoss.toFixed(2)}
                   </span>
                 </span>
+                <button
+                  onClick={() => {
+                    setSelectedDate(standardizedDate);
+                    setNoteModalOpen(true);
+                  }}
+                  style={{
+                    backgroundColor: notes[standardizedDate] ? '#444' : theme.colors.green,
+                    color: theme.colors.white,
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '5px 10px',
+                    cursor: 'pointer',
+                    marginRight: '10px',
+                  }}
+                >
+                  {notes[standardizedDate] ? 'View Note' : 'Add Note'}
+                </button>
                 <button
                   onClick={() => {
                     setSelectedDayStats({
@@ -776,6 +826,19 @@ const DailyStatsScreen = ({ tradeData }) => {
           mistakesTags={mistakesTags}
           selectedSetups={ratings[getTradeKey(selectedTrade)]?.setups || []}
           selectedMistakes={ratings[getTradeKey(selectedTrade)]?.mistakes || []}
+        />
+      )}
+
+      {noteModalOpen && selectedDate && (
+        <NoteModal
+          isOpen={noteModalOpen}
+          onClose={() => {
+            setNoteModalOpen(false);
+            setSelectedDate(null);
+          }}
+          date={selectedDate}
+          existingNote={notes[selectedDate] || ''}
+          onNoteSaved={handleNoteSaved}
         />
       )}
     </div>
