@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { theme } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import '../styles/QuillEditor.css';
 
 const NoteModal = ({ isOpen, onClose, date, existingNote = '', onNoteSaved }) => {
-  const [note, setNote] = useState(existingNote);
+  const [note, setNote] = useState('');
   const { currentUser } = useAuth();
+  const quillRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
-      setNote(existingNote);
+      setNote(existingNote || '');
     }
   }, [isOpen, existingNote]);
 
@@ -41,6 +45,31 @@ const NoteModal = ({ isOpen, onClose, date, existingNote = '', onNoteSaved }) =>
     onClose();
   };
 
+  const modules = {
+    toolbar: {
+      container: [
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        [{ 'font': ['Arial', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana'] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'align': [] }],
+        ['link', 'image'],
+        ['clean']
+      ]
+    }
+  };
+
+  const formats = [
+    'header',
+    'font',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'list', 'bullet',
+    'align',
+    'link', 'image'
+  ];
+
   if (!isOpen) return null;
 
   return (
@@ -64,7 +93,7 @@ const NoteModal = ({ isOpen, onClose, date, existingNote = '', onNoteSaved }) =>
           backgroundColor: '#111',
           padding: '32px',
           borderRadius: '16px',
-          maxWidth: '600px',
+          maxWidth: '800px',
           width: '100%',
           maxHeight: '90vh',
           overflow: 'auto',
@@ -82,23 +111,27 @@ const NoteModal = ({ isOpen, onClose, date, existingNote = '', onNoteSaved }) =>
               year: 'numeric'
             })}
           </h2>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            style={{
-              width: '100%',
-              height: '200px',
-              padding: '12px',
-              backgroundColor: '#1a1a1a',
-              border: '1px solid #333',
-              borderRadius: '8px',
-              color: theme.colors.white,
-              fontSize: '14px',
-              resize: 'vertical',
-              marginBottom: '20px',
-            }}
-            placeholder="Add your notes for this trading day..."
-          />
+          <div style={{ 
+            backgroundColor: '#1a1a1a',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            marginBottom: '20px'
+          }}>
+            <ReactQuill
+              ref={quillRef}
+              value={note}
+              onChange={setNote}
+              modules={modules}
+              formats={formats}
+              placeholder="Add your notes for this trading day..."
+              style={{
+                backgroundColor: '#1a1a1a',
+                color: theme.colors.white,
+              }}
+              theme="snow"
+              preserveWhitespace={true}
+            />
+          </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button
