@@ -585,14 +585,12 @@ const DailyStatsScreen = ({ tradeData }) => {
                   >
                     <thead>
                       <tr style={{ borderBottom: '1px solid #333' }}>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Open time</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Ticker</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Side</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Instrument</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Net P&L</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Net ROI</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Realized R-Multip</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Tags</th>
+                        <th style={{ padding: '8px', textAlign: 'left', width: '15%' }}>Open time</th>
+                        <th style={{ padding: '8px', textAlign: 'left', width: '10%' }}>Ticker</th>
+                        <th style={{ padding: '8px', textAlign: 'left', width: '25%' }}>Instrument</th>
+                        <th style={{ padding: '8px', textAlign: 'right', width: '12%' }}>Net P&L</th>
+                        <th style={{ padding: '8px', textAlign: 'right', width: '12%' }}>Net ROI</th>
+                        <th style={{ padding: '8px', textAlign: 'left', width: '26%', paddingLeft: '160px' }}>Tags</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -607,21 +605,20 @@ const DailyStatsScreen = ({ tradeData }) => {
 
                         return (
                           <tr key={index} style={{ borderBottom: '1px solid #333' }}>
-                            <td style={{ padding: '8px' }}>{openTime}</td>
-                            <td style={{ padding: '8px' }}>{trade.Symbol}</td>
-                            <td style={{ padding: '8px' }}>{optionType}</td>
-                            <td style={{ padding: '8px' }}>{instrument}</td>
+                            <td style={{ padding: '8px', textAlign: 'left' }}>{openTime}</td>
+                            <td style={{ padding: '8px', textAlign: 'left' }}>{trade.Symbol}</td>
+                            <td style={{ padding: '8px', textAlign: 'left' }}>{instrument}</td>
                             <td
                               style={{
                                 padding: '8px',
+                                textAlign: 'right',
                                 color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red,
                               }}
                             >
                               ${trade.profitLoss.toFixed(2)}
                             </td>
-                            <td style={{ padding: '8px' }}>{trade.netROI.toFixed(2)}%</td>
-                            <td style={{ padding: '8px' }}>—</td>
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '8px', textAlign: 'right' }}>{trade.netROI.toFixed(2)}%</td>
+                            <td style={{ padding: '8px', textAlign: 'left', paddingLeft: '160px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <button
                                   onClick={() => {
