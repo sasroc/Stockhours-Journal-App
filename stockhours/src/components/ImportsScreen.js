@@ -1,4 +1,4 @@
-// StockHours-Journal-App/stockhours/src/components/ImportsScreen.js
+// TradeLens/stockhours/src/components/ImportsScreen.js
 import React from 'react';
 import { theme } from '../theme';
 

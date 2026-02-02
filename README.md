@@ -1,10 +1,10 @@
-# StockHours Journal App
+# TradeLens
 
 A comprehensive day trading journal application designed to track, analyze, and visualize trading performance. Built specifically for options traders, the app provides detailed trade analytics, performance metrics, and organizational tools to help traders improve their strategies and learn from their trading history.
 
 ## Overview
 
-StockHours Journal App is a React-based web application that allows traders to import their trade data from Excel/CSV files, automatically process and calculate profit/loss metrics, and visualize performance through interactive dashboards and reports. The app features a modern dark-themed UI optimized for both desktop and mobile devices.
+TradeLens is a React-based web application that allows traders to import their trade data from Excel/CSV files, automatically process and calculate profit/loss metrics, and visualize performance through interactive dashboards and reports. The app features a modern dark-themed UI optimized for both desktop and mobile devices.
 
 ## Key Features
 
@@ -105,7 +105,7 @@ StockHours Journal App is a React-based web application that allows traders to i
 
 - **Shareable Images**: Generate branded images of daily trading performance
 - **Download Functionality**: Download share images as PNG files
-- **Branded Design**: Images include StockHours branding and logo
+- **Branded Design**: Images include TradeLens branding and logo
 
 ## Technology Stack
 

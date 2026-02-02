@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../assets/clocklogo.PNG';
+import logo from '../../assets/1.png';
 
 const LoginContainer = styled.div`
   display: flex;
@@ -238,7 +238,7 @@ export default function Login() {
 
   return (
     <LoginContainer>
-      <Logo src={logo} alt="Stock Hours Logo" />
+      <Logo src={logo} alt="TradeLens Logo" />
       <Form onSubmit={handleSubmit}>
         <Title>{isLogin ? 'Welcome Back' : 'Create Account'}</Title>
         {error && <ErrorMessage>{error}</ErrorMessage>}

@@ -1,8 +1,8 @@
 import React from 'react';
 import { theme } from '../theme';
 import backgroundImage from '../assets/backgroundtrade.jpg';
-import blackSHLogo from '../assets/blackSHlogo.PNG';
-import clockLogo from '../assets/clocklogo.PNG';
+import primaryLogo from '../assets/1.png';
+import secondaryLogo from '../assets/2.png';
 
 const ShareModal = ({ isOpen, onClose, dayStats }) => {
   if (!isOpen) return null;
@@ -11,8 +11,8 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    const shLogo = new Image();
-    const clockImg = new Image();
+    const brandLogo = new Image();
+    const accentLogo = new Image();
 
     let loadedImages = 0;
     const totalImages = 3;
@@ -27,18 +27,18 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
         // Draw background
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        // Draw Stock Hours logo and text
+        // Draw TradeLens logo and text
         const logoSize = canvas.height * 0.1; // 10% of canvas height
-        ctx.drawImage(shLogo, 40, 40, logoSize, logoSize);
+        ctx.drawImage(brandLogo, 40, 40, logoSize, logoSize);
         ctx.font = `bold ${Math.floor(canvas.height * 0.05)}px Arial`;
         ctx.fillStyle = 'white';
         ctx.textAlign = 'left';
-        ctx.fillText('Stock Hours', logoSize + 60, 40 + (logoSize / 2) + 10);
+        ctx.fillText('TradeLens', logoSize + 60, 40 + (logoSize / 2) + 10);
 
-        // Draw clock logo on right side
+        // Draw secondary logo on right side
         const clockSize = canvas.height * 0.4; // 40% of canvas height
         ctx.drawImage(
-          clockImg,
+          accentLogo,
           canvas.width - clockSize - canvas.width * 0.1,
           (canvas.height - clockSize) / 2,
           clockSize,
@@ -88,12 +88,12 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
     };
 
     img.onload = drawWhenAllLoaded;
-    shLogo.onload = drawWhenAllLoaded;
-    clockImg.onload = drawWhenAllLoaded;
+    brandLogo.onload = drawWhenAllLoaded;
+    accentLogo.onload = drawWhenAllLoaded;
 
     img.src = backgroundImage;
-    shLogo.src = blackSHLogo;
-    clockImg.src = clockLogo;
+    brandLogo.src = secondaryLogo;
+    accentLogo.src = primaryLogo;
   };
 
   // Calculate total ROI for preview
@@ -139,7 +139,7 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
             padding: '20px',
           }}
         >
-          {/* Stock Hours Logo and Text */}
+          {/* TradeLens Logo and Text */}
           <div style={{ 
             position: 'absolute',
             top: 20,
@@ -148,8 +148,8 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
             alignItems: 'center',
             gap: '10px'
           }}>
-            <img src={blackSHLogo} alt="Stock Hours Logo" style={{ height: '45px' }} />
-            <span style={{ color: 'white', fontSize: '24px', fontWeight: 'bold' }}>Stock Hours</span>
+            <img src={secondaryLogo} alt="TradeLens Logo" style={{ height: '45px' }} />
+            <span style={{ color: 'white', fontSize: '24px', fontWeight: 'bold' }}>TradeLens</span>
           </div>
 
           {/* Left side - Trade Data */}
@@ -183,9 +183,9 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
             </div>
           </div>
 
-          {/* Right side - Clock Logo */}
+          {/* Right side - Secondary Logo */}
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <img src={clockLogo} alt="Clock Logo" style={{ height: '180px' }} />
+            <img src={primaryLogo} alt="TradeLens Logo" style={{ height: '180px' }} />
           </div>
         </div>
 
