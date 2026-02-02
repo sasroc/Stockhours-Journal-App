@@ -5,18 +5,35 @@ import 'react-date-range/dist/theme/default.css'; // Theme CSS file
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter, startOfYear } from 'date-fns';
 import { theme } from '../theme';
 
+// Helper to get YTD date range
+const getYTDRange = () => {
+  const today = new Date();
+  const startDate = startOfYear(today);
+  const endDate = new Date(today);
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(23, 59, 59, 999);
+  return { startDate, endDate };
+};
+
 const DateRangePicker = ({ onDateChange }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const initialYTD = getYTDRange();
   const [dateRange, setDateRange] = useState([
     {
-      startDate: null, // Initially null to represent "all dates"
-      endDate: null,
+      startDate: initialYTD.startDate, // Default to Year-to-Date
+      endDate: initialYTD.endDate,
       key: 'selection',
     },
   ]);
   const [isSelectingEndDate, setIsSelectingEndDate] = useState(false); // Track if user is selecting the end date
   const pickerRef = useRef(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  
+  // Set YTD filter on initial mount
+  useEffect(() => {
+    const { startDate, endDate } = getYTDRange();
+    onDateChange(startDate, endDate);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle window resize
   useEffect(() => {

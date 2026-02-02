@@ -31,6 +31,16 @@ import ScrollToTopWrapper from './components/ScrollToTopWrapper';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+// Helper to get YTD date range
+const getYTDRange = () => {
+  const today = new Date();
+  const startDate = new Date(today.getFullYear(), 0, 1); // January 1st of current year
+  const endDate = new Date(today);
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(23, 59, 59, 999);
+  return { startDate, endDate };
+};
+
 const AppContainer = styled.div`
   min-height: 100vh;
   background-color: #000;
@@ -48,7 +58,7 @@ function AppRoutes() {
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [currentScreen, setCurrentScreen] = useState('Dashboard');
-  const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
+  const [dateRange, setDateRange] = useState(getYTDRange()); // Default to Year-to-Date
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const dashboardButtonRef = useRef(null);
