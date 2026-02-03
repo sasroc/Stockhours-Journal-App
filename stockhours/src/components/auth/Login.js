@@ -259,14 +259,14 @@ export default function Login() {
     try {
       if (isLogin) {
         await login(email, password);
-        navigate('/dashboard');
+        navigate('/');
       } else {
         if (password !== confirmPassword) {
           setError('Passwords do not match');
           return;
         }
         await signup(email, password);
-        navigate('/dashboard');
+        navigate('/');
       }
     } catch (err) {
       setError(err.message);
@@ -298,7 +298,7 @@ export default function Login() {
     setAuthLoading(true);
     try {
       await signInWithGoogle();
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -312,7 +312,7 @@ export default function Login() {
     setAuthLoading(true);
     try {
       await signUpWithApple();
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       setError(err.message);
     } finally {

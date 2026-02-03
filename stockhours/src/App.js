@@ -29,6 +29,8 @@ import DailyStatsScreen from './components/DailyStatsScreen';
 import AllTradesScreen from './components/AllTradesScreen';
 import ScrollToTopWrapper from './components/ScrollToTopWrapper';
 import ProfileSettingsScreen from './components/ProfileSettingsScreen';
+import MarketingLanding from './components/MarketingLanding';
+import PaywallScreen from './components/PaywallScreen';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -48,8 +50,21 @@ const AppContainer = styled.div`
   color: ${theme.colors.white};
 `;
 
+const FullScreenLoader = ({ message = 'Loading...' }) => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh',
+    backgroundColor: '#000',
+    color: '#fff'
+  }}>
+    {message}
+  </div>
+);
+
 function AppRoutes() {
-  const { currentUser, loading, isAdmin, logout } = useAuth();
+  const { currentUser, loading, isAdmin, logout, subscription } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [tradeData, setTradeData] = useState([]);
@@ -599,18 +614,7 @@ function AppRoutes() {
   };
 
   if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        backgroundColor: '#000',
-        color: '#fff'
-      }}>
-        Loading...
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   if (!currentUser) {
@@ -1351,7 +1355,7 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <ProfileSettingsScreen currentUser={currentUser} />
+              <ProfileSettingsScreen currentUser={currentUser} subscription={subscription} />
             </div>
           </>
         ) : null}
@@ -1361,18 +1365,23 @@ function AppRoutes() {
 }
 
 function AppRoutesWrapper() {
-  const { currentUser } = useAuth();
+  const { currentUser, isSubscribed, subscriptionLoading } = useAuth();
+
+  const HomeRoute = () => {
+    if (!currentUser) {
+      return <MarketingLanding />;
+    }
+    if (subscriptionLoading) {
+      return <FullScreenLoader />;
+    }
+    return isSubscribed ? <Navigate to="/dashboard" replace /> : <Navigate to="/paywall" replace />;
+  };
   
   return (
     <Routes>
-      <Route path="/" element={
-        currentUser ? (
-          <Navigate to="/dashboard" replace />
-        ) : (
-          <Navigate to="/login" replace />
-        )
-      } />
+      <Route path="/" element={<HomeRoute />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/paywall" element={<ProtectedRoute requireSubscription={false}><PaywallScreen /></ProtectedRoute>} />
       <Route path="/admin/invitations" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
