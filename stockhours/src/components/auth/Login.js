@@ -124,6 +124,66 @@ const Button = styled.button`
   }
 `;
 
+const SocialButton = styled.button`
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  color: #111;
+  border: 1px solid #d9d9d9;
+  border-radius: 10px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.75rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+
+  &:hover {
+    background: #f7f7f7;
+    border-color: #cfcfcf;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+`;
+
+const SocialIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+`;
+
+const Divider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1.5rem 0 0.5rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+`;
+
 const ErrorMessage = styled.div`
   color: #ff4444;
   margin-bottom: 1rem;
@@ -183,13 +243,13 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [invitationCode, setInvitationCode] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { login, signup, resetPassword } = useAuth();
+  const [authLoading, setAuthLoading] = useState(false);
+  const { login, signup, resetPassword, signInWithGoogle, signUpWithApple } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -201,15 +261,11 @@ export default function Login() {
         await login(email, password);
         navigate('/dashboard');
       } else {
-        if (!invitationCode) {
-          setError('Invitation code is required');
-          return;
-        }
         if (password !== confirmPassword) {
           setError('Passwords do not match');
           return;
         }
-        await signup(email, password, invitationCode);
+        await signup(email, password);
         navigate('/dashboard');
       }
     } catch (err) {
@@ -233,6 +289,34 @@ export default function Login() {
       } else {
         setError(err.message);
       }
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setError('');
+    setSuccess('');
+    setAuthLoading(true);
+    try {
+      await signInWithGoogle();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleAppleSignUp() {
+    setError('');
+    setSuccess('');
+    setAuthLoading(true);
+    try {
+      await signUpWithApple();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAuthLoading(false);
     }
   }
 
@@ -291,18 +375,48 @@ export default function Login() {
                 {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
               </EyeIcon>
             </InputContainer>
-            <InputContainer>
-              <Input
-                type="text"
-                placeholder="Invitation Code"
-                value={invitationCode}
-                onChange={(e) => setInvitationCode(e.target.value)}
-                required
-              />
-            </InputContainer>
           </>
         )}
         <Button type="submit">{isLogin ? 'Login' : 'Sign Up'}</Button>
+        <Divider>or</Divider>
+        <SocialButton type="button" onClick={handleGoogleSignIn} disabled={authLoading}>
+          <SocialIcon aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 18 18" role="img" focusable="false">
+              <path
+                fill="#4285F4"
+                d="M17.64 9.204c0-.638-.057-1.252-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.792 2.716v2.258h2.9c1.695-1.562 2.688-3.862 2.688-6.615z"
+              />
+              <path
+                fill="#34A853"
+                d="M9 18c2.43 0 4.467-.806 5.956-2.186l-2.9-2.258c-.806.54-1.84.86-3.056.86-2.352 0-4.343-1.588-5.05-3.724H.956v2.33A9 9 0 0 0 9 18z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M3.95 10.692A5.41 5.41 0 0 1 3.63 9c0-.587.102-1.157.32-1.692V4.978H.956A9 9 0 0 0 0 9c0 1.45.35 2.823.956 4.022l2.994-2.33z"
+              />
+              <path
+                fill="#EA4335"
+                d="M9 3.58c1.322 0 2.507.455 3.44 1.35l2.58-2.58C13.463.89 11.426 0 9 0A9 9 0 0 0 .956 4.978l2.994 2.33C4.657 5.168 6.648 3.58 9 3.58z"
+              />
+            </svg>
+          </SocialIcon>
+          Continue with Google
+        </SocialButton>
+        <SocialButton type="button" onClick={handleAppleSignUp} disabled={authLoading}>
+          <SocialIcon aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" role="img" focusable="false">
+              <path
+                fill="#000000"
+                d="M17.57 12.28c.02 2.25 1.98 3 2 3.01-.02.05-.31 1.09-1.04 2.16-.63.93-1.29 1.86-2.33 1.88-1.02.02-1.35-.6-2.52-.6-1.17 0-1.54.58-2.5.62-1 .04-1.77-.98-2.4-1.9-1.3-1.88-2.3-5.3-.96-7.62.67-1.14 1.87-1.87 3.17-1.89.99-.02 1.92.66 2.52.66.6 0 1.74-.82 2.94-.7.5.02 1.9.2 2.8 1.52-.07.04-1.67.98-1.65 2.86z"
+              />
+              <path
+                fill="#000000"
+                d="M15.4 4.9c.52-.63.87-1.5.77-2.4-.75.03-1.66.5-2.2 1.13-.48.56-.9 1.47-.79 2.33.84.07 1.7-.43 2.22-1.06z"
+              />
+            </svg>
+          </SocialIcon>
+          Continue with Apple
+        </SocialButton>
         <ToggleButton type="button" onClick={() => setIsLogin(!isLogin)}>
           {isLogin ? 'Need an account? Sign up' : 'Already have an account? Login'}
         </ToggleButton>

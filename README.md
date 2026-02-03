@@ -1,10 +1,10 @@
-# TradeLens
+# TradeLens App
 
 A comprehensive day trading journal application designed to track, analyze, and visualize trading performance. Built specifically for options traders, the app provides detailed trade analytics, performance metrics, and organizational tools to help traders improve their strategies and learn from their trading history.
 
 ## Overview
 
-TradeLens is a React-based web application that allows traders to import their trade data from Excel/CSV files, automatically process and calculate profit/loss metrics, and visualize performance through interactive dashboards and reports. The app features a modern dark-themed UI optimized for both desktop and mobile devices.
+TradeLens App is a React-based web application that allows traders to import their trade data from Excel/CSV files, automatically process and calculate profit/loss metrics, and visualize performance through interactive dashboards and reports. The app features a modern dark-themed UI optimized for both desktop and mobile devices.
 
 ## Key Features
 
@@ -86,12 +86,9 @@ TradeLens is a React-based web application that allows traders to import their t
 
 #### Authentication
 - **Firebase Authentication**: Secure user authentication system
+- **Multiple Sign-In Methods**: Email/password, Google, and Apple
 - **Protected Routes**: All app features require authentication
 - **User Profiles**: Individual user accounts with isolated data
-
-#### Admin Features
-- **Invitation System**: Admin users can generate invitation codes for new users
-- **User Management**: Track and manage invitation code usage
 
 ### 🎨 **User Interface**
 
@@ -105,7 +102,7 @@ TradeLens is a React-based web application that allows traders to import their t
 
 - **Shareable Images**: Generate branded images of daily trading performance
 - **Download Functionality**: Download share images as PNG files
-- **Branded Design**: Images include TradeLens branding and logo
+- **Branded Design**: Images include TradeLens App branding and logo
 
 ## Technology Stack
 
@@ -178,7 +175,7 @@ The app supports trade data exported from broker platforms in Excel or CSV forma
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd Stockhours-Journal-App/stockhours
+cd TradeLens-App/stockhours
 ```
 
 2. Install dependencies:
@@ -213,7 +210,7 @@ npm run build
 
 ## Usage
 
-1. **Sign Up/Login**: Create an account or log in with existing credentials
+1. **Sign Up/Login**: Create an account or log in with email/password, Google, or Apple
 2. **Import Trades**: Click the "+" button in the sidebar to upload your trade history file
 3. **View Dashboard**: Navigate to Dashboard to see overview statistics and calendar
 4. **Analyze Daily Stats**: Go to Daily Stats to see day-by-day breakdowns
@@ -273,3 +270,4 @@ See LICENSE file for details.
 ## Contributing
 
 This is a private project. For questions or issues, please contact the project maintainers.
+

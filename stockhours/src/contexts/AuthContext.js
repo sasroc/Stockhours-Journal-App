@@ -2,12 +2,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
+  signInWithPopup,
   signOut, 
   onAuthStateChanged,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  OAuthProvider
 } from 'firebase/auth';
 import { auth, db } from '../firebase';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -19,6 +22,20 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  const createUserDocument = async (user, email) => {
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, {
+      email: email || user.email || '',
+      isAdmin: false,
+      createdAt: serverTimestamp(),
+      lastLogin: serverTimestamp(),
+      tradeData: [],
+      uploadedFiles: [],
+      lastUpdated: serverTimestamp()
+    });
+    return userRef;
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -46,72 +63,11 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const signup = async (email, password, invitationCode) => {
-    let userCredential = null;
-    let userRef = null;
-    
-    try {
-      // Query for the invitation code
-      const codesRef = collection(db, 'invitationCodes');
-      const q = query(codesRef, where('code', '==', invitationCode));
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        throw new Error('Invalid invitation code');
-      }
-      
-      const codeDoc = querySnapshot.docs[0];
-      const codeData = codeDoc.data();
-      
-      if (codeData.used) {
-        throw new Error('Invitation code has already been used');
-      }
-      
-      // Create the user with Firebase Auth
-      userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      
-      // Create the user document in Firestore with trade data fields
-      userRef = doc(db, 'users', user.uid);
-      await setDoc(userRef, {
-        email: email,
-        isAdmin: false,
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp(),
-        tradeData: [],
-        uploadedFiles: [],
-        lastUpdated: serverTimestamp()
-      });
-      
-      // Mark the invitation code as used
-      await updateDoc(codeDoc.ref, {
-        used: true,
-        usedBy: user.uid,
-        usedAt: serverTimestamp(),
-        usedByEmail: email
-      });
-      
-      return user;
-    } catch (error) {
-      // Cleanup if we created a user but something else failed
-      if (userCredential?.user) {
-        try {
-          await userCredential.user.delete();
-        } catch (deleteError) {
-          console.error('Error cleaning up Firebase Auth user:', deleteError);
-        }
-      }
-      
-      if (userRef) {
-        try {
-          await deleteDoc(userRef);
-        } catch (deleteError) {
-          console.error('Error cleaning up Firestore user document:', deleteError);
-        }
-      }
-      
-      throw error;
-    }
+  const signup = async (email, password) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    await createUserDocument(user, email);
+    return user;
   };
 
   async function login(email, password) {
@@ -139,6 +95,56 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const signInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      const userDocData = userDoc.exists() ? userDoc.data() : null;
+
+      if (!userDocData) {
+        await createUserDocument(user, user.email);
+      }
+
+      await updateDoc(userDocRef, {
+        lastLogin: serverTimestamp(),
+        tradeData: userDocData?.tradeData || [],
+        uploadedFiles: userDocData?.uploadedFiles || [],
+        lastUpdated: userDocData?.lastUpdated || serverTimestamp()
+      });
+
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const signUpWithApple = async () => {
+    const provider = new OAuthProvider('apple.com');
+    const userCredential = await signInWithPopup(auth, provider);
+    const user = userCredential.user;
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+      await createUserDocument(user, user.email);
+    }
+
+    await updateDoc(userDocRef, {
+      lastLogin: serverTimestamp(),
+      tradeData: userDoc.exists() ? userDoc.data().tradeData || [] : [],
+      uploadedFiles: userDoc.exists() ? userDoc.data().uploadedFiles || [] : [],
+      lastUpdated: userDoc.exists() ? userDoc.data().lastUpdated || serverTimestamp() : serverTimestamp()
+    });
+
+    return user;
+  };
+
   function logout() {
     return signOut(auth);
   }
@@ -158,6 +164,8 @@ export function AuthProvider({ children }) {
     loading,
     signup,
     login,
+    signInWithGoogle,
+    signUpWithApple,
     logout,
     resetPassword
   };
