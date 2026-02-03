@@ -28,6 +28,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import DailyStatsScreen from './components/DailyStatsScreen';
 import AllTradesScreen from './components/AllTradesScreen';
 import ScrollToTopWrapper from './components/ScrollToTopWrapper';
+import ProfileSettingsScreen from './components/ProfileSettingsScreen';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -171,6 +172,8 @@ function AppRoutes() {
       setCurrentScreen('Daily Stats');
     } else if (path === '/alltrades') {
       setCurrentScreen('All Trades');
+    } else if (path === '/settings') {
+      setCurrentScreen('Profile Settings');
     }
   }, [location.pathname]);
 
@@ -588,6 +591,11 @@ function AppRoutes() {
     await logout();
     setIsProfileMenuOpen(false);
     navigate('/login', { replace: true });
+  };
+
+  const handleProfileSettingsClick = () => {
+    setIsProfileMenuOpen(false);
+    navigate('/settings');
   };
 
   if (loading) {
@@ -1112,8 +1120,39 @@ function AppRoutes() {
                 borderRadius: '4px',
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
                 zIndex: 1000,
+                minWidth: '160px',
               }}
             >
+              <button
+                onClick={handleProfileSettingsClick}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: theme.colors.white,
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  textAlign: 'left',
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .65.38 1.24.97 1.51.31.15.65.23 1 .23H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                Settings
+              </button>
               <button
                 onClick={handleLogout}
                 style={{
@@ -1298,6 +1337,23 @@ function AppRoutes() {
               />
             </div>
           </>
+        ) : location.pathname === '/settings' ? (
+          <>
+            <img src={primaryLogo} alt="TradeLens Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '900px',
+                backgroundColor: '#0d0d0d',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '0 auto',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              <ProfileSettingsScreen currentUser={currentUser} />
+            </div>
+          </>
         ) : null}
       </div>
     </div>
@@ -1323,6 +1379,7 @@ function AppRoutesWrapper() {
       <Route path="/imports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/dailystats" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/alltrades" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
