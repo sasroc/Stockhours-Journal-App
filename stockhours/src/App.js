@@ -31,6 +31,7 @@ import ScrollToTopWrapper from './components/ScrollToTopWrapper';
 import ProfileSettingsScreen from './components/ProfileSettingsScreen';
 import MarketingLanding from './components/MarketingLanding';
 import PaywallScreen from './components/PaywallScreen';
+import PricingScreen from './components/PricingScreen';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -1380,6 +1381,7 @@ function AppRoutesWrapper() {
   return (
     <Routes>
       <Route path="/" element={<HomeRoute />} />
+      <Route path="/pricing" element={<PricingScreen />} />
       <Route path="/login" element={<Login />} />
       <Route path="/paywall" element={<ProtectedRoute requireSubscription={false}><PaywallScreen /></ProtectedRoute>} />
       <Route path="/admin/invitations" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
