@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
-import primaryLogo from '../assets/1.png';
+import primaryLogo from '../assets/3.png';
 
 const PaywallScreen = () => {
   const { currentUser, subscription, refreshSubscription, subscriptionLoading, isSubscribed } = useAuth();
@@ -94,8 +94,8 @@ const PaywallScreen = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img src={primaryLogo} alt="TradeLens Logo" style={{ height: '42px' }} />
-          <span style={{ fontSize: '20px', fontWeight: 600 }}>TradeLens</span>
+          <img src={primaryLogo} alt="TradeBetter Logo" style={{ height: '42px' }} />
+          <span style={{ fontSize: '20px', fontWeight: 600 }}>TradeBetter</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
@@ -133,7 +133,7 @@ const PaywallScreen = () => {
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Choose your plan</h1>
           <p style={{ color: '#aaa' }}>
-            Your account is not subscribed yet. Pick a plan to unlock TradeLens.
+            Your account is not subscribed yet. Pick a plan to unlock TradeBetter.
           </p>
           {error && (
             <div

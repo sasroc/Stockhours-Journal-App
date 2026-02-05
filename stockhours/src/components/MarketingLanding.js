@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { theme } from '../theme';
-import primaryLogo from '../assets/1.png';
+import primaryLogo from '../assets/3.png';
 import secondaryLogo from '../assets/2.png';
 
 const MarketingLanding = () => {
@@ -73,7 +73,7 @@ const MarketingLanding = () => {
           >
             <img
               src={secondaryLogo}
-              alt="TradeLens Logo"
+              alt="TradeBetter Logo"
               style={{
                 width: '66px',
                 height: '66px',
@@ -94,7 +94,7 @@ const MarketingLanding = () => {
               textShadow: '0 0 16px rgba(0, 123, 255, 0.5)'
             }}
           >
-            TradeLens
+            TradeBetter
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -170,7 +170,7 @@ const MarketingLanding = () => {
               Track performance, refine strategy, trade with clarity.
             </h1>
             <p style={{ color: '#b5b5b5', fontSize: '18px', lineHeight: 1.7 }}>
-              TradeLens turns raw broker exports into clean analytics, daily breakdowns,
+              TradeBetter turns raw broker exports into clean analytics, daily breakdowns,
               and actionable insights so you can focus on better trading decisions.
             </p>
             <div style={{ display: 'flex', gap: '12px', marginTop: '28px', flexWrap: 'wrap' }}>
@@ -221,7 +221,7 @@ const MarketingLanding = () => {
           >
             <img
               src={primaryLogo}
-              alt="TradeLens Preview"
+              alt="TradeBetter Preview"
               style={{ width: '190px', marginBottom: '18px', filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.8))' }}
             />
             <div style={{ color: '#c5c5c5', fontSize: '14px', lineHeight: 1.6 }}>

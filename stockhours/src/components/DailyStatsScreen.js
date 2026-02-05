@@ -1,4 +1,4 @@
-// TradeLens/stockhours/src/components/DailyStatsScreen.js
+// TradeBetter/stockhours/src/components/DailyStatsScreen.js
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';

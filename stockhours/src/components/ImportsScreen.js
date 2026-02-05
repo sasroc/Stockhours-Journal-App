@@ -1,4 +1,4 @@
-// TradeLens/stockhours/src/components/ImportsScreen.js
+// TradeBetter/stockhours/src/components/ImportsScreen.js
 import React from 'react';
 import { theme } from '../theme';
 

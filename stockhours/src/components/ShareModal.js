@@ -1,7 +1,7 @@
 import React from 'react';
 import { theme } from '../theme';
 import backgroundImage from '../assets/backgroundtrade.jpg';
-import primaryLogo from '../assets/1.png';
+import primaryLogo from '../assets/3.png';
 import secondaryLogo from '../assets/2.png';
 
 const ShareModal = ({ isOpen, onClose, dayStats }) => {
@@ -27,13 +27,13 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
         // Draw background
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        // Draw TradeLens logo and text
+        // Draw TradeBetter logo and text
         const logoSize = canvas.height * 0.1; // 10% of canvas height
         ctx.drawImage(brandLogo, 40, 40, logoSize, logoSize);
         ctx.font = `bold ${Math.floor(canvas.height * 0.05)}px Arial`;
         ctx.fillStyle = 'white';
         ctx.textAlign = 'left';
-        ctx.fillText('TradeLens', logoSize + 60, 40 + (logoSize / 2) + 10);
+        ctx.fillText('TradeBetter', logoSize + 60, 40 + (logoSize / 2) + 10);
 
         // Draw secondary logo on right side
         const clockSize = canvas.height * 0.4; // 40% of canvas height
@@ -139,7 +139,7 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
             padding: '20px',
           }}
         >
-          {/* TradeLens Logo and Text */}
+          {/* TradeBetter Logo and Text */}
           <div style={{ 
             position: 'absolute',
             top: 20,
@@ -148,8 +148,8 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
             alignItems: 'center',
             gap: '10px'
           }}>
-            <img src={secondaryLogo} alt="TradeLens Logo" style={{ height: '45px' }} />
-            <span style={{ color: 'white', fontSize: '24px', fontWeight: 'bold' }}>TradeLens</span>
+            <img src={secondaryLogo} alt="TradeBetter Logo" style={{ height: '45px' }} />
+            <span style={{ color: 'white', fontSize: '24px', fontWeight: 'bold' }}>TradeBetter</span>
           </div>
 
           {/* Left side - Trade Data */}
@@ -185,7 +185,7 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
 
           {/* Right side - Secondary Logo */}
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <img src={primaryLogo} alt="TradeLens Logo" style={{ height: '180px' }} />
+            <img src={primaryLogo} alt="TradeBetter Logo" style={{ height: '180px' }} />
           </div>
         </div>
 

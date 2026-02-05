@@ -61,8 +61,8 @@ const PricingScreen = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img src={secondaryLogo} alt="TradeLens Logo" style={{ height: '42px' }} />
-          <span style={{ fontSize: '20px', fontWeight: 600 }}>TradeLens</span>
+          <img src={secondaryLogo} alt="TradeBetter Logo" style={{ height: '42px' }} />
+          <span style={{ fontSize: '20px', fontWeight: 600 }}>TradeBetter</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button

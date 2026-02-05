@@ -1,119 +1,189 @@
-# Stockhours iOS App Spec (Parity With Web)
+# iOS App Specification (TradeBetter / Stockhours)
+
+This document defines the full scope, behavior, and data requirements for the iOS app. The iOS app must be feature-parity with the current web app and must sync all user data via Firebase. It must enforce subscription gating on sign-in: subscribed users see the full app; non-subscribed users see pricing and are redirected to the website to subscribe.
 
 ## Goals
-- Ship an iOS app that mirrors the current web app’s features and data.
-- Remove CSV import from the mobile experience.
-- Ensure a single source of truth so data is identical across web and iOS.
 
-## Scope (Phase 1: Parity)
-- Authentication and user profile.
-- Trades, stats, daily stats, tagging, notes, sharing.
-- All data reads/writes go through the same backend (Firestore).
-- No CSV import on iOS. Data must already exist in Firestore.
+- Deliver full feature parity with the web app (Dashboard, Daily Stats, All Trades, Reports, Imports, Notes, Tags, Ratings, Sharing).
+- Sync all user data across platforms via Firebase (Firestore + Auth).
+- Enforce subscription gating at sign-in and on session refresh.
+- Maintain consistent data processing logic (P&L, ROI, trade pairing) with the web app.
 
-## Non-Goals (Phase 1)
-- Subscription model.
-- AI features.
-- Brokerage API integrations.
+## Scope Summary (Parity Requirements)
 
-## Data Consistency Requirements
-- Use the same Firebase project and Firestore collections as the web app.
-- All changes in iOS should immediately reflect in web (and vice versa).
-- Do not store user data locally except for short-term cache/offline support.
-- Any local cache must sync to Firestore and be resilient to conflicts.
+The iOS app must include all screens and flows that exist in the web app:
 
-## Tech Stack Recommendation (iOS)
-- SwiftUI for UI.
-- Firebase Auth + Firestore SDK.
-- Charts: Swift Charts (iOS 16+) or a lightweight chart library if needed.
-- Analytics/Crash: Firebase Analytics + Crashlytics (optional but recommended).
+- Authentication (Email/Password, Google, Apple).
+- Dashboard (overview stats, charts, calendar heatmap).
+- Daily Stats (day-by-day summaries, expandable trade list, intraday P&L chart, tags, notes, sharing).
+- All Trades (full list, sorting, pagination/virtualization, detailed view).
+- Reports (tag analysis, time-based analysis, breakdowns by symbol/strike/expiration/type).
+- Imports (upload trade files, list files, delete files).
+- Tag management (setups/mistakes), trade ratings, daily notes.
+- Date range filtering (default Year-to-Date, presets, custom).
+- Shareable images of daily performance.
 
-## Data Model (Align With Web)
-Ensure the iOS models match the fields used in the web app. Names must match exactly.
+## Subscription Gating
 
-### Firestore Document Structure (Assumed)
-`users/{uid}` document fields:
-- `setupsTags`: [String]
-- `mistakesTags`: [String]
-- `tradeRatings`: Map<String, Object>
-  - key: `${Symbol}-${Strike}-${Expiration}-${FirstBuyExecTime}`
-  - value: { setups: [String], mistakes: [String], rating: Number }
-- `notes`: Map<String, String>
-  - key: ISO date string `YYYY-MM-DD`
-  - value: note text
+### Behavior
 
-Trades data source:
-- The web app expects a structured trade data input and performs aggregation.
-- iOS must read the same trade data already stored (or stored by the backend).
-- If trades are not yet stored in Firestore, this must be added to the backend
-  before iOS ships. iOS should not parse CSV.
+- On sign-in (and on session refresh), check subscription status.
+- If subscribed, show full app and allow data access.
+- If not subscribed, show a pricing screen with plan details and a clear CTA.
+- CTA must open the subscription page on the website (external browser or in-app web view).
+- After subscribing on the website, user returns to the app; app must refresh subscription state and unlock features.
 
-## Key UI Screens (Parity)
-- Auth: Sign up, sign in, sign out, password reset.
-- Dashboard/Home: Summary stats, net P&L, graph.
-- Daily Stats: Day cards with graph, summary metrics, expand/collapse.
-- Trades List: Trade rows and details.
-- Trade Tags: Add/Remove setups/mistakes tags.
-- Notes: Add/View notes per day.
-- Share: Share daily stats image/text (iOS share sheet).
+### Subscription State Source
 
-## Functional Requirements
-- Daily stats sorting by date descending.
-- Trade calculations and grouping logic must match the web app.
-- P&L cumulative chart per day with red/green segment colors.
-- Profit factor calculation as in web.
-- Tagging changes update Firestore immediately.
-- Notes stored by standardized date `YYYY-MM-DD`.
+- Subscription state is stored per user in Firebase.
+- Use the existing field (or add if missing): `users/{uid}.subscriptionStatus` with values `active` or `inactive`.
+- Include `users/{uid}.subscriptionUpdatedAt` for cache busting and refresh.
 
-## Data Processing Requirements
-The web app performs processing on the client. iOS should match logic:
-- Flatten transactions, sort by `ExecTime`.
-- Group positions by `${Symbol}-${Strike}-${Expiration}`.
-- Build buy/sell cycles and compute `profitLoss` and `netROI`.
-- Group trades by `TradeDate`.
+### Deep Link / Return Flow
 
-If performance is an issue, move this to backend and store processed trades.
+- Use a return URL (e.g., `tradebetter://subscription-complete`) or universal link.
+- On return, re-check `subscriptionStatus` and unlock if `active`.
 
-## Offline & Sync
-- Use Firestore offline persistence.
-- Handle conflict resolution by last-write-wins unless business rules require otherwise.
-- All writes should be debounced to avoid excessive updates.
+## Firebase Data Model (Must Match Web App)
 
-## Security & Privacy
-- Enforce Firestore rules for per-user data access only.
-- Use Firebase Auth to gate all reads and writes.
-- No sensitive data in logs.
+Use the existing Firestore structure. Data must match exactly to keep sync parity:
 
-## Removal of CSV Import
-- iOS app does not include CSV import UI or file handling.
-- If the web app retains CSV import, ensure it writes to Firestore so iOS sees data.
+- `users/{uid}` document contains:
+  - `tradeRatings` (per trade key: setups, mistakes, rating)
+  - `setupsTags` (array of strings)
+  - `mistakesTags` (array of strings)
+  - `notes` (per date)
+  - `subscriptionStatus` (active/inactive)
+  - `subscriptionUpdatedAt` (timestamp)
+- Trades and import files use the same schema as the web app.
 
-## Subscription Model (Future Phase)
-- Use StoreKit 2 for iOS.
-- Backend entitlements in Firestore (or a dedicated subscription service).
-- Feature gating: if no subscription, block premium features.
+If any fields do not yet exist, the iOS app should tolerate missing values and default to empty values.
 
-## AI Features (Future Phase)
-- Define which data is sent to AI and ensure user consent.
-- Prefer server-side AI calls; return summarized results to app.
-- Add rate limits and cost tracking.
+## Trade Processing Logic (Must Match Web)
 
-## Brokerage Integrations (Future Phase)
-- Prefer server-side integration; store normalized trades in Firestore.
-- OAuth token handling should never be on-device only.
+Replicate the existing web logic for:
 
-## QA & Testing
-- Unit tests for trade calculation logic.
-- Snapshot/UI tests for key screens.
-- End-to-end test: web adds tag -> iOS sees tag immediately.
+- Transaction grouping by symbol/strike/expiration.
+- OPEN/CLOSE matching using FIFO.
+- P&L calculation using contract multiplier (100).
+- ROI calculation as `profitLoss / totalBuyCost * 100`.
+- Date standardization and sorting.
+
+The resulting data shape must remain consistent with the web app so stats match across platforms.
+
+## Screens and Core Flows
+
+### 1) Authentication
+
+- Firebase Auth with Email/Password, Google, and Apple.
+- Required for all core features.
+
+### 2) Subscription Gate
+
+- Display pricing plans and a single CTA button.
+- CTA opens `https://<your-domain>/pricing` (or the active subscription page).
+- Must block all trade data until subscription is `active`.
+
+### 3) Dashboard
+
+- Overview metrics: total trades, win rate, profit factor, gross P&L, etc.
+- Calendar heatmap with daily P&L color scale.
+- Cumulative P&L chart and win/loss distributions.
+- Date range filtering (YTD default).
+
+### 4) Daily Stats
+
+- Daily summaries grouped by trade date.
+- Intraday P&L chart per day.
+- Expandable list of trades with:
+  - Open time, ticker, instrument, net P&L, net ROI.
+  - Tags (setups/mistakes), add/remove tags.
+  - Trade rating.
+- Daily notes (rich text editor).
+- Share image generation and export.
+
+### 5) All Trades
+
+- Full list of processed trades.
+- Sorting and pagination or list virtualization.
+- Detailed trade view with:
+  - Entry/exit prices, quantities
+  - ROI
+  - Duration
+  - Option contract details
+  - Embedded chart for the underlying symbol
+- Tag management and trade rating.
+
+### 6) Reports
+
+- Overview KPIs.
+- Tag-based analysis.
+- Time-based analysis (hourly/daily/weekly).
+- Performance by symbol, strike, expiration, option type.
+- Filterable categories.
+
+### 7) Imports
+
+- Import trade history files (Excel/CSV).
+- Show list of imported files.
+- Allow deletion of a file and its trades.
+- Track which trades came from which file.
+
+## Date Range Filtering
+
+- Default: current Year-to-Date.
+- Presets: Today, This Week, This Month, Last 30 Days, Last Month, This Quarter, Year-to-Date.
+- Custom range picker.
+- All-time view allowed by clearing filters.
+- All screens must update in real time on filter change.
+
+## Notes & Rich Text
+
+- Daily notes stored per date in Firestore (`notes`).
+- Use rich text editor that supports basic formatting (bold, italics, lists).
+- On save, update Firestore and local state.
+
+## Tags & Ratings
+
+- Tags are stored in `setupsTags` and `mistakesTags`.
+- Ratings are stored in `tradeRatings` keyed by trade key.
+- Trade key must match web logic exactly:
+  - `${Symbol}-${Strike}-${Expiration}-${FirstBuyExecTime}`
+
+## Sharing
+
+- Generate shareable images for daily performance with branding.
+- Export to the device share sheet.
+
+## Performance & UX Requirements
+
+- Large data sets should be virtualized in lists.
+- Charts should be fast and responsive; defer heavy calculations to background threads where possible.
+- Maintain the dark theme UI consistent with the web app.
+- Animations and transitions should mirror the web experience.
+
+## Offline & Sync Behavior
+
+- No offline mode is required, but the app should:
+  - Cache last loaded data for fast startup.
+  - Re-sync on app foreground.
+- All edits must be persisted to Firestore immediately.
+
+## Analytics & Logging (Optional)
+
+- Log key events: sign-in, subscription check, imports, exports, share actions.
+
+## Testing Requirements
+
+- Unit tests for trade processing logic (P&L and matching logic).
+- Snapshot/UI tests for core screens.
+- Integration tests for Auth + Firestore sync.
+- Subscription gating tests (active/inactive).
 
 ## Deliverables
-- iOS app (SwiftUI) with parity features.
-- Build & release pipeline.
-- Documentation of Firestore schema and sync behavior.
 
-## Open Questions
-- Where is trade data stored today? If not in Firestore, we need a backend sync.
-- Do you want offline-first support or online-only?
-- Minimum iOS version target?
+- Fully functional iOS app with parity to the web app.
+- Firebase-backed sync for all user data.
+- Subscription gate with website redirect and re-check.
+- App Store-ready build with all required assets and metadata.
 

@@ -9,7 +9,7 @@ import ReportsScreen from './components/ReportsScreen';
 import ImportsScreen from './components/ImportsScreen';
 import DateRangePicker from './components/DateRangePicker';
 import { theme } from './theme';
-import primaryLogo from './assets/1.png';
+import primaryLogo from './assets/3.png';
 import secondaryLogo from './assets/2.png';
 import * as XLSX from 'xlsx';
 import './App.css';
@@ -665,7 +665,7 @@ function AppRoutes() {
           {!isMobileDevice && (
             <img
               src={secondaryLogo}
-              alt="TradeLens Logo"
+              alt="TradeBetter Logo"
               style={{ height: '50px', marginRight: '15px' }}
             />
           )}
@@ -1233,7 +1233,7 @@ function AppRoutes() {
             >
               <img
                 src={primaryLogo}
-                alt="TradeLens Logo"
+                alt="TradeBetter Logo"
                 style={{
                   width: '140px',
                   height: 'auto',
@@ -1248,7 +1248,7 @@ function AppRoutes() {
                   letterSpacing: '0.5px',
                 }}
               >
-                TradeLens
+                TradeBetter
               </h1>
             </div>
             <div
@@ -1267,7 +1267,7 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/reports' ? (
           <>
-            <img src={primaryLogo} alt="TradeLens Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
               style={{
                 width: '100%',
@@ -1289,7 +1289,7 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/imports' ? (
           <>
-            <img src={primaryLogo} alt="TradeLens Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
               style={{
                 width: '100%',
@@ -1306,7 +1306,7 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/dailystats' ? (
           <>
-            <img src={primaryLogo} alt="TradeLens Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
               style={{
                 width: '100%',
@@ -1323,7 +1323,7 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/alltrades' ? (
           <>
-            <img src={primaryLogo} alt="TradeLens Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
               style={{
                 width: '100%',
@@ -1344,7 +1344,7 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/settings' ? (
           <>
-            <img src={primaryLogo} alt="TradeLens Logo" style={{ width: '200px', marginBottom: '20px' }} />
+            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
             <div
               style={{
                 width: '100%',
