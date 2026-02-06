@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const Stripe = require('stripe');
 const admin = require('firebase-admin');
 const fs = require('fs');
+const fetch = require('node-fetch');
 
 dotenv.config();
 
@@ -256,7 +257,380 @@ app.post('/api/stripe/webhook', async (req, res) => {
   }
 });
 
+// ── Schwab API Integration ──────────────────────────────────────────────
+
+const SCHWAB_TOKEN_URL = 'https://api.schwabapi.com/v1/oauth/token';
+const SCHWAB_TRADER_BASE = 'https://api.schwabapi.com/trader/v1';
+
+const schwabBasicAuth = () => {
+  const id = process.env.SCHWAB_CLIENT_ID || '';
+  const secret = process.env.SCHWAB_CLIENT_SECRET || '';
+  return 'Basic ' + Buffer.from(`${id}:${secret}`).toString('base64');
+};
+
+const transformSchwabTransactions = (schwabTxns) => {
+  const grouped = {};
+  let skippedCurrency = 0;
+  let processed = 0;
+
+  for (const txn of schwabTxns) {
+    const transferItems = txn.transferItems || [];
+    for (const item of transferItems) {
+      const instrument = item.instrument || {};
+      const assetType = (instrument.assetType || '').toUpperCase();
+
+      // Skip cash/currency settlement legs — only process actual instruments
+      if (assetType === 'CURRENCY' || assetType === '') {
+        skippedCurrency++;
+        continue;
+      }
+
+      processed++;
+
+      // Determine side from the transfer item amount:
+      // positive amount = buying contracts/shares, negative = selling
+      const side = item.amount > 0 ? 'BUY'
+        : item.amount < 0 ? 'SELL'
+        : 'N/A';
+
+      // For options, use underlyingSymbol as the grouping symbol
+      const symbol = instrument.underlyingSymbol || instrument.symbol || 'UNKNOWN';
+      const strike = instrument.strikePrice || 0;
+
+      let expiration = 'N/A';
+      if (instrument.expirationDate) {
+        const d = new Date(instrument.expirationDate);
+        expiration = `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+      }
+
+      const putCall = instrument.putCall || '';
+      const type = assetType === 'EQUITY' ? 'EQUITY'
+        : putCall === 'CALL' ? 'CALL'
+        : putCall === 'PUT' ? 'PUT'
+        : assetType || 'UNKNOWN';
+
+      let posEffect = 'UNKNOWN';
+      const pe = (item.positionEffect || '').toUpperCase();
+      if (pe.includes('OPEN')) posEffect = 'OPEN';
+      else if (pe.includes('CLOS')) posEffect = 'CLOSE';
+
+      const execTime = txn.time ? new Date(txn.time).toISOString() : new Date().toISOString();
+      let tradeDate = 'N/A';
+      if (txn.tradeDate) {
+        const d = new Date(txn.tradeDate);
+        tradeDate = `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+      }
+
+      const price = item.price || (item.cost && item.amount ? Math.abs(item.cost / item.amount) : 0);
+
+      const transaction = {
+        ExecTime: execTime,
+        TradeDate: tradeDate,
+        Side: side,
+        Quantity: Math.abs(item.amount || 0),
+        Symbol: symbol,
+        Expiration: expiration,
+        Strike: strike,
+        Price: price,
+        OrderType: 'MARKET',
+        PosEffect: posEffect,
+        Type: type,
+        _schwabActivityId: String(txn.activityId || txn.transactionId || `${txn.time}-${symbol}-${side}`),
+      };
+
+      const groupKey = `${symbol}-${strike}-${expiration}`;
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = {
+          Symbol: symbol,
+          Strike: strike,
+          Expiration: expiration,
+          Transactions: [],
+        };
+      }
+      grouped[groupKey].Transactions.push(transaction);
+    }
+  }
+
+  console.log(`Transform stats: ${processed} instrument items processed, ${skippedCurrency} currency/empty items skipped`);
+  return Object.values(grouped);
+};
+
+const mergeSchwabWithExisting = (existing, schwabGroups) => {
+  // Filter out any junk CURRENCY_USD groups from previous bad syncs
+  const cleaned = existing.filter(g => g.Symbol !== 'CURRENCY_USD');
+  if (cleaned.length < existing.length) {
+    console.log(`Cleaned ${existing.length - cleaned.length} CURRENCY_USD junk groups from existing data`);
+  }
+
+  const merged = cleaned.map(g => ({
+    ...g,
+    Transactions: g.Transactions.map(t => ({ ...t })),
+  }));
+
+  const groupMap = {};
+  for (const group of merged) {
+    const key = `${group.Symbol}-${group.Strike}-${group.Expiration}`;
+    groupMap[key] = group;
+  }
+
+  const existingIds = new Set();
+  for (const group of merged) {
+    for (const tx of group.Transactions) {
+      if (tx._schwabActivityId) existingIds.add(tx._schwabActivityId);
+    }
+  }
+
+  for (const schwabGroup of schwabGroups) {
+    const key = `${schwabGroup.Symbol}-${schwabGroup.Strike}-${schwabGroup.Expiration}`;
+    if (!groupMap[key]) {
+      groupMap[key] = {
+        Symbol: schwabGroup.Symbol,
+        Strike: schwabGroup.Strike,
+        Expiration: schwabGroup.Expiration,
+        Transactions: [],
+      };
+      merged.push(groupMap[key]);
+    }
+
+    for (const tx of schwabGroup.Transactions) {
+      if (!existingIds.has(tx._schwabActivityId)) {
+        groupMap[key].Transactions.push(tx);
+        existingIds.add(tx._schwabActivityId);
+      }
+    }
+  }
+
+  return merged;
+};
+
+const refreshSchwabTokenIfNeeded = async (userRef, tokenDoc) => {
+  const data = tokenDoc.data();
+  const expiresAt = data.expiresAt?.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
+
+  if (new Date() < expiresAt) {
+    return data;
+  }
+
+  // Check if refresh token is still valid (7-day lifetime)
+  const refreshExpiresAt = data.refreshExpiresAt?.toDate ? data.refreshExpiresAt.toDate() : new Date(data.refreshExpiresAt);
+  if (new Date() >= refreshExpiresAt) {
+    return null; // Refresh token expired, need to reconnect
+  }
+
+  const resp = await fetch(SCHWAB_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: schwabBasicAuth(),
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: data.refreshToken,
+    }),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    console.error('Schwab token refresh failed:', errText);
+    return null;
+  }
+
+  const tokens = await resp.json();
+  const now = new Date();
+  const newData = {
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token || data.refreshToken,
+    expiresAt: new Date(now.getTime() + (tokens.expires_in || 1800) * 1000),
+    refreshExpiresAt: tokens.refresh_token
+      ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+      : data.refreshExpiresAt,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  await userRef.collection('schwabTokens').doc('primary').set(newData, { merge: true });
+  return { ...data, ...newData };
+};
+
+// POST /api/schwab/token – exchange auth code for tokens
+app.post('/api/schwab/token', verifyFirebaseToken, async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ error: 'Missing authorization code.' });
+    }
+    if (!process.env.SCHWAB_CLIENT_ID || !process.env.SCHWAB_CLIENT_SECRET) {
+      return res.status(500).json({ error: 'Schwab API is not configured on the server.' });
+    }
+
+    const resp = await fetch(SCHWAB_TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: schwabBasicAuth(),
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: process.env.SCHWAB_REDIRECT_URI || '',
+      }),
+    });
+
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      console.error('Schwab token exchange failed:', errBody);
+      return res.status(resp.status).json({ error: 'Failed to exchange authorization code.' });
+    }
+
+    const tokens = await resp.json();
+    const now = new Date();
+    const userRef = db.collection('users').doc(req.user.uid);
+
+    await userRef.collection('schwabTokens').doc('primary').set({
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: new Date(now.getTime() + (tokens.expires_in || 1800) * 1000),
+      refreshExpiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await userRef.set({ schwabConnected: true }, { merge: true });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Schwab token error:', error);
+    res.status(500).json({ error: 'Failed to connect Schwab account.' });
+  }
+});
+
+// GET /api/schwab/status – check connection status
+app.get('/api/schwab/status', verifyFirebaseToken, async (req, res) => {
+  try {
+    const userRef = db.collection('users').doc(req.user.uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      return res.json({ connected: false, lastSync: null });
+    }
+    const userData = userSnap.data();
+    res.json({
+      connected: !!userData.schwabConnected,
+      lastSync: userData.schwabLastSync ? userData.schwabLastSync.toDate?.() || userData.schwabLastSync : null,
+    });
+  } catch (error) {
+    console.error('Schwab status error:', error);
+    res.status(500).json({ error: 'Failed to fetch Schwab status.' });
+  }
+});
+
+// POST /api/schwab/sync – pull trades from Schwab
+app.post('/api/schwab/sync', verifyFirebaseToken, async (req, res) => {
+  try {
+    const userRef = db.collection('users').doc(req.user.uid);
+    const tokenDoc = await userRef.collection('schwabTokens').doc('primary').get();
+
+    if (!tokenDoc.exists) {
+      return res.status(400).json({ error: 'Schwab account not connected.' });
+    }
+
+    const tokenData = await refreshSchwabTokenIfNeeded(userRef, tokenDoc);
+    if (!tokenData) {
+      // Refresh token expired – clear connection
+      await userRef.collection('schwabTokens').doc('primary').delete();
+      await userRef.set({ schwabConnected: false }, { merge: true });
+      return res.json({ reconnectRequired: true, error: 'Schwab session expired. Please reconnect.' });
+    }
+
+    // Fetch account number-to-hash mappings
+    const accountNumsResp = await fetch(`${SCHWAB_TRADER_BASE}/accounts/accountNumbers`, {
+      headers: { Authorization: `Bearer ${tokenData.accessToken}` },
+    });
+
+    if (!accountNumsResp.ok) {
+      const errText = await accountNumsResp.text();
+      console.error('Schwab accountNumbers fetch failed:', errText);
+      return res.status(accountNumsResp.status).json({ error: 'Failed to fetch Schwab accounts.' });
+    }
+
+    const accountNumbers = await accountNumsResp.json();
+    console.log('Schwab accountNumbers response:', JSON.stringify(accountNumbers));
+    const allTransactions = [];
+
+    // Build date range (last 60 days, the Schwab API maximum)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 60);
+    const startDateStr = startDate.toISOString();
+    const endDateStr = endDate.toISOString();
+
+    // Fetch transactions for each account using hashValue
+    for (const acct of accountNumbers) {
+      const hashValue = acct.hashValue;
+      if (!hashValue) continue;
+
+      const txnUrl = `${SCHWAB_TRADER_BASE}/accounts/${hashValue}/transactions?types=TRADE&startDate=${encodeURIComponent(startDateStr)}&endDate=${encodeURIComponent(endDateStr)}`;
+      console.log('Fetching transactions from:', txnUrl);
+
+      const txnResp = await fetch(txnUrl, {
+        headers: { Authorization: `Bearer ${tokenData.accessToken}` },
+      });
+
+      if (txnResp.ok) {
+        const txns = await txnResp.json();
+        console.log(`Schwab transactions for account ${acct.accountNumber}: ${Array.isArray(txns) ? txns.length : 'not an array'}`);
+        if (Array.isArray(txns)) {
+          allTransactions.push(...txns);
+        }
+      } else {
+        const errText = await txnResp.text();
+        console.error(`Schwab transactions fetch failed for account ${acct.accountNumber} (${txnResp.status}):`, errText);
+      }
+    }
+
+    // Log a sample raw transaction to understand the structure
+    if (allTransactions.length > 0) {
+      console.log('Sample raw Schwab transaction:', JSON.stringify(allTransactions[0], null, 2));
+    }
+
+    const schwabGroups = transformSchwabTransactions(allTransactions);
+    console.log(`Transform result: ${schwabGroups.length} groups, total transactions: ${schwabGroups.reduce((sum, g) => sum + g.Transactions.length, 0)}`);
+    if (schwabGroups.length > 0) {
+      console.log('Sample transformed group:', JSON.stringify(schwabGroups[0], null, 2));
+    }
+
+    // Get existing trade data
+    const userSnap = await userRef.get();
+    const existing = userSnap.exists ? (userSnap.data().tradeData || []) : [];
+
+    const merged = mergeSchwabWithExisting(existing, schwabGroups);
+    console.log(`Merge result: ${merged.length} groups (was ${existing.length} existing + ${schwabGroups.length} schwab)`);
+
+    await userRef.set({
+      tradeData: merged,
+      schwabLastSync: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdated: new Date(),
+    }, { merge: true });
+
+    res.json({ success: true, tradeData: merged, transactionsImported: allTransactions.length });
+  } catch (error) {
+    console.error('Schwab sync error:', error);
+    res.status(500).json({ error: 'Failed to sync trades from Schwab.' });
+  }
+});
+
+// POST /api/schwab/disconnect – remove Schwab connection
+app.post('/api/schwab/disconnect', verifyFirebaseToken, async (req, res) => {
+  try {
+    const userRef = db.collection('users').doc(req.user.uid);
+    await userRef.collection('schwabTokens').doc('primary').delete();
+    await userRef.set({ schwabConnected: false, schwabLastSync: null }, { merge: true });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Schwab disconnect error:', error);
+    res.status(500).json({ error: 'Failed to disconnect Schwab account.' });
+  }
+});
+
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
-  console.log(`Stripe backend running on port ${PORT}`);
+  console.log(`Backend running on port ${PORT}`);
 });

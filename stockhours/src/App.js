@@ -32,6 +32,7 @@ import ProfileSettingsScreen from './components/ProfileSettingsScreen';
 import MarketingLanding from './components/MarketingLanding';
 import PaywallScreen from './components/PaywallScreen';
 import PricingScreen from './components/PricingScreen';
+import SchwabCallback from './components/SchwabCallback';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -577,6 +578,35 @@ function AppRoutes() {
 
       return remainingFiles;
     });
+  };
+
+  const apiBase = process.env.REACT_APP_STRIPE_API_URL || '';
+
+  const handleSchwabSync = async () => {
+    if (!currentUser || !apiBase) return { error: 'Not configured.' };
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`${apiBase}/api/schwab/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: data.error || 'Sync failed.' };
+      }
+      if (data.reconnectRequired) {
+        return { reconnectRequired: true, error: data.error };
+      }
+      if (data.tradeData) {
+        setTradeData(data.tradeData);
+      }
+      return { success: true, transactionsImported: data.transactionsImported };
+    } catch (err) {
+      return { error: err.message || 'Sync failed.' };
+    }
   };
 
   const handleDateChange = (startDate, endDate) => {
@@ -1295,7 +1325,7 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <ImportsScreen uploadedFiles={uploadedFiles} onDeleteFile={handleDeleteFile} />
+              <ImportsScreen uploadedFiles={uploadedFiles} onDeleteFile={handleDeleteFile} currentUser={currentUser} onSchwabSync={handleSchwabSync} />
             </div>
           </>
         ) : location.pathname === '/dailystats' ? (
@@ -1385,6 +1415,7 @@ function AppRoutesWrapper() {
       <Route path="/dailystats" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/alltrades" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="/callback/schwab" element={<ProtectedRoute requireSubscription={false}><SchwabCallback /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
