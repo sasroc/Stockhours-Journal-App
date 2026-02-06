@@ -16,7 +16,7 @@ export default function ProtectedRoute({ children, requireSubscription = true })
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
-        backgroundColor: '#000',
+        backgroundColor: '#0A1628',
         color: '#fff'
       }}>
         Loading...

@@ -71,10 +71,10 @@ const TagSelectionModal = ({ isOpen, onClose, onSave, setupsTags, mistakesTags, 
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '12px 16px',
-            backgroundColor: '#23242a',
+            backgroundColor: '#253650',
             borderRadius: '8px',
             cursor: 'pointer',
-            border: `1px solid ${isExpanded ? color : '#333'}`,
+            border: `1px solid ${isExpanded ? color : '#344563'}`,
             transition: 'all 0.2s ease'
           }}
           onClick={() => {
@@ -104,7 +104,7 @@ const TagSelectionModal = ({ isOpen, onClose, onSave, setupsTags, mistakesTags, 
               left: 0,
               right: 0,
               marginTop: '8px',
-              backgroundColor: '#23242a',
+              backgroundColor: '#253650',
               borderRadius: '8px',
               border: `1px solid ${color}`,
               maxHeight: '300px',
@@ -133,7 +133,7 @@ const TagSelectionModal = ({ isOpen, onClose, onSave, setupsTags, mistakesTags, 
                   style={{
                     flex: 1,
                     padding: '8px 12px',
-                    backgroundColor: '#1a1a1a',
+                    backgroundColor: '#1B2B43',
                     border: '1px solid #333',
                     borderRadius: '4px',
                     color: theme.colors.white,
@@ -168,7 +168,7 @@ const TagSelectionModal = ({ isOpen, onClose, onSave, setupsTags, mistakesTags, 
                   style={{
                     padding: '8px 12px',
                     cursor: 'pointer',
-                    backgroundColor: selectedTags.includes(tag) ? '#2a2a2a' : 'transparent',
+                    backgroundColor: selectedTags.includes(tag) ? '#2B3C5A' : 'transparent',
                     color: theme.colors.white,
                     display: 'flex',
                     alignItems: 'center',
@@ -176,7 +176,7 @@ const TagSelectionModal = ({ isOpen, onClose, onSave, setupsTags, mistakesTags, 
                     borderRadius: '4px',
                     transition: 'background-color 0.2s ease',
                     ':hover': {
-                      backgroundColor: '#2a2a2a'
+                      backgroundColor: '#2B3C5A'
                     }
                   }}
                 >
@@ -297,7 +297,7 @@ const TagSelectionModal = ({ isOpen, onClose, onSave, setupsTags, mistakesTags, 
             onClick={onClose}
             style={{
               padding: '10px 20px',
-              backgroundColor: '#333',
+              backgroundColor: '#344563',
               color: theme.colors.white,
               border: 'none',
               borderRadius: '6px',
@@ -305,7 +305,7 @@ const TagSelectionModal = ({ isOpen, onClose, onSave, setupsTags, mistakesTags, 
               fontSize: '14px',
               transition: 'background-color 0.2s ease',
               ':hover': {
-                backgroundColor: '#444'
+                backgroundColor: '#3D5070'
               }
             }}
           >

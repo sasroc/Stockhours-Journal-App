@@ -20,7 +20,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile }) => {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '10px',
-                  backgroundColor: '#1a1a1a',
+                  backgroundColor: '#1B2B43',
                   marginBottom: '10px',
                   borderRadius: '4px',
                 }}

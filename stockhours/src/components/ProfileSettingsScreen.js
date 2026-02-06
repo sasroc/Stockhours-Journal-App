@@ -59,10 +59,10 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
       >
         <div
           style={{
-            backgroundColor: '#111',
+            backgroundColor: '#121F35',
             borderRadius: '8px',
             padding: '16px',
-            border: '1px solid #222',
+            border: '1px solid #233350',
           }}
         >
           <div style={{ fontSize: '12px', color: '#888', marginBottom: '6px' }}>Email</div>
@@ -70,10 +70,10 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
         </div>
         <div
           style={{
-            backgroundColor: '#111',
+            backgroundColor: '#121F35',
             borderRadius: '8px',
             padding: '16px',
-            border: '1px solid #222',
+            border: '1px solid #233350',
           }}
         >
           <div style={{ fontSize: '12px', color: '#888', marginBottom: '6px' }}>User ID</div>
@@ -81,10 +81,10 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
         </div>
         <div
           style={{
-            backgroundColor: '#111',
+            backgroundColor: '#121F35',
             borderRadius: '8px',
             padding: '16px',
-            border: '1px solid #222',
+            border: '1px solid #233350',
           }}
         >
           <div style={{ fontSize: '12px', color: '#888', marginBottom: '6px' }}>Plan</div>
@@ -119,10 +119,10 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
       <div
         style={{
           marginTop: '24px',
-          backgroundColor: '#111',
+          backgroundColor: '#121F35',
           borderRadius: '8px',
           padding: '16px',
-          border: '1px solid #222',
+          border: '1px solid #233350',
         }}
       >
         <h3 style={{ marginTop: 0, fontSize: '18px' }}>Preferences</h3>

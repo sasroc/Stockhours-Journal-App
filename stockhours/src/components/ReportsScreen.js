@@ -37,7 +37,7 @@ function ChartContainer({ data, options, layout, title }) {
         height: '400px',
         width: '100%',
         position: 'relative',
-        backgroundColor: '#1a1a1a',
+        backgroundColor: '#1B2B43',
         padding: '10px 0', // Remove left/right padding
         borderRadius: '8px',
         marginBottom: '20px',
@@ -52,7 +52,7 @@ function ChartContainer({ data, options, layout, title }) {
         height: '400px',
         width: '100%',
         position: 'relative',
-        backgroundColor: '#1a1a1a',
+        backgroundColor: '#1B2B43',
         padding: '20px',
         borderRadius: '8px',
         marginBottom: '20px',
@@ -1911,7 +1911,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       }}>
         <div style={{ 
           width: isHalfScreen ? '100%' : '200px', 
-          backgroundColor: '#1a1a1a', 
+          backgroundColor: '#1B2B43', 
           padding: '10px', 
           borderRadius: '8px', 
           marginRight: '20px', 

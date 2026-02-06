@@ -44,12 +44,12 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
       const value = i;
       // Determine fill for this star
       const currentRating = hoverRating !== null ? hoverRating : tradeRating;
-      let fill = '#444';
+      let fill = '#3D5070';
       if (currentRating >= value) {
         fill = '#FFD700'; // full gold
       } else if (currentRating >= value - 0.5) {
         // half-star: use gold gradient on left, gray on right
-        fill = 'linear-gradient(90deg, #FFD700 50%, #444 50%)';
+        fill = 'linear-gradient(90deg, #FFD700 50%, #3D5070 50%)';
       }
       stars.push(
         <span
@@ -57,7 +57,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
           style={{
             cursor: 'pointer',
             fontSize: 24,
-            color: currentRating >= value ? '#FFD700' : '#444',
+            color: currentRating >= value ? '#FFD700' : '#3D5070',
             marginRight: 2,
             position: 'relative',
             display: 'inline-block',
@@ -114,15 +114,15 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
         </div>
         <div style={{ position: 'relative' }}>
           <div
-            style={{ width: '100%', background: 'none', color: '#b3b3c6', border: '1px solid #333', borderRadius: 6, padding: '8px', fontSize: 16, cursor: 'pointer', userSelect: 'none' }}
+            style={{ width: '100%', background: 'none', color: '#b3b3c6', border: '1px solid #344563', borderRadius: 6, padding: '8px', fontSize: 16, cursor: 'pointer', userSelect: 'none' }}
             onClick={() => setDropdownOpen(o => !o)}
           >
             Select tag
           </div>
           {dropdownOpen && (
-            <div style={{ position: 'absolute', top: '110%', left: 0, width: '100%', background: '#23242a', border: '1px solid #333', borderRadius: 6, zIndex: 20, maxHeight: 220, overflowY: 'auto', boxShadow: '0 2px 8px #000a' }}>
+            <div style={{ position: 'absolute', top: '110%', left: 0, width: '100%', background: '#253650', border: '1px solid #344563', borderRadius: 6, zIndex: 20, maxHeight: 220, overflowY: 'auto', boxShadow: '0 2px 8px #000a' }}>
               {tags.map(tag => (
-                <div key={tag} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', color: selected.includes(tag) ? '#888' : '#b3b3c6', fontSize: 16, borderBottom: '1px solid #29293a', position: 'relative' }}>
+                <div key={tag} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', color: selected.includes(tag) ? '#888' : '#b3b3c6', fontSize: 16, borderBottom: '1px solid #2B3D55', position: 'relative' }}>
                   {editTag === tag ? (
                     <input
                       value={editValue}
@@ -140,7 +140,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
                           setEditValue('');
                         }
                       }}
-                      style={{ padding: '2px 6px', borderRadius: 4, border: '1px solid #333', background: '#23242a', color: '#fff', fontSize: 15 }}
+                      style={{ padding: '2px 6px', borderRadius: 4, border: '1px solid #344563', background: '#253650', color: '#fff', fontSize: 15 }}
                       autoFocus
                     />
                   ) : (
@@ -165,7 +165,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
                         <FaEllipsisH />
                       </span>
                       {menuTag === tag && (
-                        <div style={{ position: 'absolute', top: 32, right: 0, background: '#23242a', border: '1px solid #333', borderRadius: 6, zIndex: 30, minWidth: 90 }}>
+                        <div style={{ position: 'absolute', top: 32, right: 0, background: '#253650', border: '1px solid #344563', borderRadius: 6, zIndex: 30, minWidth: 90 }}>
                           <div
                             style={{ padding: '6px 12px', cursor: 'pointer', color: '#b3b3c6' }}
                             onClick={() => {
@@ -215,7 +215,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
                 >+ Add new tag</span>
               </div>
               {adding && (
-                <div style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', background: '#23242a' }}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', background: '#253650' }}>
                   <input
                     id={label + '-add-input'}
                     type="text"
@@ -233,7 +233,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
                         setNewTag('');
                       }
                     }}
-                    style={{ flex: 1, padding: '6px 8px', borderRadius: 4, border: '1px solid #333', background: '#23242a', color: '#fff', fontSize: 16 }}
+                    style={{ flex: 1, padding: '6px 8px', borderRadius: 4, border: '1px solid #344563', background: '#253650', color: '#fff', fontSize: 16 }}
                     placeholder="New tag"
                     autoFocus
                   />
@@ -260,7 +260,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
         {/* Show selected tags as chips */}
         <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {selected.map(tag => (
-            <span key={tag} style={{ background: '#23242a', color: '#b3b3c6', borderRadius: 12, padding: '4px 12px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 4, position: 'relative' }}>
+            <span key={tag} style={{ background: '#253650', color: '#b3b3c6', borderRadius: 12, padding: '4px 12px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 4, position: 'relative' }}>
               {tag}
               <span
                 style={{ marginLeft: 4, cursor: 'pointer', color: '#888' }}
@@ -290,7 +290,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
             <div style={{ fontSize: 16, color: '#b3b3c6', marginTop: 2 }}>{optionTaken}</div>
           </div>
           {/* Left container */}
-          <div style={{ background: '#18191c', borderRadius: 16, padding: '32px 24px 24px 24px', boxShadow: '0 4px 32px 0 #000a', display: 'flex', flexDirection: 'column', gap: 16, maxHeight: 600, overflowY: 'auto' }}>
+          <div style={{ background: '#1A2B44', borderRadius: 16, padding: '32px 24px 24px 24px', boxShadow: '0 4px 32px 0 #000a', display: 'flex', flexDirection: 'column', gap: 16, maxHeight: 600, overflowY: 'auto' }}>
             {/* Net P&L */}
             <div style={{ color: trade.netPL >= 0 ? theme.colors.green : theme.colors.red, fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
               Net P&L<br />
@@ -331,7 +331,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
           </div>
         </div>
         {/* Right: TradingView chart placeholder */}
-        <div style={{ flex: '2 1 600px', minWidth: 320, background: '#18191c', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
+        <div style={{ flex: '2 1 600px', minWidth: 320, background: '#1A2B44', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
           <TradingViewChart
             symbol={trade.symbol}
             buyTime={trade.open.ExecTime}
@@ -560,11 +560,11 @@ const AllTradesScreen = ({ tradeData }) => {
 
   return (
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
-      <div style={{ background: '#18191c', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px #000a' }}>
+      <div style={{ background: '#1A2B44', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px #000a' }}>
         <div style={{ width: '100%', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', color: theme.colors.white, minWidth: 900 }}>
             <thead>
-              <tr style={{ background: '#23242a' }}>
+              <tr style={{ background: '#253650' }}>
                 <th style={{ padding: '12px 8px', textAlign: 'left', color: '#b3b3c6' }}>Open date</th>
                 <th style={{ padding: '12px 8px', textAlign: 'left', color: '#b3b3c6' }}>Symbol</th>
                 <th style={{ padding: '12px 8px', textAlign: 'left', color: '#b3b3c6' }}>Status</th>
@@ -617,7 +617,7 @@ const AllTradesScreen = ({ tradeData }) => {
           </table>
         </div>
         {/* Pagination */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#18191c', padding: '12px 20px', borderTop: '1px solid #23242a', color: '#b3b3c6' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#1A2B44', padding: '12px 20px', borderTop: '1px solid #23242a', color: '#b3b3c6' }}>
           <div>
             Trades per page: <span style={{ color: '#fff', fontWeight: 600 }}>{ROWS_PER_PAGE}</span>
           </div>

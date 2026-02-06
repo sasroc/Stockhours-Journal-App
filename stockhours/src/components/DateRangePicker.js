@@ -162,7 +162,7 @@ const DateRangePicker = ({ onDateChange }) => {
         style={{
           display: 'flex',
           alignItems: 'center',
-          backgroundColor: '#2a2a2a',
+          backgroundColor: '#2B3C5A',
           padding: isMobile ? '8px 12px' : '5px 10px',
           borderRadius: '4px',
           color: theme.colors.white,
@@ -209,7 +209,7 @@ const DateRangePicker = ({ onDateChange }) => {
             top: isMobile ? '35px' : '40px',
             right: 0,
             zIndex: 1001,
-            backgroundColor: '#1a1a1a',
+            backgroundColor: '#1B2B43',
             borderRadius: '8px',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
             padding: '10px',
@@ -243,8 +243,8 @@ const DateRangePicker = ({ onDateChange }) => {
               flexDirection: 'column',
               gap: '8px',
               padding: '10px',
-              borderLeft: isMobile ? 'none' : '1px solid #333',
-              borderTop: isMobile ? '1px solid #333' : 'none',
+              borderLeft: isMobile ? 'none' : '1px solid #344563',
+              borderTop: isMobile ? '1px solid #344563' : 'none',
               marginTop: isMobile ? '10px' : '0',
               paddingTop: isMobile ? '10px' : '0',
             }}
@@ -264,7 +264,7 @@ const DateRangePicker = ({ onDateChange }) => {
                 onClick={() => handleQuickSelect(option.value)}
                 style={{
                   backgroundColor: 'transparent',
-                  border: '1px solid #333',
+                  border: '1px solid #344563',
                   color: theme.colors.white,
                   padding: '8px 12px',
                   borderRadius: '4px',
@@ -275,12 +275,12 @@ const DateRangePicker = ({ onDateChange }) => {
                   whiteSpace: 'nowrap',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#333';
+                  e.target.style.backgroundColor = '#344563';
                   e.target.style.borderColor = theme.colors.green;
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.backgroundColor = 'transparent';
-                  e.target.style.borderColor = '#333';
+                  e.target.style.borderColor = '#344563';
                 }}
               >
                 {option.label}

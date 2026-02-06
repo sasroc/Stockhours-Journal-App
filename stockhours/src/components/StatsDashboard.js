@@ -42,7 +42,7 @@ const InfoCircle = ({ tooltip }) => {
           top: '-40px',
           left: '50%',
           transform: 'translateX(-50%)',
-          backgroundColor: '#000',
+          backgroundColor: '#0A1628',
           color: '#fff',
           padding: '8px 12px',
           borderRadius: '4px',
@@ -174,7 +174,7 @@ const CircleProgress = ({ value, total, color, isHalfCircle = false, profitValue
             top: '-30px',
             left: '50%',
             transform: 'translateX(-50%)',
-            backgroundColor: '#000',
+            backgroundColor: '#0A1628',
             color: '#fff',
             padding: '4px 8px',
             borderRadius: '4px',
@@ -483,7 +483,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
       >
         <div
           style={{
-            backgroundColor: '#111',
+            backgroundColor: '#121F35',
             padding: '32px 32px 24px 32px',
             borderRadius: '16px',
             maxWidth: '900px',
@@ -511,7 +511,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                 setNoteModalOpen(true);
               }}
               style={{
-                backgroundColor: notes[dayData.date] ? '#444' : theme.colors.green,
+                backgroundColor: notes[dayData.date] ? '#3D5070' : theme.colors.green,
                 color: theme.colors.white,
                 border: 'none',
                 borderRadius: '4px',
@@ -545,7 +545,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             style={{
               height: '180px',
               margin: '24px 0 16px 0',
-              backgroundColor: '#181818',
+              backgroundColor: '#1A2A42',
               borderRadius: '12px',
               padding: '12px',
             }}
@@ -599,7 +599,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                   x: { display: false },
                   y: {
                     beginAtZero: true,
-                    grid: { color: '#222' },
+                    grid: { color: '#233350' },
                     ticks: { color: '#888' },
                   },
                 },
@@ -647,7 +647,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                       key={index} 
                       style={{ 
                         borderBottom: '1px solid #222', 
-                        background: isHovered ? '#23242a' : 'none',
+                        background: isHovered ? '#253650' : 'none',
                         cursor: 'pointer',
                         transition: 'background-color 0.2s ease',
                       }}
@@ -658,7 +658,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                       <td style={{ padding: '12px 8px', color: '#fff', fontSize: 15 }}>{openTime}</td>
                       <td style={{ padding: '12px 8px' }}>
                         <span style={{
-                          background: '#23233a',
+                          background: '#253555',
                           color: '#b3b3c6',
                           borderRadius: '16px',
                           padding: '4px 14px',
@@ -727,7 +727,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
               style={{
                 width: daySize,
                 height: daySize,
-                backgroundColor: '#333',
+                backgroundColor: '#344563',
                 color: theme.colors.white,
                 display: 'flex',
                 alignItems: 'center',
@@ -748,7 +748,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             ? dailyData.pnl >= 0
               ? theme.colors.green
               : theme.colors.red
-            : '#444';
+            : '#3D5070';
 
           week.push(
             <div
@@ -804,7 +804,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           style={{
             width: daySize,
             height: daySize,
-            backgroundColor: '#1a1a1a',
+            backgroundColor: '#1B2B43',
             color: theme.colors.white,
             display: 'flex',
             flexDirection: 'column',
@@ -858,7 +858,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           maxTicksLimit: 10,
         },
         grid: {
-          color: '#333',
+          color: '#344563',
         },
       },
       y: {
@@ -872,7 +872,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           callback: value => `$${value.toFixed(2)}`,
         },
         grid: {
-          color: '#333',
+          color: '#344563',
         },
       },
     },
@@ -888,7 +888,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             return `Date: ${date}, Cumulative P&L: $${value.toFixed(2)}`;
           },
         },
-        backgroundColor: '#333',
+        backgroundColor: '#344563',
         titleColor: theme.colors.white,
         bodyColor: theme.colors.white,
       },
@@ -923,7 +923,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           maxTicksLimit: 10,
         },
         grid: {
-          color: '#333',
+          color: '#344563',
         },
       },
       y: {
@@ -937,7 +937,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           callback: value => `$${value.toFixed(2)}`,
         },
         grid: {
-          color: '#333',
+          color: '#344563',
         },
       },
     },
@@ -955,7 +955,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             return `Date: ${date}, Daily P&L: $${value.toFixed(2)}`;
           },
         },
-        backgroundColor: '#333',
+        backgroundColor: '#344563',
         titleColor: theme.colors.white,
         bodyColor: theme.colors.white,
       },
@@ -992,7 +992,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
         {/* Net P&L Box */}
         <div
           style={{
-            backgroundColor: '#1a1a1a',
+            backgroundColor: '#1B2B43',
             padding: '15px',
             borderRadius: '8px',
             position: 'relative',
@@ -1008,7 +1008,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             <div
               style={{
                 marginLeft: 'auto',
-                backgroundColor: '#2a2a2a',
+                backgroundColor: '#2B3C5A',
                 padding: '2px 8px',
                 borderRadius: '12px',
                 fontSize: '12px',
@@ -1033,7 +1033,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
         {/* Trade Expectancy Box */}
         <div
           style={{
-            backgroundColor: '#1a1a1a',
+            backgroundColor: '#1B2B43',
             padding: '15px',
             borderRadius: '8px',
             position: 'relative',
@@ -1062,7 +1062,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
         {/* Profit Factor Box */}
         <div
           style={{
-            backgroundColor: '#1a1a1a',
+            backgroundColor: '#1B2B43',
             padding: '15px',
             borderRadius: '8px',
             position: 'relative',
@@ -1107,7 +1107,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
         {/* Trade Win % Box */}
         <div
           style={{
-            backgroundColor: '#1a1a1a',
+            backgroundColor: '#1B2B43',
             padding: '15px',
             borderRadius: '8px',
             position: 'relative',
@@ -1177,7 +1177,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
         {/* Avg Win/Loss Trade Box */}
         <div
           style={{
-            backgroundColor: '#1a1a1a',
+            backgroundColor: '#1B2B43',
             padding: '15px',
             borderRadius: '8px',
             position: 'relative',
@@ -1205,7 +1205,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             <div
               style={{
                 height: '4px',
-                backgroundColor: '#2a2a2a',
+                backgroundColor: '#2B3C5A',
                 borderRadius: '2px',
                 overflow: 'hidden',
                 display: 'flex',
@@ -1253,7 +1253,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             <h3 style={{ color: theme.colors.white, marginBottom: '20px', textAlign: 'center' }}>Cumulative Daily P&L</h3>
             <div style={{ 
               height: '300px', 
-              backgroundColor: '#1a1a1a', 
+              backgroundColor: '#1B2B43', 
               padding: '20px', 
               borderRadius: '8px',
               overflow: 'hidden'
@@ -1270,7 +1270,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             <h3 style={{ color: theme.colors.white, marginBottom: '20px', textAlign: 'center' }}>Daily P&L</h3>
             <div style={{ 
               height: '300px', 
-              backgroundColor: '#1a1a1a', 
+              backgroundColor: '#1B2B43', 
               padding: '20px', 
               borderRadius: '8px',
               overflow: 'hidden'
@@ -1370,7 +1370,7 @@ const Calendar = ({ defaultView, isHalfScreen }) => {
               style={{
                 width: daySize,
                 height: daySize,
-                backgroundColor: '#333',
+                backgroundColor: '#344563',
                 color: theme.colors.white,
                 display: 'flex',
                 alignItems: 'center',
@@ -1387,7 +1387,7 @@ const Calendar = ({ defaultView, isHalfScreen }) => {
               style={{
                 width: daySize,
                 height: daySize,
-                backgroundColor: '#444', // Light grey for days with no trades in default view
+                backgroundColor: '#3D5070', // Light grey for days with no trades in default view
                 color: theme.colors.white,
                 display: 'flex',
                 alignItems: 'center',

@@ -393,7 +393,7 @@ const DailyStatsScreen = ({ tradeData }) => {
               x: { display: false },
               y: {
                 beginAtZero: true,
-                grid: { color: '#333' },
+                grid: { color: '#344563' },
                 ticks: { color: '#888' },
               },
             },
@@ -403,7 +403,7 @@ const DailyStatsScreen = ({ tradeData }) => {
             <div
               key={date}
               style={{
-                backgroundColor: '#0d0d0d',
+                backgroundColor: '#0F1D2F',
                 borderRadius: '8px',
                 padding: '15px',
                 marginBottom: '20px',
@@ -461,7 +461,7 @@ const DailyStatsScreen = ({ tradeData }) => {
                     setNoteModalOpen(true);
                   }}
                   style={{
-                    backgroundColor: notes[standardizedDate] ? '#444' : theme.colors.green,
+                    backgroundColor: notes[standardizedDate] ? '#3D5070' : theme.colors.green,
                     color: theme.colors.white,
                     border: 'none',
                     borderRadius: '4px',

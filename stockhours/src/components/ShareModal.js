@@ -116,7 +116,7 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
     >
       <div
         style={{
-          backgroundColor: '#1a1a1a',
+          backgroundColor: '#1B2B43',
           borderRadius: '8px',
           padding: '20px',
           maxWidth: '90%',

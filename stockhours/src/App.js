@@ -9,7 +9,7 @@ import ReportsScreen from './components/ReportsScreen';
 import ImportsScreen from './components/ImportsScreen';
 import DateRangePicker from './components/DateRangePicker';
 import { theme } from './theme';
-import primaryLogo from './assets/3.png';
+
 import secondaryLogo from './assets/2.png';
 import * as XLSX from 'xlsx';
 import './App.css';
@@ -47,7 +47,7 @@ const getYTDRange = () => {
 
 const AppContainer = styled.div`
   min-height: 100vh;
-  background-color: #000;
+  background-color: #0A1628;
   color: ${theme.colors.white};
 `;
 
@@ -57,7 +57,7 @@ const FullScreenLoader = ({ message = 'Loading...' }) => (
     justifyContent: 'center', 
     alignItems: 'center', 
     height: '100vh',
-    backgroundColor: '#000',
+    backgroundColor: '#0A1628',
     color: '#fff'
   }}>
     {message}
@@ -623,14 +623,14 @@ function AppRoutes() {
   }
 
   return (
-    <div className="App" style={{ backgroundColor: '#000', minHeight: '100vh', color: theme.colors.white }}>
+    <div className="App" style={{ backgroundColor: '#0A1628', minHeight: '100vh', color: theme.colors.white }}>
       <header
         style={{
           display: 'flex',
           alignItems: 'center',
-          backgroundColor: '#1a1a1a',
+          backgroundColor: '#1B2B43',
           padding: '10px 20px',
-          borderBottom: '1px solid #333',
+          borderBottom: '1px solid #344563',
           position: 'fixed',
           top: 0,
           left: 0,
@@ -663,11 +663,34 @@ function AppRoutes() {
             </button>
           )}
           {!isMobileDevice && (
-            <img
-              src={secondaryLogo}
-              alt="TradeBetter Logo"
-              style={{ height: '50px', marginRight: '15px' }}
-            />
+            <div
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '14px',
+                overflow: 'hidden',
+                backgroundColor: '#0C1829',
+                border: '1px solid #1E2D48',
+                boxShadow: '0 8px 20px rgba(0, 0, 0, 0.6), 0 0 18px rgba(0, 123, 255, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '15px',
+              }}
+            >
+              <img
+                src={secondaryLogo}
+                alt="TradeBetter Logo"
+                style={{
+                  width: '66px',
+                  height: '66px',
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                  transform: 'scale(1.1) translateX(7px)',
+                  display: 'block',
+                }}
+              />
+            </div>
           )}
           <h2 style={{ 
             margin: 0, 
@@ -706,7 +729,7 @@ function AppRoutes() {
           left: 0,
           width: '50px',
           height: 'calc(100% - 71px)',
-          backgroundColor: '#1a1a1a',
+          backgroundColor: '#1B2B43',
           display: (isHalfScreen && !isSidebarOpen) ? 'none' : 'flex',
           padding: '20px 0',
           boxSizing: 'border-box',
@@ -744,7 +767,7 @@ function AppRoutes() {
                 left: '50px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: '#333',
+                backgroundColor: '#344563',
                 color: theme.colors.white,
                 padding: '5px 10px',
                 borderRadius: '4px',
@@ -810,7 +833,7 @@ function AppRoutes() {
                 left: '50px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: '#333',
+                backgroundColor: '#344563',
                 color: theme.colors.white,
                 padding: '5px 10px',
                 borderRadius: '4px',
@@ -870,7 +893,7 @@ function AppRoutes() {
                 left: '50px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: '#333',
+                backgroundColor: '#344563',
                 color: theme.colors.white,
                 padding: '5px 10px',
                 borderRadius: '4px',
@@ -929,7 +952,7 @@ function AppRoutes() {
                 left: '50px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: '#333',
+                backgroundColor: '#344563',
                 color: theme.colors.white,
                 padding: '5px 10px',
                 borderRadius: '4px',
@@ -986,7 +1009,7 @@ function AppRoutes() {
                 left: '50px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: '#333',
+                backgroundColor: '#344563',
                 color: theme.colors.white,
                 padding: '5px 10px',
                 borderRadius: '4px',
@@ -1043,7 +1066,7 @@ function AppRoutes() {
                 left: '50px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: '#333',
+                backgroundColor: '#344563',
                 color: theme.colors.white,
                 padding: '5px 10px',
                 borderRadius: '4px',
@@ -1100,7 +1123,7 @@ function AppRoutes() {
                 left: '50px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: '#333',
+                backgroundColor: '#344563',
                 color: theme.colors.white,
                 padding: '5px 10px',
                 borderRadius: '4px',
@@ -1120,7 +1143,7 @@ function AppRoutes() {
                 right: '-120px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: '#1a1a1a',
+                backgroundColor: '#1B2B43',
                 padding: '10px',
                 borderRadius: '4px',
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
@@ -1211,7 +1234,7 @@ function AppRoutes() {
             style={{
               width: '100%',
               maxWidth: '1400px',
-              backgroundColor: '#0d0d0d',
+              backgroundColor: '#0F1D2F',
               borderRadius: '8px',
               padding: '20px',
               margin: '0 auto',
@@ -1224,38 +1247,9 @@ function AppRoutes() {
           <>
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '16px',
-                marginBottom: '24px',
-              }}
-            >
-              <img
-                src={primaryLogo}
-                alt="TradeBetter Logo"
-                style={{
-                  width: '140px',
-                  height: 'auto',
-                  filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6))',
-                }}
-              />
-              <h1
-                style={{
-                  color: theme.colors.white,
-                  margin: 0,
-                  fontSize: '32px',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                TradeBetter
-              </h1>
-            </div>
-            <div
-              style={{
                 width: '100%',
                 maxWidth: '1600px',
-                backgroundColor: '#0d0d0d',
+                backgroundColor: '#0F1D2F',
                 borderRadius: '8px',
                 padding: '20px',
                 margin: '0 auto',
@@ -1267,12 +1261,12 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/reports' ? (
           <>
-            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
+
             <div
               style={{
                 width: '100%',
                 maxWidth: '1600px',
-                backgroundColor: '#0d0d0d',
+                backgroundColor: '#0F1D2F',
                 borderRadius: '8px',
                 padding: '20px',
                 margin: '0 auto',
@@ -1289,12 +1283,12 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/imports' ? (
           <>
-            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
+
             <div
               style={{
                 width: '100%',
                 maxWidth: '1400px',
-                backgroundColor: '#0d0d0d',
+                backgroundColor: '#0F1D2F',
                 borderRadius: '8px',
                 padding: '20px',
                 margin: '0 auto',
@@ -1306,12 +1300,12 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/dailystats' ? (
           <>
-            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
+
             <div
               style={{
                 width: '100%',
                 maxWidth: '1400px',
-                backgroundColor: '#0d0d0d',
+                backgroundColor: '#0F1D2F',
                 borderRadius: '8px',
                 padding: '20px',
                 margin: '0 auto',
@@ -1323,12 +1317,12 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/alltrades' ? (
           <>
-            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
+
             <div
               style={{
                 width: '100%',
                 maxWidth: '1400px',
-                backgroundColor: '#0d0d0d',
+                backgroundColor: '#0F1D2F',
                 borderRadius: '8px',
                 padding: '20px',
                 margin: '0 auto',
@@ -1344,12 +1338,12 @@ function AppRoutes() {
           </>
         ) : location.pathname === '/settings' ? (
           <>
-            <img src={primaryLogo} alt="TradeBetter Logo" style={{ width: '200px', marginBottom: '20px' }} />
+
             <div
               style={{
                 width: '100%',
                 maxWidth: '900px',
-                backgroundColor: '#0d0d0d',
+                backgroundColor: '#0F1D2F',
                 borderRadius: '8px',
                 padding: '20px',
                 margin: '0 auto',

@@ -1,19 +1,19 @@
 .quill {
-  background-color: #1a1a1a;
+  background-color: #1B2B43;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .ql-toolbar {
-  background-color: #23242a !important;
-  border-color: #333 !important;
+  background-color: #253650 !important;
+  border-color: #344563 !important;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
 }
 
 .ql-container {
-  background-color: #1a1a1a !important;
-  border-color: #333 !important;
+  background-color: #1B2B43 !important;
+  border-color: #344563 !important;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
   min-height: 200px;
@@ -90,14 +90,14 @@
 }
 
 .ql-editor blockquote {
-  border-left: 4px solid #333;
+  border-left: 4px solid #344563;
   margin: 1em 0;
   padding-left: 1em;
   color: #888;
 }
 
 .ql-editor pre {
-  background-color: #23242a;
+  background-color: #253650;
   border-radius: 4px;
   padding: 1em;
   margin: 1em 0;
@@ -105,7 +105,7 @@
 }
 
 .ql-editor code {
-  background-color: #23242a;
+  background-color: #253650;
   padding: 0.2em 0.4em;
   border-radius: 3px;
   color: #4CAF50;
@@ -150,8 +150,8 @@
 }
 
 .ql-toolbar .ql-picker-options {
-  background-color: #23242a !important;
-  border-color: #333 !important;
+  background-color: #253650 !important;
+  border-color: #344563 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -172,7 +172,7 @@
 /* Dropdown styles */
 .ql-toolbar .ql-picker-label {
   color: #fff !important;
-  border-color: #333 !important;
+  border-color: #344563 !important;
   transition: all 0.2s ease;
   border-radius: 4px;
   padding: 4px 8px;
@@ -324,16 +324,16 @@
 }
 
 .ql-toolbar .ql-size .ql-picker-label {
-  background-color: #1a1a1a;
-  border: 1px solid #333;
+  background-color: #1B2B43;
+  border: 1px solid #344563;
   border-radius: 4px;
   padding: 4px 8px;
   transition: all 0.2s ease;
 }
 
 .ql-toolbar .ql-size .ql-picker-label:hover {
-  background-color: #23242a;
-  border-color: #444;
+  background-color: #253650;
+  border-color: #3D5070;
 }
 
 .ql-toolbar .ql-size .ql-picker-label.ql-active {

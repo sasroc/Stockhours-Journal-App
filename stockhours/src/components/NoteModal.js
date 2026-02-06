@@ -90,7 +90,7 @@ const NoteModal = ({ isOpen, onClose, date, existingNote = '', onNoteSaved }) =>
     >
       <div
         style={{
-          backgroundColor: '#111',
+          backgroundColor: '#121F35',
           padding: '32px',
           borderRadius: '16px',
           maxWidth: '800px',
@@ -112,7 +112,7 @@ const NoteModal = ({ isOpen, onClose, date, existingNote = '', onNoteSaved }) =>
             })}
           </h2>
           <div style={{ 
-            backgroundColor: '#1a1a1a',
+            backgroundColor: '#1B2B43',
             borderRadius: '8px',
             overflow: 'hidden',
             marginBottom: '20px'
@@ -125,7 +125,7 @@ const NoteModal = ({ isOpen, onClose, date, existingNote = '', onNoteSaved }) =>
               formats={formats}
               placeholder="Add your notes for this trading day..."
               style={{
-                backgroundColor: '#1a1a1a',
+                backgroundColor: '#1B2B43',
                 color: theme.colors.white,
               }}
               theme="snow"
@@ -137,7 +137,7 @@ const NoteModal = ({ isOpen, onClose, date, existingNote = '', onNoteSaved }) =>
           <button
             onClick={onClose}
             style={{
-              backgroundColor: '#333',
+              backgroundColor: '#344563',
               color: theme.colors.white,
               border: 'none',
               borderRadius: '6px',
