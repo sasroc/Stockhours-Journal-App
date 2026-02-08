@@ -728,6 +728,93 @@ Trader Self-Assessment:
   }
 });
 
+// ── AI Daily Debrief ────────────────────────────────────────────────────
+
+app.post('/api/ai/daily-debrief', verifyFirebaseToken, async (req, res) => {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'AI service is not configured on the server.' });
+    }
+
+    // Verify Pro subscription
+    const userRef = db.collection('users').doc(req.user.uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      return res.status(404).json({ error: 'User record not found.' });
+    }
+    const userData = userSnap.data();
+    const sub = userData.subscription || {};
+    if (sub.plan !== 'pro' || !['active', 'trialing'].includes(sub.status)) {
+      return res.status(403).json({ error: 'AI Daily Debrief is available on the Pro plan.' });
+    }
+
+    const { trades, stats, dailyNote, recentHistory } = req.body;
+    if (!trades || !trades.length) {
+      return res.status(400).json({ error: 'No trades provided for debrief.' });
+    }
+
+    const systemPrompt = `You are an expert trading coach with 20+ years of experience in options and equities trading. You are delivering an end-of-day debrief to a trader. Analyze their full day of trading and provide structured, actionable coaching. Your response MUST follow this exact structure with these section headers in bold:
+
+**Daily Performance Summary**
+Recap the day's numbers and put the performance in context relative to recent trading days.
+
+**Standout Trades**
+Highlight the best and worst trades of the day. Explain what made them stand out and what can be learned.
+
+**Behavioral Patterns**
+Analyze patterns in the trader's setups, mistakes, timing, and consistency. Reference recent days if context is available.
+
+**Tomorrow's Game Plan**
+Provide 2-3 specific, actionable suggestions for the next trading session based on today's performance.
+
+Keep the total response under 500 words. Be direct, specific, and constructive.`;
+
+    const tradeLines = trades.map((t, i) => {
+      let line = `Trade ${i + 1}: ${t.symbol} ${t.type || ''} | P&L: $${t.profitLoss != null ? t.profitLoss.toFixed(2) : 'N/A'} | ROI: ${t.netROI != null ? t.netROI.toFixed(2) + '%' : 'N/A'} | Qty: ${t.quantity || 'N/A'}`;
+      if (t.entryTime) line += ` | Entry: ${t.entryTime}`;
+      if (t.setups && t.setups.length) line += ` | Setups: ${t.setups.join(', ')}`;
+      if (t.mistakes && t.mistakes.length) line += ` | Mistakes: ${t.mistakes.join(', ')}`;
+      if (t.rating) line += ` | Rating: ${t.rating}/5`;
+      return line;
+    }).join('\n');
+
+    let userPrompt = `Today's Trades (${stats.date}):\n${tradeLines}\n\nDaily Stats:\n- Total P&L: $${stats.totalPL != null ? stats.totalPL.toFixed(2) : 'N/A'}\n- Total Trades: ${stats.totalTrades}\n- Winners: ${stats.winners} | Losers: ${stats.losers}\n- Profit Factor: ${stats.profitFactor}\n- Volume: ${stats.volume}`;
+
+    if (dailyNote) {
+      userPrompt += `\n\nTrader's Daily Note:\n${dailyNote}`;
+    }
+
+    if (recentHistory && recentHistory.length) {
+      userPrompt += `\n\nRecent Trading Days:`;
+      recentHistory.forEach(day => {
+        userPrompt += `\n- ${day.date}: ${day.tradeCount} trades, P&L: $${day.totalPL != null ? day.totalPL.toFixed(2) : 'N/A'}`;
+      });
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 800,
+      temperature: 0.7,
+    });
+
+    const debrief = completion.choices[0]?.message?.content || '';
+    res.json({ debrief });
+  } catch (error) {
+    console.error('AI daily debrief error:', error);
+    if (error?.status === 429) {
+      return res.status(429).json({ error: 'AI service is busy. Please try again in a moment.' });
+    }
+    if (error?.status === 401) {
+      return res.status(500).json({ error: 'AI service authentication failed. Please contact support.' });
+    }
+    res.status(500).json({ error: 'Failed to generate daily debrief.' });
+  }
+});
+
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
