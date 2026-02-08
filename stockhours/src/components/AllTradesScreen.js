@@ -21,7 +21,7 @@ const getTradeKey = (trade) => {
 };
 
 // Placeholder for the detailed view
-function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistakesTags, setSetupsTags, setMistakesTags, selectedSetups, selectedMistakes, setSelectedSetups, setSelectedMistakes, setRatings }) {
+function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistakesTags, setSetupsTags, setMistakesTags, selectedSetups, selectedMistakes, setSelectedSetups, setSelectedMistakes, setRatings, isPro, currentUser }) {
   // Dummy values for fields not in trade object
   const grossPL = trade.netPL;
   const adjustedCost = (trade.entryPrice * trade.open.Quantity * 100).toFixed(2);
@@ -35,6 +35,63 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
 
   // Trade rating state (supports half-stars)
   const [hoverRating, setHoverRating] = React.useState(null);
+  const [aiReview, setAiReview] = React.useState(null);
+  const [aiLoading, setAiLoading] = React.useState(false);
+  const [aiError, setAiError] = React.useState(null);
+
+  const handleAIReview = async () => {
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const token = await currentUser.getIdToken();
+      const apiBase = process.env.REACT_APP_STRIPE_API_URL || '';
+      const res = await fetch(`${apiBase}/api/ai/trade-review`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          trade: {
+            symbol: trade.symbol,
+            strike: trade.open.Strike,
+            type: trade.open.Type,
+            expiration: trade.open.Expiration,
+            entryPrice: trade.entryPrice,
+            exitPrice: trade.exitPrice,
+            quantity: trade.open.Quantity,
+            netPL: trade.netPL,
+            netROI: trade.netROI,
+            status: trade.status,
+            tradeDate: trade.openDate,
+            closeDate: trade.closeDate,
+            entryTime: trade.open.ExecTime,
+            exitTime: trade.close.ExecTime,
+            rating: rating,
+            setups: selectedSetups,
+            mistakes: selectedMistakes,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 403) {
+          setAiError('AI Trade Review is available on the Pro plan.');
+        } else if (res.status === 429) {
+          setAiError('AI service is busy. Please try again in a moment.');
+        } else {
+          setAiError(data.error || 'Failed to generate trade review.');
+        }
+      } else {
+        setAiReview(data.review);
+      }
+    } catch (err) {
+      setAiError('Network error. Please check your connection and try again.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const tradeRating = rating || 0;
 
   // Star rendering logic for half-stars and hover
@@ -341,6 +398,70 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
           />
         </div>
       </div>
+      {/* AI Trade Review Section */}
+      <div style={{ marginTop: 24 }}>
+        {aiLoading ? (
+          <div style={{ background: '#1A2B44', border: '1px solid #2B3D55', borderRadius: 12, padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{
+              display: 'inline-block', width: 20, height: 20, border: '3px solid #667eea', borderTop: '3px solid transparent', borderRadius: '50%',
+              animation: 'aiSpin 1s linear infinite',
+            }} />
+            <style>{`@keyframes aiSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            <span style={{ color: '#d0d0e0', fontSize: 15 }}>Analyzing your trade...</span>
+          </div>
+        ) : aiError ? (
+          <div style={{ background: 'rgba(255, 77, 79, 0.08)', border: '1px solid rgba(255, 77, 79, 0.3)', borderRadius: 12, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ color: '#ff6b6b', fontSize: 14 }}>{aiError}</span>
+            <button
+              onClick={handleAIReview}
+              style={{ background: '#667eea', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}
+            >Retry</button>
+          </div>
+        ) : aiReview ? (
+          <div style={{ background: '#1A2B44', border: '1px solid #2B3D55', borderRadius: 12, padding: '20px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <span style={{ color: '#b388ff', fontWeight: 700, fontSize: 16 }}>AI Trade Review</span>
+              <button
+                onClick={() => setAiReview(null)}
+                style={{ background: 'none', border: '1px solid #2B3D55', color: '#b3b3c6', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 13 }}
+              >Dismiss</button>
+            </div>
+            <div style={{ color: '#d0d0e0', fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+              {aiReview.split('\n').map((line, i) => {
+                const boldMatch = line.match(/^\*\*(.+?)\*\*$/);
+                if (boldMatch) {
+                  return <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: 15, marginTop: i > 0 ? 12 : 0, marginBottom: 4 }}>{boldMatch[1]}</div>;
+                }
+                if (line.startsWith('- ')) {
+                  return <div key={i} style={{ paddingLeft: 12 }}>{'\u2022 '}{line.slice(2)}</div>;
+                }
+                return <div key={i}>{line}</div>;
+              })}
+            </div>
+          </div>
+        ) : isPro ? (
+          <button
+            onClick={handleAIReview}
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px',
+              fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+              boxShadow: '0 2px 12px rgba(102, 126, 234, 0.3)',
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            <span style={{ fontSize: 18 }}>{'\u2728'}</span>
+            AI Trade Review
+          </button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#666e80', fontSize: 14 }}>
+            <span style={{ fontSize: 16 }}>{'\uD83D\uDD12'}</span>
+            <span>AI Trade Review is available on the <span style={{ color: '#b388ff', fontWeight: 600 }}>Pro plan</span></span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -445,7 +566,7 @@ const AllTradesScreen = ({ tradeData }) => {
   const totalPages = Math.ceil(allTrades.length / ROWS_PER_PAGE);
   const paginatedTrades = allTrades.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
 
-  const { currentUser } = useAuth();
+  const { currentUser, isPro } = useAuth();
   // Ratings state: key = tradeKey, value = rating
   const [ratings, setRatings] = useState({});
   // Track if ratings are loaded from Firestore
@@ -554,6 +675,8 @@ const AllTradesScreen = ({ tradeData }) => {
         setSelectedSetups={tags => handleSetTradeMeta(selectedTrade, { setups: tags })}
         setSelectedMistakes={tags => handleSetTradeMeta(selectedTrade, { mistakes: tags })}
         setRatings={setRatings}
+        isPro={isPro}
+        currentUser={currentUser}
       />
     );
   }

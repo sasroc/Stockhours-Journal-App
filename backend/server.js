@@ -5,6 +5,7 @@ const Stripe = require('stripe');
 const admin = require('firebase-admin');
 const fs = require('fs');
 const fetch = require('node-fetch');
+const OpenAI = require('openai');
 
 dotenv.config();
 
@@ -13,6 +14,8 @@ const app = express();
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(',').map((item) => item.trim()).filter(Boolean)
   : [];
+
+const primaryFrontendUrl = allowedOrigins[0] || '';
 
 app.use(cors({
   origin: allowedOrigins.length ? allowedOrigins : true,
@@ -62,6 +65,7 @@ const initializeFirebaseAdmin = () => {
 
 initializeFirebaseAdmin();
 const db = admin.firestore();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 const getPlanForPrice = (priceId) => {
   if (!priceId) return 'none';
@@ -147,8 +151,8 @@ app.post('/api/stripe/checkout', verifyFirebaseToken, async (req, res) => {
       customer: stripeCustomerId,
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
-      success_url: `${process.env.FRONTEND_URL}/?checkout=success`,
-      cancel_url: `${process.env.FRONTEND_URL}/paywall?checkout=cancel`,
+      success_url: `${primaryFrontendUrl}/?checkout=success`,
+      cancel_url: `${primaryFrontendUrl}/paywall?checkout=cancel`,
       metadata: {
         uid: req.user.uid,
         plan
@@ -187,7 +191,7 @@ app.post('/api/stripe/portal', verifyFirebaseToken, async (req, res) => {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: `${process.env.FRONTEND_URL}/paywall`
+      return_url: `${primaryFrontendUrl}/paywall`
     });
 
     res.json({ url: session.url });
@@ -627,6 +631,100 @@ app.post('/api/schwab/disconnect', verifyFirebaseToken, async (req, res) => {
   } catch (error) {
     console.error('Schwab disconnect error:', error);
     res.status(500).json({ error: 'Failed to disconnect Schwab account.' });
+  }
+});
+
+// ── AI Trade Review ─────────────────────────────────────────────────────
+
+app.post('/api/ai/trade-review', verifyFirebaseToken, async (req, res) => {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'AI review is not configured on the server.' });
+    }
+
+    // Verify Pro subscription
+    const userRef = db.collection('users').doc(req.user.uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      return res.status(404).json({ error: 'User record not found.' });
+    }
+    const userData = userSnap.data();
+    const sub = userData.subscription || {};
+    if (sub.plan !== 'pro' || !['active', 'trialing'].includes(sub.status)) {
+      return res.status(403).json({ error: 'AI Trade Review is available on the Pro plan.' });
+    }
+
+    // Validate trade data
+    const { trade } = req.body;
+    if (!trade || !trade.symbol) {
+      return res.status(400).json({ error: 'Missing trade data.' });
+    }
+
+    const systemPrompt = `You are an expert trading coach with 20+ years of experience in options and equities trading. Analyze the following trade and provide structured, actionable feedback. Be direct, specific, and constructive. Your response MUST follow this exact structure with these section headers in bold:
+
+**Trade Summary**
+Brief recap of what was traded and the outcome.
+
+**What Went Well**
+Identify positives in the trade execution, timing, or strategy.
+
+**Areas for Improvement**
+Specific, actionable suggestions for improving future trades.
+
+**Key Takeaway**
+One concise lesson the trader should remember from this trade.
+
+Keep the total response under 300 words.`;
+
+    const side = (trade.type || '').toUpperCase() === 'PUT' ? 'SHORT' : 'LONG';
+    const holdingPeriod = trade.entryTime && trade.exitTime
+      ? `${Math.round((new Date(trade.exitTime) - new Date(trade.entryTime)) / (1000 * 60))} minutes`
+      : 'N/A';
+
+    const userPrompt = `Trade Details:
+- Symbol: ${trade.symbol}
+- Side: ${side}
+- Strike: ${trade.strike || 'N/A'}
+- Type: ${trade.type || 'N/A'}
+- Expiration: ${trade.expiration || 'N/A'}
+- Entry Price: $${trade.entryPrice || 'N/A'}
+- Exit Price: $${trade.exitPrice || 'N/A'}
+- Quantity: ${trade.quantity || 'N/A'} contracts
+- Net P&L: $${trade.netPL != null ? trade.netPL.toFixed(2) : 'N/A'}
+- Net ROI: ${trade.netROI != null ? trade.netROI.toFixed(2) + '%' : 'N/A'}
+- Status: ${trade.status || 'N/A'}
+- Trade Date: ${trade.tradeDate || 'N/A'}
+- Close Date: ${trade.closeDate || 'N/A'}
+- Holding Period: ${holdingPeriod}
+- Entry Time: ${trade.entryTime || 'N/A'}
+- Exit Time: ${trade.exitTime || 'N/A'}
+
+Trader Self-Assessment:
+- Rating: ${trade.rating ? trade.rating + '/5 stars' : 'Not rated'}
+- Setups: ${trade.setups && trade.setups.length ? trade.setups.join(', ') : 'None tagged'}
+- Mistakes: ${trade.mistakes && trade.mistakes.length ? trade.mistakes.join(', ') : 'None tagged'}`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 600,
+      temperature: 0.7,
+    });
+
+    const review = completion.choices[0]?.message?.content || '';
+    res.json({ review });
+  } catch (error) {
+    console.error('AI trade review error:', error);
+    if (error?.status === 429) {
+      return res.status(429).json({ error: 'AI service is busy. Please try again in a moment.' });
+    }
+    if (error?.status === 401) {
+      return res.status(500).json({ error: 'AI service authentication failed. Please contact support.' });
+    }
+    res.status(500).json({ error: 'Failed to generate trade review.' });
   }
 });
 
