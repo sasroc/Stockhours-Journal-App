@@ -815,6 +815,141 @@ Keep the total response under 500 words. Be direct, specific, and constructive.`
   }
 });
 
+// ── AI Pattern Detection ─────────────────────────────────────────────────
+
+app.post('/api/ai/pattern-detection', verifyFirebaseToken, async (req, res) => {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'AI service is not configured on the server.' });
+    }
+
+    // Verify Pro subscription
+    const userRef = db.collection('users').doc(req.user.uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      return res.status(404).json({ error: 'User record not found.' });
+    }
+    const userData = userSnap.data();
+    const sub = userData.subscription || {};
+    if (sub.plan !== 'pro' || !['active', 'trialing'].includes(sub.status)) {
+      return res.status(403).json({ error: 'AI Pattern Detection is available on the Pro plan.' });
+    }
+
+    const { stats } = req.body;
+    if (!stats || !stats.overall || stats.overall.totalTrades <= 0) {
+      return res.status(400).json({ error: 'No trade data provided for analysis.' });
+    }
+
+    const systemPrompt = `You are an expert trading coach with 20+ years of experience in options and equities trading. You are analyzing a trader's full trade history statistics to identify behavioral patterns and actionable insights.
+
+Respond with exactly 5-8 pattern insights. Each insight should:
+- Be a specific, data-backed finding (cite the actual numbers from the stats)
+- Include an actionable recommendation
+- Use this format: **Pattern Title** followed by the insight paragraph
+
+Prioritize the most impactful and surprising patterns. Look for:
+- Time-of-day edges (when they trade best/worst)
+- Day-of-week patterns
+- Setup/strategy effectiveness differences
+- Position sizing impact on win rate
+- Trade duration sweet spots
+- Common mistakes and their cost
+- Symbol concentration or diversification effects
+
+Keep the total response around 600 words. Be direct, specific, and constructive.`;
+
+    let userPrompt = `Here are the trader's full history statistics:\n\n`;
+
+    userPrompt += `OVERALL STATS:\n- Total Trades: ${stats.overall.totalTrades}\n- Win Rate: ${stats.overall.winRate}%\n- Avg Win: $${stats.overall.avgWin}\n- Avg Loss: $${stats.overall.avgLoss}\n- Profit Factor: ${stats.overall.profitFactor}\n- Total P&L: $${stats.overall.totalPL}\n- Best Trade: $${stats.overall.bestTrade}\n- Worst Trade: $${stats.overall.worstTrade}\n\n`;
+
+    if (stats.byTimeOfDay && Object.keys(stats.byTimeOfDay).length > 0) {
+      userPrompt += `BY TIME OF DAY:\n`;
+      for (const [hour, data] of Object.entries(stats.byTimeOfDay)) {
+        if (data.trades > 0) {
+          userPrompt += `- ${hour}: ${data.trades} trades, ${data.winRate}% win rate, avg P&L $${data.avgPL}\n`;
+        }
+      }
+      userPrompt += `\n`;
+    }
+
+    if (stats.byDayOfWeek && Object.keys(stats.byDayOfWeek).length > 0) {
+      userPrompt += `BY DAY OF WEEK:\n`;
+      for (const [day, data] of Object.entries(stats.byDayOfWeek)) {
+        if (data.trades > 0) {
+          userPrompt += `- ${day}: ${data.trades} trades, ${data.winRate}% win rate, avg P&L $${data.avgPL}\n`;
+        }
+      }
+      userPrompt += `\n`;
+    }
+
+    if (stats.bySymbol && stats.bySymbol.length > 0) {
+      userPrompt += `BY SYMBOL (top tickers):\n`;
+      stats.bySymbol.forEach(s => {
+        userPrompt += `- ${s.symbol}: ${s.trades} trades, ${s.winRate}% win rate, total P&L $${s.totalPL}, avg P&L $${s.avgPL}\n`;
+      });
+      userPrompt += `\n`;
+    }
+
+    if (stats.bySetup && stats.bySetup.length > 0) {
+      userPrompt += `BY SETUP TAG:\n`;
+      stats.bySetup.forEach(s => {
+        userPrompt += `- ${s.tag}: ${s.trades} trades, ${s.winRate}% win rate, avg P&L $${s.avgPL}\n`;
+      });
+      userPrompt += `\n`;
+    }
+
+    if (stats.byMistake && stats.byMistake.length > 0) {
+      userPrompt += `BY MISTAKE TAG:\n`;
+      stats.byMistake.forEach(s => {
+        userPrompt += `- ${s.tag}: ${s.trades} trades, avg P&L $${s.avgPL}\n`;
+      });
+      userPrompt += `\n`;
+    }
+
+    if (stats.byDuration && Object.keys(stats.byDuration).length > 0) {
+      userPrompt += `BY TRADE DURATION:\n`;
+      for (const [bucket, data] of Object.entries(stats.byDuration)) {
+        if (data.trades > 0) {
+          userPrompt += `- ${bucket}: ${data.trades} trades, ${data.winRate}% win rate, avg P&L $${data.avgPL}\n`;
+        }
+      }
+      userPrompt += `\n`;
+    }
+
+    if (stats.bySize && Object.keys(stats.bySize).length > 0) {
+      userPrompt += `BY POSITION SIZE (contracts):\n`;
+      for (const [bucket, data] of Object.entries(stats.bySize)) {
+        if (data.trades > 0) {
+          userPrompt += `- ${bucket}: ${data.trades} trades, ${data.winRate}% win rate, avg P&L $${data.avgPL}\n`;
+        }
+      }
+      userPrompt += `\n`;
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 1000,
+      temperature: 0.7,
+    });
+
+    const insights = completion.choices[0]?.message?.content || '';
+    res.json({ insights });
+  } catch (error) {
+    console.error('AI pattern detection error:', error);
+    if (error?.status === 429) {
+      return res.status(429).json({ error: 'AI service is busy. Please try again in a moment.' });
+    }
+    if (error?.status === 401) {
+      return res.status(500).json({ error: 'AI service authentication failed. Please contact support.' });
+    }
+    res.status(500).json({ error: 'Failed to generate pattern insights.' });
+  }
+});
+
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);

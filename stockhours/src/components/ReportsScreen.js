@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { theme } from '../theme';
 import { startOfWeek, endOfWeek, eachWeekOfInterval, getMonth, getHours, differenceInDays } from 'date-fns';
+import { useAuth } from '../contexts/AuthContext';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 // ChartContainer component for robust responsive chart rendering
 function ChartContainer({ data, options, layout, title }) {
@@ -80,15 +83,20 @@ const getTradeKey = (trade) => {
 };
 
 const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRatings = {} }) => {
+  const { currentUser, isPro } = useAuth();
   const [selectedReport, setSelectedReport] = useState('Overview');
   const [hoveredReport, setHoveredReport] = useState(null);
   const [expandedCategories, setExpandedCategories] = useState({
+    'AI Insights': true,
     'Date & Time': true,
     'Price & Quantity': true,
     'Options': true,
     'Tags': true,
   });
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960);
+  const [patternInsights, setPatternInsights] = useState(null);
+  const [patternLoading, setPatternLoading] = useState(false);
+  const [patternError, setPatternError] = useState(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -98,6 +106,24 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    const fetchInsights = async () => {
+      if (currentUser) {
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.patternInsights) setPatternInsights(data.patternInsights);
+          }
+        } catch (err) {
+          console.error('Failed to load pattern insights:', err);
+        }
+      }
+    };
+    fetchInsights();
+  }, [currentUser]);
 
   // Restore original position-tracking logic for processedTrades
   const processedTrades = useMemo(() => {
@@ -1260,7 +1286,223 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
     }],
   };
 
+  const computeTradeStats = () => {
+    const trades = processedTrades;
+    const tagTrades = tagProcessedTrades;
+
+    // Overall
+    const totalTrades = trades.length;
+    const winningTrades = trades.filter(t => t.profitLoss > 0);
+    const losingTrades = trades.filter(t => t.profitLoss < 0);
+    const winRate = totalTrades > 0 ? ((winningTrades.length / totalTrades) * 100).toFixed(1) : '0';
+    const avgWin = winningTrades.length > 0 ? (winningTrades.reduce((s, t) => s + t.profitLoss, 0) / winningTrades.length).toFixed(2) : '0';
+    const avgLoss = losingTrades.length > 0 ? (losingTrades.reduce((s, t) => s + t.profitLoss, 0) / losingTrades.length).toFixed(2) : '0';
+    const grossProfit = winningTrades.reduce((s, t) => s + t.profitLoss, 0);
+    const grossLoss = Math.abs(losingTrades.reduce((s, t) => s + t.profitLoss, 0));
+    const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : '0';
+    const totalPL = trades.reduce((s, t) => s + t.profitLoss, 0).toFixed(2);
+    const bestTrade = trades.length > 0 ? Math.max(...trades.map(t => t.profitLoss)).toFixed(2) : '0';
+    const worstTrade = trades.length > 0 ? Math.min(...trades.map(t => t.profitLoss)).toFixed(2) : '0';
+
+    // By Time of Day
+    const timeLabels = ['Pre-market', '9-10', '10-11', '11-12', '12-1', '1-2', '2-3', '3-4'];
+    const timeBuckets = {};
+    timeLabels.forEach(l => { timeBuckets[l] = { trades: 0, wins: 0, totalPL: 0 }; });
+    trades.forEach(t => {
+      const h = new Date(t.FirstBuyExecTime).getHours();
+      let bucket;
+      if (h < 9) bucket = 'Pre-market';
+      else if (h < 10) bucket = '9-10';
+      else if (h < 11) bucket = '10-11';
+      else if (h < 12) bucket = '11-12';
+      else if (h < 13) bucket = '12-1';
+      else if (h < 14) bucket = '1-2';
+      else if (h < 15) bucket = '2-3';
+      else bucket = '3-4';
+      timeBuckets[bucket].trades++;
+      if (t.profitLoss > 0) timeBuckets[bucket].wins++;
+      timeBuckets[bucket].totalPL += t.profitLoss;
+    });
+    const byTimeOfDay = {};
+    for (const [k, v] of Object.entries(timeBuckets)) {
+      if (v.trades > 0) {
+        byTimeOfDay[k] = { trades: v.trades, winRate: ((v.wins / v.trades) * 100).toFixed(1), avgPL: (v.totalPL / v.trades).toFixed(2) };
+      }
+    }
+
+    // By Day of Week
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const dayBuckets = {};
+    daysOfWeek.forEach(d => { dayBuckets[d] = { trades: 0, wins: 0, totalPL: 0 }; });
+    trades.forEach(t => {
+      const day = new Date(t.FirstBuyExecTime).getDay();
+      if (day >= 1 && day <= 5) {
+        const name = daysOfWeek[day - 1];
+        dayBuckets[name].trades++;
+        if (t.profitLoss > 0) dayBuckets[name].wins++;
+        dayBuckets[name].totalPL += t.profitLoss;
+      }
+    });
+    const byDayOfWeek = {};
+    for (const [k, v] of Object.entries(dayBuckets)) {
+      if (v.trades > 0) {
+        byDayOfWeek[k] = { trades: v.trades, winRate: ((v.wins / v.trades) * 100).toFixed(1), avgPL: (v.totalPL / v.trades).toFixed(2) };
+      }
+    }
+
+    // By Symbol (top 10)
+    const symbolMap = {};
+    trades.forEach(t => {
+      if (!symbolMap[t.Symbol]) symbolMap[t.Symbol] = { trades: 0, wins: 0, totalPL: 0 };
+      symbolMap[t.Symbol].trades++;
+      if (t.profitLoss > 0) symbolMap[t.Symbol].wins++;
+      symbolMap[t.Symbol].totalPL += t.profitLoss;
+    });
+    const bySymbol = Object.entries(symbolMap)
+      .sort((a, b) => b[1].trades - a[1].trades)
+      .slice(0, 10)
+      .map(([symbol, v]) => ({
+        symbol, trades: v.trades, winRate: ((v.wins / v.trades) * 100).toFixed(1),
+        totalPL: v.totalPL.toFixed(2), avgPL: (v.totalPL / v.trades).toFixed(2),
+      }));
+
+    // By Setup Tag
+    const setupMap = {};
+    tagTrades.forEach(t => {
+      (t.setupTags || []).forEach(tag => {
+        if (!setupMap[tag]) setupMap[tag] = { trades: 0, wins: 0, totalPL: 0 };
+        setupMap[tag].trades++;
+        if (t.profitLoss > 0) setupMap[tag].wins++;
+        setupMap[tag].totalPL += t.profitLoss;
+      });
+    });
+    const bySetup = Object.entries(setupMap).map(([tag, v]) => ({
+      tag, trades: v.trades, winRate: ((v.wins / v.trades) * 100).toFixed(1), avgPL: (v.totalPL / v.trades).toFixed(2),
+    }));
+
+    // By Mistake Tag
+    const mistakeMap = {};
+    tagTrades.forEach(t => {
+      (t.mistakeTags || []).forEach(tag => {
+        if (!mistakeMap[tag]) mistakeMap[tag] = { trades: 0, totalPL: 0 };
+        mistakeMap[tag].trades++;
+        mistakeMap[tag].totalPL += t.profitLoss;
+      });
+    });
+    const byMistake = Object.entries(mistakeMap).map(([tag, v]) => ({
+      tag, trades: v.trades, avgPL: (v.totalPL / v.trades).toFixed(2),
+    }));
+
+    // By Duration
+    const durLabels = ['<15min', '15-60min', '1-4hr', '4hr+'];
+    const durBuckets = {};
+    durLabels.forEach(l => { durBuckets[l] = { trades: 0, wins: 0, totalPL: 0 }; });
+    trades.forEach(t => {
+      const entry = new Date(t.FirstBuyExecTime);
+      const exit = new Date(t.ExitTime);
+      if (isNaN(entry) || isNaN(exit)) return;
+      const mins = (exit - entry) / (1000 * 60);
+      let bucket;
+      if (mins < 15) bucket = '<15min';
+      else if (mins < 60) bucket = '15-60min';
+      else if (mins < 240) bucket = '1-4hr';
+      else bucket = '4hr+';
+      durBuckets[bucket].trades++;
+      if (t.profitLoss > 0) durBuckets[bucket].wins++;
+      durBuckets[bucket].totalPL += t.profitLoss;
+    });
+    const byDuration = {};
+    for (const [k, v] of Object.entries(durBuckets)) {
+      if (v.trades > 0) {
+        byDuration[k] = { trades: v.trades, winRate: ((v.wins / v.trades) * 100).toFixed(1), avgPL: (v.totalPL / v.trades).toFixed(2) };
+      }
+    }
+
+    // By Position Size
+    const sizeLabels = ['1', '2-5', '6-10', '10+'];
+    const sizeBuckets = {};
+    sizeLabels.forEach(l => { sizeBuckets[l] = { trades: 0, wins: 0, totalPL: 0 }; });
+    trades.forEach(t => {
+      const vol = t.totalVolume || 0;
+      let bucket;
+      if (vol <= 1) bucket = '1';
+      else if (vol <= 5) bucket = '2-5';
+      else if (vol <= 10) bucket = '6-10';
+      else bucket = '10+';
+      sizeBuckets[bucket].trades++;
+      if (t.profitLoss > 0) sizeBuckets[bucket].wins++;
+      sizeBuckets[bucket].totalPL += t.profitLoss;
+    });
+    const bySize = {};
+    for (const [k, v] of Object.entries(sizeBuckets)) {
+      if (v.trades > 0) {
+        bySize[k] = { trades: v.trades, winRate: ((v.wins / v.trades) * 100).toFixed(1), avgPL: (v.totalPL / v.trades).toFixed(2) };
+      }
+    }
+
+    return {
+      overall: { totalTrades, winRate, avgWin, avgLoss, profitFactor, totalPL, bestTrade, worstTrade },
+      byTimeOfDay, byDayOfWeek, bySymbol, bySetup, byMistake, byDuration, bySize,
+    };
+  };
+
+  const handlePatternDetection = async () => {
+    setPatternLoading(true);
+    setPatternError(null);
+    try {
+      const stats = computeTradeStats();
+      const token = await currentUser.getIdToken();
+      const API_URL = process.env.REACT_APP_STRIPE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/ai/pattern-detection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ stats }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        if (response.status === 403) {
+          setPatternError('AI Pattern Detection is available on the Pro plan.');
+        } else if (response.status === 429) {
+          setPatternError('AI service is busy. Please try again in a moment.');
+        } else {
+          setPatternError(errData.error || 'Failed to generate pattern insights.');
+        }
+        return;
+      }
+
+      const data = await response.json();
+      setPatternInsights(data.insights);
+      // Persist to Firestore
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userDocRef, { patternInsights: data.insights });
+      }
+    } catch (err) {
+      console.error('Pattern detection error:', err);
+      setPatternError('Network error. Please check your connection and try again.');
+    } finally {
+      setPatternLoading(false);
+    }
+  };
+
+  const handleDeletePatternInsights = async () => {
+    setPatternInsights(null);
+    if (currentUser) {
+      try {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userDocRef, { patternInsights: null });
+      } catch (err) {
+        console.error('Failed to delete pattern insights:', err);
+      }
+    }
+  };
+
   const reportCategories = {
+    'AI Insights': ['Pattern Detection'],
     'Date & Time': ['Days', 'Weeks', 'Months', 'Trade time', 'Trade duration'],
     'Price & Quantity': ['Volume', 'Price', 'Instrument'],
     'Options': ['Days till expiration'],
@@ -1885,6 +2127,138 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
           />
         </div>
       );
+    } else if (selectedReport === 'Pattern Detection') {
+      // Not Pro — locked message
+      if (!isPro) {
+        return (
+          <div style={{ marginTop: '20px', backgroundColor: '#1A2B44', borderRadius: '12px', padding: '30px', border: '1px solid #2B3D55', textAlign: 'center' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b388ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '12px' }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>AI Pattern Detection</div>
+            <div style={{ color: '#b3b3c6', fontSize: '14px' }}>
+              Upgrade to the <span style={{ color: '#b388ff', fontWeight: 'bold' }}>Pro plan</span> to unlock AI-powered pattern detection across your full trade history.
+            </div>
+          </div>
+        );
+      }
+
+      // Loading state
+      if (patternLoading) {
+        return (
+          <div style={{ marginTop: '20px', backgroundColor: '#1A2B44', borderRadius: '12px', padding: '30px', border: '1px solid #2B3D55', textAlign: 'center' }}>
+            <div style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid #2B3D55', borderTop: '3px solid #b388ff', borderRadius: '50%', animation: 'aiSpin 1s linear infinite', marginBottom: '12px' }} />
+            <div style={{ color: '#d0d0e0', fontSize: '16px' }}>Analyzing your trade history...</div>
+            <div style={{ color: '#b3b3c6', fontSize: '13px', marginTop: '6px' }}>This may take a few seconds</div>
+            <style>{`@keyframes aiSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+          </div>
+        );
+      }
+
+      // Error state
+      if (patternError) {
+        return (
+          <div style={{ marginTop: '20px', backgroundColor: '#2a1a1a', borderRadius: '12px', padding: '20px', border: '1px solid #5a2a2a' }}>
+            <div style={{ color: '#ff6b6b', fontSize: '14px', marginBottom: '12px' }}>{patternError}</div>
+            <button
+              onClick={handlePatternDetection}
+              style={{ padding: '8px 20px', backgroundColor: 'transparent', color: '#ff6b6b', border: '1px solid #ff6b6b', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
+            >
+              Retry
+            </button>
+          </div>
+        );
+      }
+
+      // Insights loaded
+      if (patternInsights) {
+        return (
+          <div style={{ marginTop: '20px' }}>
+            <div style={{ backgroundColor: '#1A2B44', borderRadius: '12px', border: '1px solid #2B3D55', overflow: 'hidden' }}>
+              <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #2B3D55' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b388ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span style={{ color: '#b388ff', fontWeight: 'bold', fontSize: '16px' }}>AI Pattern Insights</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={handlePatternDetection}
+                    style={{ padding: '6px 14px', backgroundColor: 'transparent', color: '#b388ff', border: '1px solid #b388ff', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                  >
+                    Regenerate
+                  </button>
+                  <button
+                    onClick={handleDeletePatternInsights}
+                    style={{ padding: '6px 14px', backgroundColor: 'transparent', color: '#ff6b6b', border: '1px solid #ff6b6b', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+              <div style={{ padding: '20px', color: '#d0d0e0', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
+                {patternInsights.split('\n').map((line, i) => {
+                  if (line.startsWith('**') && line.includes('**')) {
+                    const match = line.match(/^\*\*(.+?)\*\*(.*)/);
+                    if (match) {
+                      return (
+                        <div key={i} style={{ marginTop: i > 0 ? '16px' : '0' }}>
+                          <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px' }}>{match[1]}</span>
+                          {match[2] && <span>{match[2]}</span>}
+                        </div>
+                      );
+                    }
+                  }
+                  if (line.trim() === '') return <div key={i} style={{ height: '8px' }} />;
+                  return <div key={i}>{line}</div>;
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // No insights yet — show generate button
+      return (
+        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+          <div style={{ backgroundColor: '#1A2B44', borderRadius: '12px', padding: '40px 30px', border: '1px solid #2B3D55' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#b388ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}>
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Discover Your Trading Patterns</div>
+            <div style={{ color: '#b3b3c6', fontSize: '14px', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
+              AI analyzes your full trade history to surface behavioral insights, timing edges, and strategy effectiveness.
+            </div>
+            <button
+              onClick={handlePatternDetection}
+              disabled={processedTrades.length === 0}
+              style={{
+                padding: '12px 32px',
+                background: processedTrades.length === 0 ? '#555' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: processedTrades.length === 0 ? 'not-allowed' : 'pointer',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              Detect Patterns
+            </button>
+            {processedTrades.length === 0 && (
+              <div style={{ color: '#b3b3c6', fontSize: '12px', marginTop: '12px' }}>Import some trades first to use this feature.</div>
+            )}
+          </div>
+        </div>
+      );
     } else {
       return (
         <div style={{ color: theme.colors.white, marginTop: '20px' }}>
@@ -1950,6 +2324,11 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
                   style={{ padding: '10px', color: theme.colors.white, display: 'block', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold' }}
                 >
                   <span style={{ marginRight: '8px' }}>
+                    {category === 'AI Insights' && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b388ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    )}
                     {category === 'Date & Time' && (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={theme.colors.white} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10" />
