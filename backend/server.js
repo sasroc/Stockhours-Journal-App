@@ -950,6 +950,111 @@ Keep the total response around 600 words. Be direct, specific, and constructive.
   }
 });
 
+// AI Weekly Review endpoint
+app.post('/api/ai/weekly-review', verifyFirebaseToken, async (req, res) => {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'AI service is not configured on the server.' });
+    }
+
+    // Verify Pro subscription
+    const userRef = db.collection('users').doc(req.user.uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      return res.status(404).json({ error: 'User record not found.' });
+    }
+    const userData = userSnap.data();
+    const sub = userData.subscription || {};
+    if (sub.plan !== 'pro' || !['active', 'trialing'].includes(sub.status)) {
+      return res.status(403).json({ error: 'AI Weekly Review is available on the Pro plan.' });
+    }
+
+    const { weeklyStats, dailyBreakdown, tradeCount, notes } = req.body;
+    if (!weeklyStats || tradeCount <= 0) {
+      return res.status(400).json({ error: 'No trade data provided for weekly review.' });
+    }
+
+    const systemPrompt = `You are a concise trading coach. Generate a brief weekly review.
+
+Keep it SHORT — the entire response should be under 300 words. No filler, no restating stats the trader already knows. Focus on insight, not summary.
+
+**The Week in Brief** — 2-3 sentences: the headline takeaway.
+
+**What Worked & What Didn't** — 2-3 bullet points max. Be specific.
+
+**One Key Observation** — A single behavioral or pattern insight.
+
+---GOALS---
+
+**Next Week's Focus**
+3 numbered goals. One sentence each. Specific and actionable.
+
+The "---GOALS---" delimiter MUST appear on its own line exactly as shown.`;
+
+    let userPrompt = `Here is the trader's weekly data:\n\n`;
+    userPrompt += `WEEKLY STATS:\n`;
+    userPrompt += `- Total P&L: $${weeklyStats.totalPL?.toFixed(2)}\n`;
+    userPrompt += `- Total Trades: ${weeklyStats.totalTrades}\n`;
+    userPrompt += `- Winners: ${weeklyStats.winners}\n`;
+    userPrompt += `- Losers: ${weeklyStats.losers}\n`;
+    userPrompt += `- Win Rate: ${weeklyStats.winRate}%\n`;
+    userPrompt += `- Profit Factor: ${weeklyStats.profitFactor}\n`;
+    userPrompt += `- Best Day P&L: $${weeklyStats.bestDay?.toFixed(2)}\n`;
+    userPrompt += `- Worst Day P&L: $${weeklyStats.worstDay?.toFixed(2)}\n`;
+    userPrompt += `- Total Volume (contracts): ${weeklyStats.totalVolume}\n\n`;
+
+    if (dailyBreakdown && dailyBreakdown.length > 0) {
+      userPrompt += `DAILY BREAKDOWN:\n`;
+      dailyBreakdown.forEach(day => {
+        userPrompt += `- ${day.date}: ${day.trades} trades, P&L $${day.totalPL?.toFixed(2)}, ${day.winners}W/${day.losers}L\n`;
+      });
+      userPrompt += `\n`;
+    }
+
+    if (notes && notes.length > 0) {
+      userPrompt += `TRADER'S DAILY NOTES:\n`;
+      notes.forEach(note => {
+        userPrompt += `- ${note.date}: ${note.text}\n`;
+      });
+      userPrompt += `\n`;
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 600,
+      temperature: 0.7,
+    });
+
+    const fullResponse = completion.choices[0]?.message?.content || '';
+
+    // Parse response: split on ---GOALS--- delimiter
+    let review, goals;
+    if (fullResponse.includes('---GOALS---')) {
+      const parts = fullResponse.split('---GOALS---');
+      review = parts[0].trim();
+      goals = parts[1].trim();
+    } else {
+      review = fullResponse.trim();
+      goals = '';
+    }
+
+    res.json({ review, goals });
+  } catch (error) {
+    console.error('AI weekly review error:', error);
+    if (error?.status === 429) {
+      return res.status(429).json({ error: 'AI service is busy. Please try again in a moment.' });
+    }
+    if (error?.status === 401) {
+      return res.status(500).json({ error: 'AI service authentication failed. Please contact support.' });
+    }
+    res.status(500).json({ error: 'Failed to generate weekly review.' });
+  }
+});
+
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);

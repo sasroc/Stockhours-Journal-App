@@ -412,6 +412,37 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     fetchDebriefs();
   }, [currentUser]);
 
+  // Weekly review badge state
+  const [weeklyReviews, setWeeklyReviews] = useState({});
+  useEffect(() => {
+    const fetchWeeklyReviews = async () => {
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.weeklyReviews) setWeeklyReviews(data.weeklyReviews);
+        }
+      }
+    };
+    fetchWeeklyReviews();
+  }, [currentUser]);
+
+  const getWeekMonday = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    d.setDate(d.getDate() - diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+  const toWeekKey = (date) => {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const currentWeekKey = toWeekKey(getWeekMonday(new Date()));
+  const hasCurrentWeekReview = !!weeklyReviews[currentWeekKey];
+
   // Convert YYYY-MM-DD to MM/DD/YYYY to match DailyStatsScreen debrief keys
   const toDebriefKey = (dateStr) => {
     const [year, month, day] = dateStr.split('-');
@@ -1261,6 +1292,33 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   return (
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
       <style>{`@keyframes aiSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      {/* Weekly Review Badge */}
+      {isPro && (
+        <div
+          onClick={() => navigate('/weekly-reviews')}
+          style={{
+            background: hasCurrentWeekReview ? '#1A2B44' : 'linear-gradient(135deg, #667eea, #764ba2)',
+            border: hasCurrentWeekReview ? '1px solid #2B3D55' : 'none',
+            borderRadius: '10px',
+            padding: '12px 20px',
+            marginBottom: '16px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            transition: 'opacity 0.2s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+        >
+          <span style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>
+            {hasCurrentWeekReview ? '✨ Weekly Review Ready' : '✨ Generate your Weekly Review'}
+          </span>
+          <span style={{ color: hasCurrentWeekReview ? '#b388ff' : 'rgba(255,255,255,0.8)', fontSize: '13px' }}>
+            {hasCurrentWeekReview ? 'View →' : '→'}
+          </span>
+        </div>
+      )}
       {/* First row of stat boxes */}
       <div
         style={{

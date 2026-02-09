@@ -33,6 +33,7 @@ import MarketingLanding from './components/MarketingLanding';
 import PaywallScreen from './components/PaywallScreen';
 import PricingScreen from './components/PricingScreen';
 import SchwabCallback from './components/SchwabCallback';
+import WeeklyReviewScreen from './components/WeeklyReviewScreen';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -93,6 +94,8 @@ function AppRoutes() {
   const dailyStatsTooltipRef = useRef(null);
   const allTradesButtonRef = useRef(null);
   const allTradesTooltipRef = useRef(null);
+  const weeklyReviewButtonRef = useRef(null);
+  const weeklyReviewTooltipRef = useRef(null);
 
   // Tag lists (per user)
   const [setupsTags, setSetupsTags] = useState([]);
@@ -191,6 +194,8 @@ function AppRoutes() {
       setCurrentScreen('All Trades');
     } else if (path === '/settings') {
       setCurrentScreen('Profile Settings');
+    } else if (path === '/weekly-reviews') {
+      setCurrentScreen('Weekly Reviews');
     }
   }, [location.pathname]);
 
@@ -633,6 +638,10 @@ function AppRoutes() {
     navigate('/alltrades');
   };
 
+  const handleWeeklyReviewsClick = () => {
+    navigate('/weekly-reviews');
+  };
+
   const handleLogout = async () => {
     await logout();
     setIsProfileMenuOpen(false);
@@ -1055,6 +1064,65 @@ function AppRoutes() {
 
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div
+            ref={weeklyReviewButtonRef}
+            onClick={handleWeeklyReviewsClick}
+            onMouseEnter={(e) => { weeklyReviewTooltipRef.current.style.visibility = 'visible'; }}
+            onMouseLeave={(e) => { weeklyReviewTooltipRef.current.style.visibility = 'hidden'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              backgroundColor: theme.colors.green,
+              borderRadius: '50%',
+              cursor: 'pointer',
+              marginBottom: '20px',
+              position: 'relative',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute' }}
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+              <path d="M15 14l-3 3-1.5-1.5" />
+            </svg>
+            <span
+              ref={weeklyReviewTooltipRef}
+              className="tooltip"
+              style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                left: '50px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#344563',
+                color: theme.colors.white,
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1001,
+              }}
+            >
+              Weekly Reviews
+            </span>
+          </div>
+        </div>
+
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+          <div
             ref={importsButtonRef}
             onClick={handleImportsClick}
             onMouseEnter={(e) => { importsTooltipRef.current.style.visibility = 'visible'; }}
@@ -1383,6 +1451,22 @@ function AppRoutes() {
               <ProfileSettingsScreen currentUser={currentUser} subscription={subscription} />
             </div>
           </>
+        ) : location.pathname === '/weekly-reviews' ? (
+          <>
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '1400px',
+                backgroundColor: '#0F1D2F',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '0 auto',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              <WeeklyReviewScreen tradeData={filteredTradeData} />
+            </div>
+          </>
         ) : null}
       </div>
     </div>
@@ -1415,6 +1499,7 @@ function AppRoutesWrapper() {
       <Route path="/dailystats" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/alltrades" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
+      <Route path="/weekly-reviews" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/callback/schwab" element={<ProtectedRoute requireSubscription={false}><SchwabCallback /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
