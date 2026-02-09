@@ -3,7 +3,7 @@ import { Line, Bar } from 'react-chartjs-2';
 import { theme } from '../theme';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import NoteModal from './NoteModal';
 
@@ -198,8 +198,12 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const [notes, setNotes] = useState({});
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [debriefs, setDebriefs] = useState({});
+  const [debriefLoading, setDebriefLoading] = useState(null);
+  const [debriefError, setDebriefError] = useState(null);
+  const [debriefVisible, setDebriefVisible] = useState({});
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, isPro } = useAuth();
 
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
@@ -393,6 +397,126 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     fetchNotes();
   }, [currentUser]);
 
+  // Fetch saved debriefs from Firestore on mount
+  useEffect(() => {
+    const fetchDebriefs = async () => {
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.dailyDebriefs) setDebriefs(data.dailyDebriefs);
+        }
+      }
+    };
+    fetchDebriefs();
+  }, [currentUser]);
+
+  // Convert YYYY-MM-DD to MM/DD/YYYY to match DailyStatsScreen debrief keys
+  const toDebriefKey = (dateStr) => {
+    const [year, month, day] = dateStr.split('-');
+    return `${month}/${day}/${year}`;
+  };
+
+  const stripHtml = (html) => {
+    if (!html) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
+  const handleDailyDebrief = async (date) => {
+    if (debriefLoading) return;
+    const debriefKey = toDebriefKey(date);
+    setDebriefLoading(date);
+    setDebriefError(null);
+
+    try {
+      const dayTrades = calendarData[date]?.trades || [];
+      const tradePayload = dayTrades.map(trade => ({
+        symbol: trade.Symbol,
+        type: trade.Type || 'N/A',
+        profitLoss: trade.profitLoss,
+        netROI: trade.Quantity && trade.Price ? (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100 : 0,
+        quantity: trade.Quantity || 0,
+        entryTime: trade.FirstBuyExecTime ? new Date(trade.FirstBuyExecTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+        setups: [],
+        mistakes: [],
+        rating: 0,
+      }));
+
+      const totalPL = dayTrades.reduce((sum, t) => sum + t.profitLoss, 0);
+      const winners = dayTrades.filter(t => t.profitLoss > 0).length;
+      const losers = dayTrades.filter(t => t.profitLoss < 0).length;
+      const dayTotalProfits = dayTrades.filter(t => t.profitLoss > 0).reduce((sum, t) => sum + t.profitLoss, 0);
+      const dayTotalLosses = Math.abs(dayTrades.filter(t => t.profitLoss < 0).reduce((sum, t) => sum + t.profitLoss, 0));
+      const dayProfitFactor = dayTotalLosses === 0 ? (dayTotalProfits > 0 ? 'Inf' : '0') : (dayTotalProfits / dayTotalLosses).toFixed(2);
+      const volume = dayTrades.reduce((sum, t) => sum + (t.Quantity || 0), 0);
+
+      const stats = {
+        date: debriefKey,
+        totalPL,
+        totalTrades: dayTrades.length,
+        winners,
+        losers,
+        profitFactor: dayProfitFactor,
+        volume,
+      };
+
+      const dailyNote = stripHtml(notes[date] || '');
+
+      // Build recent history from last 5 other trading days
+      const sortedDates = Object.keys(calendarData).sort((a, b) => new Date(b) - new Date(a)).filter(d => d !== date);
+      const recentHistory = sortedDates.slice(0, 5).map(d => {
+        const dTrades = calendarData[d]?.trades || [];
+        return {
+          date: toDebriefKey(d),
+          tradeCount: dTrades.length,
+          totalPL: dTrades.reduce((sum, t) => sum + t.profitLoss, 0),
+        };
+      });
+
+      const token = await currentUser.getIdToken();
+      const API_URL = process.env.REACT_APP_STRIPE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/ai/daily-debrief`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ trades: tradePayload, stats, dailyNote, recentHistory }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        if (response.status === 403) {
+          setDebriefError({ date, message: 'AI Daily Debrief is available on the Pro plan.' });
+        } else if (response.status === 429) {
+          setDebriefError({ date, message: 'AI service is busy. Please try again in a moment.' });
+        } else {
+          setDebriefError({ date, message: errData.error || 'Failed to generate debrief.' });
+        }
+        return;
+      }
+
+      const data = await response.json();
+      setDebriefs(prev => {
+        const updated = { ...prev, [debriefKey]: data.debrief };
+        if (currentUser) {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          updateDoc(userDocRef, { dailyDebriefs: updated });
+        }
+        return updated;
+      });
+      setDebriefVisible(prev => ({ ...prev, [debriefKey]: true }));
+    } catch (err) {
+      console.error('Daily debrief error:', err);
+      setDebriefError({ date, message: 'Network error. Please check your connection and try again.' });
+    } finally {
+      setDebriefLoading(null);
+    }
+  };
+
   const totalTrades = trades.length;
   const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
   const tradeExpectancy = totalTrades > 0 ? totalProfitLoss / totalTrades : 0;
@@ -523,6 +647,45 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             >
               {notes[dayData.date] ? 'View Note' : 'Add Note'}
             </button>
+            {isPro && (() => {
+              const dk = toDebriefKey(dayData.date);
+              return (
+                <button
+                  onClick={() => {
+                    if (debriefs[dk]) {
+                      setDebriefVisible(prev => ({ ...prev, [dk]: !prev[dk] }));
+                    } else {
+                      handleDailyDebrief(dayData.date);
+                    }
+                  }}
+                  disabled={debriefLoading === dayData.date}
+                  style={{
+                    background: debriefLoading === dayData.date ? '#555' : 'linear-gradient(135deg, #667eea, #764ba2)',
+                    color: '#fff',
+                    border: debriefs[dk] && !debriefVisible[dk] ? '1px solid #764ba2' : 'none',
+                    borderRadius: '4px',
+                    padding: '5px 10px',
+                    cursor: debriefLoading === dayData.date ? 'not-allowed' : 'pointer',
+                    marginRight: '10px',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                  }}
+                >
+                  {debriefLoading === dayData.date ? (
+                    <>
+                      <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'aiSpin 0.8s linear infinite' }} />
+                      Analyzing...
+                    </>
+                  ) : debriefs[dk] ? (
+                    debriefVisible[dk] ? <>{'✨ Hide Debrief'}</> : <>{'✨ View Debrief'}</>
+                  ) : (
+                    <>{'✨ AI Debrief'}</>
+                  )}
+                </button>
+              );
+            })()}
             <button
               onClick={onClose}
               style={{
@@ -539,6 +702,36 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
               ×
             </button>
           </div>
+
+          {/* AI Debrief Error */}
+          {debriefError && debriefError.date === dayData.date && (
+            <div style={{
+              backgroundColor: 'rgba(255, 82, 82, 0.1)',
+              border: '1px solid rgba(255, 82, 82, 0.3)',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              marginBottom: '15px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <span style={{ color: '#ff5252', fontSize: '14px' }}>{debriefError.message}</span>
+              <button
+                onClick={() => { setDebriefError(null); handleDailyDebrief(dayData.date); }}
+                style={{
+                  background: 'rgba(255, 82, 82, 0.2)',
+                  color: '#ff5252',
+                  border: '1px solid rgba(255, 82, 82, 0.4)',
+                  borderRadius: '4px',
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
           {/* Chart */}
           <div
@@ -616,6 +809,96 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             <div style={{ color: '#b3b3c6', fontSize: 16 }}>Volume<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{volume}</span></div>
             <div style={{ color: '#b3b3c6', fontSize: 16 }}>Profit factor<br /><span style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>{profitFactor}</span></div>
           </div>
+
+          {/* AI Daily Debrief Result */}
+          {(() => {
+            const dk = toDebriefKey(dayData.date);
+            if (!debriefs[dk] || !debriefVisible[dk]) return null;
+            return (
+            <div style={{
+              backgroundColor: '#1A2B44',
+              border: '1px solid #2B3D55',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '15px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: '#b388ff', fontSize: '15px', fontWeight: 'bold' }}>{'✨ AI Daily Debrief'}</span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    onClick={() => { handleDailyDebrief(dayData.date); }}
+                    style={{
+                      background: 'rgba(255,255,255,0.08)',
+                      color: '#b3b3c6',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '4px 10px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                    }}
+                  >
+                    Regenerate
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDebriefs(prev => { const next = { ...prev }; delete next[dk]; return next; });
+                      setDebriefVisible(prev => { const next = { ...prev }; delete next[dk]; return next; });
+                      if (currentUser) {
+                        const userDocRef = doc(db, 'users', currentUser.uid);
+                        const updated = { ...debriefs }; delete updated[dk];
+                        updateDoc(userDocRef, { dailyDebriefs: updated });
+                      }
+                    }}
+                    style={{
+                      background: 'rgba(255, 82, 82, 0.15)',
+                      color: '#ff5252',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '4px 10px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setDebriefVisible(prev => ({ ...prev, [dk]: false }))}
+                    style={{
+                      background: 'rgba(255,255,255,0.08)',
+                      color: '#b3b3c6',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '4px 10px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                    }}
+                  >
+                    Hide
+                  </button>
+                </div>
+              </div>
+              <div style={{ color: '#d0d0e0', fontSize: '14px', lineHeight: '1.6' }}>
+                {debriefs[dk].split('\n').map((line, i) => {
+                  if (/^\*\*(.+)\*\*$/.test(line.trim())) {
+                    return <div key={i} style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px', marginTop: i > 0 ? '14px' : '0', marginBottom: '4px' }}>{line.trim().replace(/^\*\*|\*\*$/g, '')}</div>;
+                  }
+                  if (/^[-•]\s/.test(line.trim())) {
+                    return <div key={i} style={{ paddingLeft: '16px', position: 'relative', marginBottom: '2px' }}><span style={{ position: 'absolute', left: '4px' }}>&bull;</span>{line.trim().replace(/^[-•]\s/, '').replace(/\*\*(.+?)\*\*/g, (_, m) => m)}</div>;
+                  }
+                  if (!line.trim()) return <div key={i} style={{ height: '8px' }} />;
+                  const parts = line.split(/\*\*(.+?)\*\*/g);
+                  return (
+                    <div key={i} style={{ marginBottom: '2px' }}>
+                      {parts.map((part, j) =>
+                        j % 2 === 1 ? <strong key={j} style={{ color: '#fff' }}>{part}</strong> : <span key={j}>{part}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            );
+          })()}
 
           {/* Trade Table */}
           <div style={{ overflowX: 'auto', marginTop: 16 }}>
@@ -977,6 +1260,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
 
   return (
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
+      <style>{`@keyframes aiSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       {/* First row of stat boxes */}
       <div
         style={{
