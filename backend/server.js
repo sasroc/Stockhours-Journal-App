@@ -201,6 +201,63 @@ app.post('/api/stripe/portal', verifyFirebaseToken, async (req, res) => {
   }
 });
 
+app.post('/api/stripe/change-plan', verifyFirebaseToken, async (req, res) => {
+  try {
+    const { plan } = req.body;
+    if (!['basic', 'pro'].includes(plan)) {
+      return res.status(400).json({ error: 'Invalid plan. Must be "basic" or "pro".' });
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PRICE_BASIC_ID || !process.env.STRIPE_PRICE_PRO_ID) {
+      return res.status(500).json({ error: 'Stripe is not configured on the server.' });
+    }
+
+    const userRef = db.collection('users').doc(req.user.uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      return res.status(404).json({ error: 'User record not found.' });
+    }
+
+    const userData = userSnap.data();
+    const stripeCustomerId = userData.stripeCustomerId;
+    if (!stripeCustomerId) {
+      return res.status(400).json({ error: 'No Stripe customer found. Please subscribe first.' });
+    }
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: stripeCustomerId,
+      status: 'active',
+      limit: 1
+    });
+
+    if (!subscriptions.data.length) {
+      return res.status(400).json({ error: 'No active subscription found.' });
+    }
+
+    const subscription = subscriptions.data[0];
+    const itemId = subscription.items.data[0].id;
+    const newPriceId = plan === 'basic'
+      ? process.env.STRIPE_PRICE_BASIC_ID
+      : process.env.STRIPE_PRICE_PRO_ID;
+
+    const updated = await stripe.subscriptions.update(subscription.id, {
+      items: [{ id: itemId, price: newPriceId }],
+      proration_behavior: 'create_prorations'
+    });
+
+    await updateUserSubscription(userRef, {
+      status: updated.status,
+      plan,
+      stripeCustomerId
+    });
+
+    res.json({ success: true, plan, status: updated.status });
+  } catch (error) {
+    console.error('Change plan error:', error);
+    res.status(500).json({ error: 'Failed to change subscription plan.' });
+  }
+});
+
 app.post('/api/stripe/webhook', async (req, res) => {
   const signature = req.headers['stripe-signature'];
   if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
