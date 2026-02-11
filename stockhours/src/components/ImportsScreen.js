@@ -29,6 +29,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync 
       searchParams.delete('message');
       setSearchParams(searchParams, { replace: true });
     }
+
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch Schwab connection status on mount
@@ -280,6 +281,56 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync 
               </button>
             )}
           </div>
+        </div>
+
+        {/* IBKR Broker Card — Coming Soon */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px',
+            backgroundColor: '#0F1D2F',
+            borderRadius: '8px',
+            border: '1px solid #344563',
+            marginTop: '12px',
+            opacity: 0.6,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
+                backgroundColor: '#8B0000',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+                fontSize: '14px',
+              }}
+            >
+              IB
+            </div>
+            <div>
+              <div style={{ fontWeight: 600 }}>Interactive Brokers</div>
+              <div style={{ fontSize: '13px', color: '#8899AA' }}>Coming soon</div>
+            </div>
+          </div>
+
+          <span
+            style={{
+              fontSize: '12px',
+              color: '#8899AA',
+              backgroundColor: '#1B2B43',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              border: '1px solid #344563',
+            }}
+          >
+            Coming Soon
+          </span>
         </div>
       </div>
 
