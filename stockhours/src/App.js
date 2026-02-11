@@ -858,10 +858,9 @@ function AppRoutes() {
               strokeLinejoin="round"
               style={{ position: 'absolute' }}
             >
-              <rect x="4" y="4" width="6" height="6" />
-              <rect x="4" y="12" width="6" height="6" />
-              <rect x="12" y="4" width="6" height="6" />
-              <rect x="12" y="12" width="6" height="6" />
+              <path d="M3 10.5L12 3l9 7.5" />
+              <path d="M6 9.5V21h12V9.5" />
+              <rect x="10" y="14" width="4" height="7" rx="1" />
             </svg>
             <span
               ref={dashboardTooltipRef}
@@ -1035,9 +1034,10 @@ function AppRoutes() {
               strokeLinejoin="round"
               style={{ position: 'absolute' }}
             >
-              <rect x="6" y="6" width="12" height="12" rx="2" />
-              <line x1="10" y1="8" x2="10" y2="16" />
-              <line x1="14" y1="8" x2="14" y2="16" />
+              <line x1="4" y1="20" x2="20" y2="20" />
+              <rect x="5" y="12" width="4" height="8" rx="1" />
+              <rect x="10" y="8" width="4" height="12" rx="1" />
+              <rect x="15" y="5" width="4" height="15" rx="1" />
             </svg>
             <span
               ref={reportsTooltipRef}
