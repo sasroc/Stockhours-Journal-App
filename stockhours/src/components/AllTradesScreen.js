@@ -426,16 +426,20 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
                 style={{ background: 'none', border: '1px solid #2B3D55', color: '#b3b3c6', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 13 }}
               >Dismiss</button>
             </div>
-            <div style={{ color: '#d0d0e0', fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+            <div style={{ color: '#d0d0e0', fontSize: 14, lineHeight: 1.7 }}>
               {aiReview.split('\n').map((line, i) => {
-                const boldMatch = line.match(/^\*\*(.+?)\*\*$/);
+                const boldMatch = line.trim().match(/^\*\*(.+?)\*\*$/);
                 if (boldMatch) {
-                  return <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: 15, marginTop: i > 0 ? 12 : 0, marginBottom: 4 }}>{boldMatch[1]}</div>;
+                  return <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: 15, marginTop: i > 0 ? 14 : 0, marginBottom: 4, paddingLeft: 10, borderLeft: '3px solid #b388ff' }}>{boldMatch[1]}</div>;
                 }
-                if (line.startsWith('- ')) {
-                  return <div key={i} style={{ paddingLeft: 12 }}>{'\u2022 '}{line.slice(2)}</div>;
+                if (/^[-•]\s/.test(line.trim())) {
+                  const text = line.trim().replace(/^[-•]\s/, '');
+                  const parts = text.split(/\*\*(.+?)\*\*/g);
+                  return <div key={i} style={{ paddingLeft: 14, position: 'relative', marginBottom: 2 }}><span style={{ position: 'absolute', left: 2 }}>{'\u2022'}</span>{parts.map((p, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#fff' }}>{p}</strong> : <span key={j}>{p}</span>)}</div>;
                 }
-                return <div key={i}>{line}</div>;
+                if (!line.trim()) return <div key={i} style={{ height: 6 }} />;
+                const parts = line.split(/\*\*(.+?)\*\*/g);
+                return <div key={i} style={{ marginBottom: 2 }}>{parts.map((p, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#fff' }}>{p}</strong> : <span key={j}>{p}</span>)}</div>;
               })}
             </div>
           </div>

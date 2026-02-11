@@ -831,17 +831,15 @@ const DailyStatsScreen = ({ tradeData }) => {
                   </div>
                   <div style={{ color: '#d0d0e0', fontSize: '14px', lineHeight: '1.6' }}>
                     {debriefs[date].split('\n').map((line, i) => {
-                      // Bold headers: **text**
                       if (/^\*\*(.+)\*\*$/.test(line.trim())) {
-                        return <div key={i} style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px', marginTop: i > 0 ? '14px' : '0', marginBottom: '4px' }}>{line.trim().replace(/^\*\*|\*\*$/g, '')}</div>;
+                        return <div key={i} style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px', marginTop: i > 0 ? '14px' : '0', marginBottom: '4px', paddingLeft: '10px', borderLeft: '3px solid #b388ff' }}>{line.trim().replace(/^\*\*|\*\*$/g, '')}</div>;
                       }
-                      // Bullet points
                       if (/^[-•]\s/.test(line.trim())) {
-                        return <div key={i} style={{ paddingLeft: '16px', position: 'relative', marginBottom: '2px' }}><span style={{ position: 'absolute', left: '4px' }}>&bull;</span>{line.trim().replace(/^[-•]\s/, '').replace(/\*\*(.+?)\*\*/g, (_, m) => m)}</div>;
+                        const text = line.trim().replace(/^[-•]\s/, '');
+                        const parts = text.split(/\*\*(.+?)\*\*/g);
+                        return <div key={i} style={{ paddingLeft: '16px', position: 'relative', marginBottom: '2px' }}><span style={{ position: 'absolute', left: '4px' }}>&bull;</span>{parts.map((part, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#fff' }}>{part}</strong> : <span key={j}>{part}</span>)}</div>;
                       }
-                      // Empty lines
-                      if (!line.trim()) return <div key={i} style={{ height: '8px' }} />;
-                      // Inline bold
+                      if (!line.trim()) return <div key={i} style={{ height: '6px' }} />;
                       const parts = line.split(/\*\*(.+?)\*\*/g);
                       return (
                         <div key={i} style={{ marginBottom: '2px' }}>

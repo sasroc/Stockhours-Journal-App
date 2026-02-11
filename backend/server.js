@@ -717,21 +717,21 @@ app.post('/api/ai/trade-review', verifyFirebaseToken, async (req, res) => {
       return res.status(400).json({ error: 'Missing trade data.' });
     }
 
-    const systemPrompt = `You are an expert trading coach with 20+ years of experience in options and equities trading. Analyze the following trade and provide structured, actionable feedback. Be direct, specific, and constructive. Your response MUST follow this exact structure with these section headers in bold:
+    const systemPrompt = `You are TradeBetter AI — a sharp, encouraging trading coach. Analyze this trade and give quick, punchy feedback the trader can absorb in 30 seconds. Use this EXACT format:
 
-**Trade Summary**
-Brief recap of what was traded and the outcome.
+**📊 Recap**
+One sentence: what was traded, outcome, and holding time.
 
-**What Went Well**
-Identify positives in the trade execution, timing, or strategy.
+**✅ Wins**
+- 1-2 bullet points on what went right (be specific to THIS trade)
 
-**Areas for Improvement**
-Specific, actionable suggestions for improving future trades.
+**🔧 Improve**
+- 1-2 bullet points on what to do differently next time
 
-**Key Takeaway**
-One concise lesson the trader should remember from this trade.
+**💡 Key Lesson**
+One sentence takeaway the trader should remember.
 
-Keep the total response under 300 words.`;
+Rules: Max 120 words total. Be specific, never generic. Conversational tone — talk TO the trader, not about them.`;
 
     const side = (trade.type || '').toUpperCase() === 'PUT' ? 'SHORT' : 'LONG';
     const holdingPeriod = trade.entryTime && trade.exitTime
@@ -767,7 +767,7 @@ Trader Self-Assessment:
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      max_tokens: 600,
+      max_tokens: 400,
       temperature: 0.7,
     });
 
@@ -810,21 +810,22 @@ app.post('/api/ai/daily-debrief', verifyFirebaseToken, async (req, res) => {
       return res.status(400).json({ error: 'No trades provided for debrief.' });
     }
 
-    const systemPrompt = `You are an expert trading coach with 20+ years of experience in options and equities trading. You are delivering an end-of-day debrief to a trader. Analyze their full day of trading and provide structured, actionable coaching. Your response MUST follow this exact structure with these section headers in bold:
+    const systemPrompt = `You are TradeBetter AI — a sharp, encouraging trading coach delivering an end-of-day debrief. Make it scannable and actionable — the trader should absorb it in under a minute. Use this EXACT format:
 
-**Daily Performance Summary**
-Recap the day's numbers and put the performance in context relative to recent trading days.
+**📊 Day in Review**
+2-3 sentences: P&L headline, win rate, and how today compares to recent days.
 
-**Standout Trades**
-Highlight the best and worst trades of the day. Explain what made them stand out and what can be learned.
+**⭐ Standout Trades**
+- Best trade: one bullet (ticker, why it worked)
+- Worst trade: one bullet (ticker, what went wrong)
 
-**Behavioral Patterns**
-Analyze patterns in the trader's setups, mistakes, timing, and consistency. Reference recent days if context is available.
+**🧠 Patterns**
+- 1-2 observations about behavior, timing, or consistency
 
-**Tomorrow's Game Plan**
-Provide 2-3 specific, actionable suggestions for the next trading session based on today's performance.
+**🎯 Tomorrow's Focus**
+- 2 specific action items for the next session
 
-Keep the total response under 500 words. Be direct, specific, and constructive.`;
+Rules: Max 200 words total. Be specific to THIS trader's data, never generic. Conversational tone — talk TO the trader.`;
 
     const tradeLines = trades.map((t, i) => {
       let line = `Trade ${i + 1}: ${t.symbol} ${t.type || ''} | P&L: $${t.profitLoss != null ? t.profitLoss.toFixed(2) : 'N/A'} | ROI: ${t.netROI != null ? t.netROI.toFixed(2) + '%' : 'N/A'} | Qty: ${t.quantity || 'N/A'}`;
@@ -854,7 +855,7 @@ Keep the total response under 500 words. Be direct, specific, and constructive.`
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      max_tokens: 800,
+      max_tokens: 500,
       temperature: 0.7,
     });
 
