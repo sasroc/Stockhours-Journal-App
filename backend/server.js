@@ -691,6 +691,360 @@ app.post('/api/schwab/disconnect', verifyFirebaseToken, async (req, res) => {
   }
 });
 
+// ── Webull API Integration ──────────────────────────────────────────────
+
+const crypto = require('crypto');
+
+const WEBULL_AUTH_BASE = 'https://api.webull.com/oauth';
+const WEBULL_API_BASE = 'https://api.webull.com/api';
+
+const webullSignature = (timestamp, method, path, body = '') => {
+  const message = `${timestamp}${method}${path}${body}`;
+  return crypto
+    .createHmac('sha1', process.env.WEBULL_APP_SECRET || '')
+    .update(message)
+    .digest('base64');
+};
+
+const getWebullHeaders = (method, path, accessToken = null, body = '') => {
+  const timestamp = Date.now().toString();
+  const signature = webullSignature(timestamp, method, path, body);
+  const headers = {
+    'Content-Type': 'application/json',
+    'App-Key': process.env.WEBULL_APP_KEY || '',
+    'Timestamp': timestamp,
+    'Signature': signature,
+  };
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+  return headers;
+};
+
+const transformWebullOrders = (webullOrders) => {
+  const grouped = {};
+  let processed = 0;
+
+  for (const order of webullOrders) {
+    // Only process filled orders
+    if ((order.status || '').toUpperCase() !== 'FILLED') continue;
+
+    processed++;
+
+    const symbol = order.symbol || 'UNKNOWN';
+    const side = (order.action || '').toUpperCase();
+    const assetType = (order.assetType || 'EQUITY').toUpperCase();
+
+    // Extract option details if present
+    let strike = 0;
+    let expiration = 'N/A';
+    let putCall = '';
+
+    if (order.optionExercisePrice) {
+      strike = parseFloat(order.optionExercisePrice) || 0;
+    }
+    if (order.optionExpireDate) {
+      const d = new Date(order.optionExpireDate);
+      expiration = `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+    }
+    if (order.optionType) {
+      putCall = order.optionType.toUpperCase();
+    }
+
+    const type = assetType === 'STOCK' ? 'EQUITY'
+      : putCall === 'CALL' ? 'CALL'
+      : putCall === 'PUT' ? 'PUT'
+      : assetType || 'UNKNOWN';
+
+    // Determine position effect
+    let posEffect = 'UNKNOWN';
+    const action = (order.action || '').toUpperCase();
+    if (action.includes('BUY')) {
+      posEffect = order.openClose === 'CLOSE' ? 'CLOSE' : 'OPEN';
+    } else if (action.includes('SELL')) {
+      posEffect = order.openClose === 'CLOSE' ? 'CLOSE' : 'OPEN';
+    }
+
+    const filledTime = order.filledTime || order.createTime || new Date().toISOString();
+    const execTime = new Date(filledTime).toISOString();
+    let tradeDate = 'N/A';
+    if (filledTime) {
+      const d = new Date(filledTime);
+      tradeDate = `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+    }
+
+    const transaction = {
+      ExecTime: execTime,
+      TradeDate: tradeDate,
+      Side: side.includes('BUY') ? 'BUY' : side.includes('SELL') ? 'SELL' : 'N/A',
+      Quantity: Math.abs(order.filledQuantity || order.totalQuantity || 0),
+      Symbol: symbol,
+      Expiration: expiration,
+      Strike: strike,
+      Price: parseFloat(order.avgFilledPrice || order.lmtPrice || 0),
+      OrderType: (order.orderType || 'MARKET').toUpperCase(),
+      PosEffect: posEffect,
+      Type: type,
+      _webullOrderId: String(order.orderId || `${filledTime}-${symbol}-${side}`),
+    };
+
+    const groupKey = `${symbol}-${strike}-${expiration}`;
+    if (!grouped[groupKey]) {
+      grouped[groupKey] = {
+        Symbol: symbol,
+        Strike: strike,
+        Expiration: expiration,
+        Transactions: [],
+      };
+    }
+    grouped[groupKey].Transactions.push(transaction);
+  }
+
+  console.log(`Webull transform: ${processed} filled orders processed`);
+  return Object.values(grouped);
+};
+
+const mergeWebullWithExisting = (existing, webullGroups) => {
+  const merged = existing.map(g => ({
+    ...g,
+    Transactions: g.Transactions.map(t => ({ ...t })),
+  }));
+
+  const groupMap = {};
+  for (const group of merged) {
+    const key = `${group.Symbol}-${group.Strike}-${group.Expiration}`;
+    groupMap[key] = group;
+  }
+
+  const existingIds = new Set();
+  for (const group of merged) {
+    for (const tx of group.Transactions) {
+      if (tx._webullOrderId) existingIds.add(tx._webullOrderId);
+    }
+  }
+
+  for (const webullGroup of webullGroups) {
+    const key = `${webullGroup.Symbol}-${webullGroup.Strike}-${webullGroup.Expiration}`;
+    if (!groupMap[key]) {
+      groupMap[key] = {
+        Symbol: webullGroup.Symbol,
+        Strike: webullGroup.Strike,
+        Expiration: webullGroup.Expiration,
+        Transactions: [],
+      };
+      merged.push(groupMap[key]);
+    }
+
+    for (const tx of webullGroup.Transactions) {
+      if (!existingIds.has(tx._webullOrderId)) {
+        groupMap[key].Transactions.push(tx);
+        existingIds.add(tx._webullOrderId);
+      }
+    }
+  }
+
+  return merged;
+};
+
+const refreshWebullTokenIfNeeded = async (userRef, tokenDoc) => {
+  const data = tokenDoc.data();
+  const expiresAt = data.expiresAt?.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
+
+  if (new Date() < expiresAt) {
+    return data;
+  }
+
+  // Check if refresh token is still valid (15-day lifetime)
+  const refreshExpiresAt = data.refreshExpiresAt?.toDate ? data.refreshExpiresAt.toDate() : new Date(data.refreshExpiresAt);
+  if (new Date() >= refreshExpiresAt) {
+    return null; // Refresh token expired, need to reconnect
+  }
+
+  const path = '/oauth/token';
+  const bodyObj = {
+    grant_type: 'refresh_token',
+    refresh_token: data.refreshToken,
+    client_id: process.env.WEBULL_CLIENT_ID || '',
+  };
+  const bodyStr = JSON.stringify(bodyObj);
+
+  const resp = await fetch(`${WEBULL_AUTH_BASE}/token`, {
+    method: 'POST',
+    headers: getWebullHeaders('POST', path, null, bodyStr),
+    body: bodyStr,
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    console.error('Webull token refresh failed:', errText);
+    return null;
+  }
+
+  const tokens = await resp.json();
+  const now = new Date();
+  const newData = {
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token || data.refreshToken,
+    expiresAt: new Date(now.getTime() + (tokens.expires_in || 1800) * 1000), // 30 min default
+    refreshExpiresAt: tokens.refresh_token
+      ? new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000) // 15 days
+      : data.refreshExpiresAt,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  await userRef.collection('webullTokens').doc('primary').set(newData, { merge: true });
+  return { ...data, ...newData };
+};
+
+// POST /api/webull/token – exchange auth code for tokens
+app.post('/api/webull/token', verifyFirebaseToken, async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ error: 'Missing authorization code.' });
+    }
+    if (!process.env.WEBULL_CLIENT_ID || !process.env.WEBULL_CLIENT_SECRET) {
+      return res.status(500).json({ error: 'Webull API is not configured on the server.' });
+    }
+
+    const path = '/oauth/token';
+    const bodyObj = {
+      grant_type: 'authorization_code',
+      code,
+      client_id: process.env.WEBULL_CLIENT_ID,
+      client_secret: process.env.WEBULL_CLIENT_SECRET,
+      redirect_uri: process.env.WEBULL_REDIRECT_URI || '',
+    };
+    const bodyStr = JSON.stringify(bodyObj);
+
+    const resp = await fetch(`${WEBULL_AUTH_BASE}/token`, {
+      method: 'POST',
+      headers: getWebullHeaders('POST', path, null, bodyStr),
+      body: bodyStr,
+    });
+
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      console.error('Webull token exchange failed:', errBody);
+      return res.status(resp.status).json({ error: 'Failed to exchange authorization code.' });
+    }
+
+    const tokens = await resp.json();
+    const now = new Date();
+    const userRef = db.collection('users').doc(req.user.uid);
+
+    await userRef.collection('webullTokens').doc('primary').set({
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: new Date(now.getTime() + (tokens.expires_in || 1800) * 1000), // 30 min
+      refreshExpiresAt: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000), // 15 days
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await userRef.set({ webullConnected: true }, { merge: true });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Webull token error:', error);
+    res.status(500).json({ error: 'Failed to connect Webull account.' });
+  }
+});
+
+// GET /api/webull/status – check connection status
+app.get('/api/webull/status', verifyFirebaseToken, async (req, res) => {
+  try {
+    const userRef = db.collection('users').doc(req.user.uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      return res.json({ connected: false, lastSync: null });
+    }
+    const userData = userSnap.data();
+    res.json({
+      connected: !!userData.webullConnected,
+      lastSync: userData.webullLastSync ? userData.webullLastSync.toDate?.() || userData.webullLastSync : null,
+    });
+  } catch (error) {
+    console.error('Webull status error:', error);
+    res.status(500).json({ error: 'Failed to fetch Webull status.' });
+  }
+});
+
+// POST /api/webull/sync – pull trades from Webull
+app.post('/api/webull/sync', verifyFirebaseToken, async (req, res) => {
+  try {
+    const userRef = db.collection('users').doc(req.user.uid);
+    const tokenDoc = await userRef.collection('webullTokens').doc('primary').get();
+
+    if (!tokenDoc.exists) {
+      return res.status(400).json({ error: 'Webull account not connected.' });
+    }
+
+    const tokenData = await refreshWebullTokenIfNeeded(userRef, tokenDoc);
+    if (!tokenData) {
+      // Refresh token expired – clear connection
+      await userRef.collection('webullTokens').doc('primary').delete();
+      await userRef.set({ webullConnected: false }, { merge: true });
+      return res.json({ reconnectRequired: true, error: 'Webull session expired. Please reconnect.' });
+    }
+
+    // Fetch today's orders (Webull API returns current day only)
+    const ordersPath = '/api/trade/orders';
+    const ordersResp = await fetch(`${WEBULL_API_BASE}/trade/orders`, {
+      method: 'GET',
+      headers: getWebullHeaders('GET', ordersPath, tokenData.accessToken),
+    });
+
+    if (!ordersResp.ok) {
+      const errText = await ordersResp.text();
+      console.error('Webull orders fetch failed:', errText);
+      return res.status(ordersResp.status).json({ error: 'Failed to fetch Webull orders.' });
+    }
+
+    const ordersData = await ordersResp.json();
+    const orders = Array.isArray(ordersData) ? ordersData : (ordersData.orders || []);
+    console.log(`Webull orders fetched: ${orders.length}`);
+
+    if (orders.length > 0) {
+      console.log('Sample Webull order:', JSON.stringify(orders[0], null, 2));
+    }
+
+    const webullGroups = transformWebullOrders(orders);
+    console.log(`Webull transform result: ${webullGroups.length} groups`);
+
+    // Get existing trade data
+    const userSnap = await userRef.get();
+    const existing = userSnap.exists ? (userSnap.data().tradeData || []) : [];
+
+    const merged = mergeWebullWithExisting(existing, webullGroups);
+    console.log(`Merge result: ${merged.length} groups (was ${existing.length} existing + ${webullGroups.length} webull)`);
+
+    await userRef.set({
+      tradeData: merged,
+      webullLastSync: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdated: new Date(),
+    }, { merge: true });
+
+    res.json({ success: true, tradeData: merged, transactionsImported: orders.length });
+  } catch (error) {
+    console.error('Webull sync error:', error);
+    res.status(500).json({ error: 'Failed to sync trades from Webull.' });
+  }
+});
+
+// POST /api/webull/disconnect – remove Webull connection
+app.post('/api/webull/disconnect', verifyFirebaseToken, async (req, res) => {
+  try {
+    const userRef = db.collection('users').doc(req.user.uid);
+    await userRef.collection('webullTokens').doc('primary').delete();
+    await userRef.set({ webullConnected: false, webullLastSync: null }, { merge: true });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Webull disconnect error:', error);
+    res.status(500).json({ error: 'Failed to disconnect Webull account.' });
+  }
+});
+
 // ── AI Trade Review ─────────────────────────────────────────────────────
 
 app.post('/api/ai/trade-review', verifyFirebaseToken, async (req, res) => {

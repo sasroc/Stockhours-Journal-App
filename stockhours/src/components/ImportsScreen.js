@@ -2,25 +2,30 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { theme } from '../theme';
 
-const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync }) => {
+const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync, onWebullSync }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [schwabStatus, setSchwabStatus] = useState({ connected: false, lastSync: null });
+  const [webullStatus, setWebullStatus] = useState({ connected: false, lastSync: null });
   const [syncing, setSyncing] = useState(false);
+  const [webullSyncing, setWebullSyncing] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'success'|'error', text }
   const [statusLoading, setStatusLoading] = useState(true);
 
   const apiBase = process.env.REACT_APP_STRIPE_API_URL || '';
   const schwabClientId = process.env.REACT_APP_SCHWAB_CLIENT_ID || '';
   const schwabRedirectUri = process.env.REACT_APP_SCHWAB_REDIRECT_URI || '';
+  const webullClientId = process.env.REACT_APP_WEBULL_CLIENT_ID || '';
+  const webullRedirectUri = process.env.REACT_APP_WEBULL_REDIRECT_URI || '';
 
   // Check URL params for callback messages
   useEffect(() => {
     const schwabParam = searchParams.get('schwab');
+    const webullParam = searchParams.get('webull');
+
     if (schwabParam === 'connected') {
       setMessage({ type: 'success', text: 'Schwab account connected successfully!' });
       searchParams.delete('schwab');
       setSearchParams(searchParams, { replace: true });
-      // Refresh status
       fetchSchwabStatus();
     } else if (schwabParam === 'error') {
       const msg = searchParams.get('message') || 'Failed to connect Schwab account.';
@@ -30,12 +35,24 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync 
       setSearchParams(searchParams, { replace: true });
     }
 
+    if (webullParam === 'connected') {
+      setMessage({ type: 'success', text: 'Webull account connected successfully!' });
+      searchParams.delete('webull');
+      setSearchParams(searchParams, { replace: true });
+      fetchWebullStatus();
+    } else if (webullParam === 'error') {
+      const msg = searchParams.get('message') || 'Failed to connect Webull account.';
+      setMessage({ type: 'error', text: msg });
+      searchParams.delete('webull');
+      searchParams.delete('message');
+      setSearchParams(searchParams, { replace: true });
+    }
+
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch Schwab connection status on mount
   const fetchSchwabStatus = async () => {
     if (!currentUser || !apiBase) {
-      setStatusLoading(false);
       return;
     }
     try {
@@ -49,13 +66,34 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync 
       }
     } catch (err) {
       console.error('Failed to fetch Schwab status:', err);
-    } finally {
-      setStatusLoading(false);
+    }
+  };
+
+  // Fetch Webull connection status on mount
+  const fetchWebullStatus = async () => {
+    if (!currentUser || !apiBase) {
+      return;
+    }
+    try {
+      const token = await currentUser.getIdToken();
+      const resp = await fetch(`${apiBase}/api/webull/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        setWebullStatus(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch Webull status:', err);
     }
   };
 
   useEffect(() => {
-    fetchSchwabStatus();
+    const fetchStatuses = async () => {
+      await Promise.all([fetchSchwabStatus(), fetchWebullStatus()]);
+      setStatusLoading(false);
+    };
+    fetchStatuses();
   }, [currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleConnect = () => {
@@ -98,6 +136,51 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync 
       });
       setSchwabStatus({ connected: false, lastSync: null });
       setMessage({ type: 'success', text: 'Schwab account disconnected.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to disconnect.' });
+    }
+  };
+
+  const handleWebullConnect = () => {
+    const authUrl = `https://www.webull.com/oauth/authorize?client_id=${encodeURIComponent(webullClientId)}&redirect_uri=${encodeURIComponent(webullRedirectUri)}&response_type=code`;
+    window.location.assign(authUrl);
+  };
+
+  const handleWebullSync = async () => {
+    if (!onWebullSync) return;
+    setWebullSyncing(true);
+    setMessage(null);
+    try {
+      const result = await onWebullSync();
+      if (result.reconnectRequired) {
+        setWebullStatus({ connected: false, lastSync: null });
+        setMessage({ type: 'error', text: result.error || 'Session expired. Please reconnect.' });
+      } else if (result.error) {
+        setMessage({ type: 'error', text: result.error });
+      } else {
+        setMessage({ type: 'success', text: `Sync complete! ${result.transactionsImported || 0} transactions imported.` });
+        fetchWebullStatus();
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Sync failed unexpectedly.' });
+    } finally {
+      setWebullSyncing(false);
+    }
+  };
+
+  const handleWebullDisconnect = async () => {
+    if (!currentUser || !apiBase) return;
+    try {
+      const token = await currentUser.getIdToken();
+      await fetch(`${apiBase}/api/webull/disconnect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setWebullStatus({ connected: false, lastSync: null });
+      setMessage({ type: 'success', text: 'Webull account disconnected.' });
     } catch (err) {
       setMessage({ type: 'error', text: 'Failed to disconnect.' });
     }
@@ -278,6 +361,130 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync 
                 }}
               >
                 Connect Schwab Account
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Webull Broker Card */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px',
+            backgroundColor: '#0F1D2F',
+            borderRadius: '8px',
+            border: '1px solid #344563',
+            marginTop: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
+                backgroundColor: '#E63946',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+                fontSize: '14px',
+              }}
+            >
+              WB
+            </div>
+            <div>
+              <div style={{ fontWeight: 600 }}>Webull</div>
+              {statusLoading ? (
+                <div style={{ fontSize: '13px', color: '#8899AA' }}>Checking status...</div>
+              ) : webullStatus.connected ? (
+                <div style={{ fontSize: '13px', color: '#2ecc71', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: '#2ecc71',
+                    display: 'inline-block',
+                  }} />
+                  Connected
+                  <span style={{ color: '#8899AA', marginLeft: '8px' }}>
+                    Last sync: {formatLastSync(webullStatus.lastSync)}
+                  </span>
+                </div>
+              ) : (
+                <div style={{ fontSize: '13px', color: '#8899AA' }}>Not connected</div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {statusLoading ? null : webullStatus.connected ? (
+              <>
+                <button
+                  onClick={handleWebullSync}
+                  disabled={webullSyncing}
+                  style={{
+                    backgroundColor: theme.colors.green,
+                    color: theme.colors.white,
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 16px',
+                    cursor: webullSyncing ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    opacity: webullSyncing ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  {webullSyncing && (
+                    <span
+                      style={{
+                        width: '14px',
+                        height: '14px',
+                        border: '2px solid rgba(255,255,255,0.3)',
+                        borderTopColor: '#fff',
+                        borderRadius: '50%',
+                        display: 'inline-block',
+                        animation: 'spin 1s linear infinite',
+                      }}
+                    />
+                  )}
+                  {webullSyncing ? 'Syncing...' : 'Sync Trades'}
+                </button>
+                <button
+                  onClick={handleWebullDisconnect}
+                  style={{
+                    background: 'none',
+                    border: '1px solid #555',
+                    color: '#ff6b6b',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                  }}
+                >
+                  Disconnect
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleWebullConnect}
+                disabled={!webullClientId}
+                style={{
+                  backgroundColor: '#E63946',
+                  color: theme.colors.white,
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  cursor: webullClientId ? 'pointer' : 'not-allowed',
+                  fontSize: '14px',
+                  opacity: webullClientId ? 1 : 0.5,
+                }}
+              >
+                Connect Webull Account
               </button>
             )}
           </div>

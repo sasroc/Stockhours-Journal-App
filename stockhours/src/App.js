@@ -33,6 +33,7 @@ import MarketingLanding from './components/MarketingLanding';
 import PaywallScreen from './components/PaywallScreen';
 import PricingScreen from './components/PricingScreen';
 import SchwabCallback from './components/SchwabCallback';
+import WebullCallback from './components/WebullCallback';
 import WeeklyReviewScreen from './components/WeeklyReviewScreen';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -592,6 +593,33 @@ function AppRoutes() {
     try {
       const token = await currentUser.getIdToken();
       const response = await fetch(`${apiBase}/api/schwab/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: data.error || 'Sync failed.' };
+      }
+      if (data.reconnectRequired) {
+        return { reconnectRequired: true, error: data.error };
+      }
+      if (data.tradeData) {
+        setTradeData(data.tradeData);
+      }
+      return { success: true, transactionsImported: data.transactionsImported };
+    } catch (err) {
+      return { error: err.message || 'Sync failed.' };
+    }
+  };
+
+  const handleWebullSync = async () => {
+    if (!currentUser || !apiBase) return { error: 'Not configured.' };
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`${apiBase}/api/webull/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1393,7 +1421,7 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <ImportsScreen uploadedFiles={uploadedFiles} onDeleteFile={handleDeleteFile} currentUser={currentUser} onSchwabSync={handleSchwabSync} />
+              <ImportsScreen uploadedFiles={uploadedFiles} onDeleteFile={handleDeleteFile} currentUser={currentUser} onSchwabSync={handleSchwabSync} onWebullSync={handleWebullSync} />
             </div>
           </>
         ) : location.pathname === '/dailystats' ? (
@@ -1501,6 +1529,7 @@ function AppRoutesWrapper() {
       <Route path="/settings" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/weekly-reviews" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/callback/schwab" element={<ProtectedRoute requireSubscription={false}><SchwabCallback /></ProtectedRoute>} />
+      <Route path="/callback/webull" element={<ProtectedRoute requireSubscription={false}><WebullCallback /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
