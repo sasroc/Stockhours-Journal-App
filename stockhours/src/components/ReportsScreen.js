@@ -2269,28 +2269,29 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
   };
 
   return (
-    <div style={{ 
-      padding: '20px', 
+    <div style={{
+      padding: '20px',
       backgroundColor: theme.colors.black,
-      minWidth: '300px', // Add minimum width
       width: '100%',
-      overflow: 'auto' // Add overflow handling
+      boxSizing: 'border-box',
+      overflow: 'hidden'
     }}>
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: isHalfScreen ? 'column' : 'row', 
+      <div style={{
+        display: 'flex',
+        flexDirection: isHalfScreen ? 'column' : 'row',
         alignItems: 'flex-start',
-        minWidth: '300px', // Add minimum width
-        width: '100%'
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
-        <div style={{ 
-          width: isHalfScreen ? '100%' : '200px', 
-          backgroundColor: '#1B2B43', 
-          padding: '10px', 
-          borderRadius: '8px', 
-          marginRight: '20px', 
+        <div style={{
+          width: isHalfScreen ? '100%' : '200px',
+          backgroundColor: '#1B2B43',
+          padding: '10px',
+          borderRadius: '8px',
+          marginRight: isHalfScreen ? '0' : '20px',
+          marginBottom: isHalfScreen ? '20px' : '0',
           flexShrink: 0,
-          minWidth: '200px' // Add minimum width
+          boxSizing: 'border-box'
         }}>
           <ul style={{ listStyle: 'none', padding: '0' }}>
             <li
@@ -2394,11 +2395,11 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
             ))}
           </ul>
         </div>
-        <div style={{ 
-          flex: 1, 
-          minWidth: '300px', // Add minimum width
-          width: '100%',
-          overflow: 'auto' // Add overflow handling
+        <div style={{
+          flex: 1,
+          minWidth: 0,
+          overflow: 'auto',
+          boxSizing: 'border-box'
         }}>
           {renderContent()}
         </div>

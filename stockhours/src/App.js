@@ -1390,6 +1390,8 @@ function AppRoutes() {
                 padding: '20px',
                 margin: '0 auto',
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
               }}
             >
               <ReportsScreen 
