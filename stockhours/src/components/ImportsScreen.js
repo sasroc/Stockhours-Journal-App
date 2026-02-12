@@ -10,6 +10,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
   const [webullSyncing, setWebullSyncing] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'success'|'error', text }
   const [statusLoading, setStatusLoading] = useState(true);
+  const [showBrokerModal, setShowBrokerModal] = useState(false);
 
   const apiBase = process.env.REACT_APP_STRIPE_API_URL || '';
   const schwabClientId = process.env.REACT_APP_SCHWAB_CLIENT_ID || '';
@@ -242,40 +243,65 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
           border: '1px solid #344563',
         }}
       >
-        <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '16px' }}>Broker Connections</h3>
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px',
-            backgroundColor: '#0F1D2F',
-            borderRadius: '8px',
-            border: '1px solid #344563',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '16px' }}>Broker Connections</h3>
+          {!statusLoading && (
+            <button
+              onClick={() => setShowBrokerModal(true)}
               style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#1B6AC9',
+                backgroundColor: theme.colors.teal,
+                color: theme.colors.white,
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: '14px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: '14px',
+                gap: '6px',
               }}
             >
-              CS
-            </div>
-            <div>
-              <div style={{ fontWeight: 600 }}>Charles Schwab</div>
-              {statusLoading ? (
-                <div style={{ fontSize: '13px', color: '#8899AA' }}>Checking status...</div>
-              ) : schwabStatus.connected ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Connect a Broker
+            </button>
+          )}
+        </div>
+
+        {/* Connected brokers - always shown */}
+        {!statusLoading && schwabStatus.connected && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px',
+              backgroundColor: '#0F1D2F',
+              borderRadius: '8px',
+              border: '1px solid #344563',
+              marginBottom: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  backgroundColor: '#1B6AC9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                }}
+              >
+                CS
+              </div>
+              <div>
+                <div style={{ fontWeight: 600 }}>Charles Schwab</div>
                 <div style={{ fontSize: '13px', color: '#2ecc71', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{
                     width: '8px',
@@ -289,117 +315,90 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
                     Last sync: {formatLastSync(schwabStatus.lastSync)}
                   </span>
                 </div>
-              ) : (
-                <div style={{ fontSize: '13px', color: '#8899AA' }}>Not connected</div>
-              )}
+              </div>
             </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {statusLoading ? null : schwabStatus.connected ? (
-              <>
-                <button
-                  onClick={handleSync}
-                  disabled={syncing}
-                  style={{
-                    backgroundColor: theme.colors.teal,
-                    color: theme.colors.white,
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '8px 16px',
-                    cursor: syncing ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    opacity: syncing ? 0.7 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  {syncing && (
-                    <span
-                      style={{
-                        width: '14px',
-                        height: '14px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        borderTopColor: '#fff',
-                        borderRadius: '50%',
-                        display: 'inline-block',
-                        animation: 'spin 1s linear infinite',
-                      }}
-                    />
-                  )}
-                  {syncing ? 'Syncing...' : 'Sync Trades'}
-                </button>
-                <button
-                  onClick={handleDisconnect}
-                  style={{
-                    background: 'none',
-                    border: '1px solid #555',
-                    color: '#ff6b6b',
-                    borderRadius: '6px',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                  }}
-                >
-                  Disconnect
-                </button>
-              </>
-            ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button
-                onClick={handleConnect}
-                disabled={!schwabClientId}
+                onClick={handleSync}
+                disabled={syncing}
                 style={{
-                  backgroundColor: '#1B6AC9',
+                  backgroundColor: theme.colors.teal,
                   color: theme.colors.white,
                   border: 'none',
                   borderRadius: '6px',
                   padding: '8px 16px',
-                  cursor: schwabClientId ? 'pointer' : 'not-allowed',
+                  cursor: syncing ? 'not-allowed' : 'pointer',
                   fontSize: '14px',
-                  opacity: schwabClientId ? 1 : 0.5,
+                  opacity: syncing ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
               >
-                Connect Schwab Account
+                {syncing && (
+                  <span
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      borderTopColor: '#fff',
+                      borderRadius: '50%',
+                      display: 'inline-block',
+                      animation: 'spin 1s linear infinite',
+                    }}
+                  />
+                )}
+                {syncing ? 'Syncing...' : 'Sync Trades'}
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Webull Broker Card */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px',
-            backgroundColor: '#0F1D2F',
-            borderRadius: '8px',
-            border: '1px solid #344563',
-            marginTop: '12px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#E63946',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: '14px',
-              }}
-            >
-              WB
+              <button
+                onClick={handleDisconnect}
+                style={{
+                  background: 'none',
+                  border: '1px solid #555',
+                  color: '#ff6b6b',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+              >
+                Disconnect
+              </button>
             </div>
-            <div>
-              <div style={{ fontWeight: 600 }}>Webull</div>
-              {statusLoading ? (
-                <div style={{ fontSize: '13px', color: '#8899AA' }}>Checking status...</div>
-              ) : webullStatus.connected ? (
+          </div>
+        )}
+
+        {!statusLoading && webullStatus.connected && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px',
+              backgroundColor: '#0F1D2F',
+              borderRadius: '8px',
+              border: '1px solid #344563',
+              marginBottom: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  backgroundColor: '#E63946',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                }}
+              >
+                WB
+              </div>
+              <div>
+                <div style={{ fontWeight: 600 }}>Webull</div>
                 <div style={{ fontSize: '13px', color: '#2ecc71', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{
                     width: '8px',
@@ -413,133 +412,301 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
                     Last sync: {formatLastSync(webullStatus.lastSync)}
                   </span>
                 </div>
-              ) : (
-                <div style={{ fontSize: '13px', color: '#8899AA' }}>Not connected</div>
-              )}
+              </div>
             </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {statusLoading ? null : webullStatus.connected ? (
-              <>
-                <button
-                  onClick={handleWebullSync}
-                  disabled={webullSyncing}
-                  style={{
-                    backgroundColor: theme.colors.teal,
-                    color: theme.colors.white,
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '8px 16px',
-                    cursor: webullSyncing ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    opacity: webullSyncing ? 0.7 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  {webullSyncing && (
-                    <span
-                      style={{
-                        width: '14px',
-                        height: '14px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        borderTopColor: '#fff',
-                        borderRadius: '50%',
-                        display: 'inline-block',
-                        animation: 'spin 1s linear infinite',
-                      }}
-                    />
-                  )}
-                  {webullSyncing ? 'Syncing...' : 'Sync Trades'}
-                </button>
-                <button
-                  onClick={handleWebullDisconnect}
-                  style={{
-                    background: 'none',
-                    border: '1px solid #555',
-                    color: '#ff6b6b',
-                    borderRadius: '6px',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                  }}
-                >
-                  Disconnect
-                </button>
-              </>
-            ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button
-                onClick={handleWebullConnect}
-                disabled={!webullClientId}
+                onClick={handleWebullSync}
+                disabled={webullSyncing}
                 style={{
-                  backgroundColor: '#E63946',
+                  backgroundColor: theme.colors.teal,
                   color: theme.colors.white,
                   border: 'none',
                   borderRadius: '6px',
                   padding: '8px 16px',
-                  cursor: webullClientId ? 'pointer' : 'not-allowed',
+                  cursor: webullSyncing ? 'not-allowed' : 'pointer',
                   fontSize: '14px',
-                  opacity: webullClientId ? 1 : 0.5,
+                  opacity: webullSyncing ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
               >
-                Connect Webull Account
+                {webullSyncing && (
+                  <span
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      borderTopColor: '#fff',
+                      borderRadius: '50%',
+                      display: 'inline-block',
+                      animation: 'spin 1s linear infinite',
+                    }}
+                  />
+                )}
+                {webullSyncing ? 'Syncing...' : 'Sync Trades'}
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* IBKR Broker Card — Coming Soon */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px',
-            backgroundColor: '#0F1D2F',
-            borderRadius: '8px',
-            border: '1px solid #344563',
-            marginTop: '12px',
-            opacity: 0.6,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#8B0000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: '14px',
-              }}
-            >
-              IB
-            </div>
-            <div>
-              <div style={{ fontWeight: 600 }}>Interactive Brokers</div>
-              <div style={{ fontSize: '13px', color: '#8899AA' }}>Coming soon</div>
+              <button
+                onClick={handleWebullDisconnect}
+                style={{
+                  background: 'none',
+                  border: '1px solid #555',
+                  color: '#ff6b6b',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+              >
+                Disconnect
+              </button>
             </div>
           </div>
+        )}
 
-          <span
+        {/* No connected brokers message */}
+        {!statusLoading && !schwabStatus.connected && !webullStatus.connected && (
+          <div
             style={{
-              fontSize: '12px',
-              color: '#8899AA',
-              backgroundColor: '#1B2B43',
-              padding: '4px 10px',
-              borderRadius: '4px',
+              padding: '24px',
+              backgroundColor: '#0F1D2F',
+              borderRadius: '8px',
               border: '1px solid #344563',
+              textAlign: 'center',
             }}
           >
-            Coming Soon
-          </span>
-        </div>
+            <p style={{ color: '#8899AA', margin: 0 }}>
+              No brokers connected. Click "Connect a Broker" to get started.
+            </p>
+          </div>
+        )}
+
+        {/* Loading state */}
+        {statusLoading && (
+          <div
+            style={{
+              padding: '24px',
+              backgroundColor: '#0F1D2F',
+              borderRadius: '8px',
+              border: '1px solid #344563',
+              textAlign: 'center',
+            }}
+          >
+            <p style={{ color: '#8899AA', margin: 0 }}>Checking broker connections...</p>
+          </div>
+        )}
+
       </div>
+
+      {/* Broker Selection Modal */}
+      {showBrokerModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+          }}
+          onClick={() => setShowBrokerModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#1B2B43',
+              borderRadius: '12px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '420px',
+              border: '1px solid #344563',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', color: theme.colors.white }}>Connect a Broker</h3>
+              <button
+                onClick={() => setShowBrokerModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#8899AA',
+                  cursor: 'pointer',
+                  fontSize: '20px',
+                  padding: '0',
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <p style={{ color: '#8899AA', fontSize: '14px', margin: '0 0 20px 0' }}>
+              Select a broker to connect your trading account.
+            </p>
+
+            {/* Schwab */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px',
+                backgroundColor: '#0F1D2F',
+                borderRadius: '8px',
+                marginBottom: '12px',
+                border: '1px solid #344563',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    backgroundColor: '#1B6AC9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    color: theme.colors.white,
+                  }}
+                >
+                  CS
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '15px', color: theme.colors.white }}>Charles Schwab</div>
+                  {schwabStatus.connected && (
+                    <div style={{ fontSize: '12px', color: '#2ecc71' }}>Already connected</div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={handleConnect}
+                disabled={!schwabClientId || schwabStatus.connected}
+                style={{
+                  backgroundColor: schwabStatus.connected ? '#344563' : '#1B6AC9',
+                  color: theme.colors.white,
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  cursor: (!schwabClientId || schwabStatus.connected) ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  opacity: (!schwabClientId || schwabStatus.connected) ? 0.5 : 1,
+                }}
+              >
+                {schwabStatus.connected ? 'Connected' : 'Connect'}
+              </button>
+            </div>
+
+            {/* Webull */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px',
+                backgroundColor: '#0F1D2F',
+                borderRadius: '8px',
+                marginBottom: '12px',
+                border: '1px solid #344563',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    backgroundColor: '#E63946',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    color: theme.colors.white,
+                  }}
+                >
+                  WB
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '15px', color: theme.colors.white }}>Webull</div>
+                  {webullStatus.connected && (
+                    <div style={{ fontSize: '12px', color: '#2ecc71' }}>Already connected</div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={handleWebullConnect}
+                disabled={!webullClientId || webullStatus.connected}
+                style={{
+                  backgroundColor: webullStatus.connected ? '#344563' : '#E63946',
+                  color: theme.colors.white,
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  cursor: (!webullClientId || webullStatus.connected) ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  opacity: (!webullClientId || webullStatus.connected) ? 0.5 : 1,
+                }}
+              >
+                {webullStatus.connected ? 'Connected' : 'Connect'}
+              </button>
+            </div>
+
+            {/* IBKR - Coming Soon */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px',
+                backgroundColor: '#0F1D2F',
+                borderRadius: '8px',
+                border: '1px solid #344563',
+                opacity: 0.6,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    backgroundColor: '#8B0000',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    color: theme.colors.white,
+                  }}
+                >
+                  IB
+                </div>
+                <div style={{ fontWeight: 600, fontSize: '15px', color: theme.colors.white }}>Interactive Brokers</div>
+              </div>
+              <span
+                style={{
+                  fontSize: '12px',
+                  color: '#8899AA',
+                  backgroundColor: '#1B2B43',
+                  padding: '6px 12px',
+                  borderRadius: '4px',
+                }}
+              >
+                Coming Soon
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Uploaded Files Section */}
       <div
