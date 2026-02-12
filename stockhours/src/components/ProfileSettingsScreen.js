@@ -132,7 +132,7 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
             disabled={portalLoading}
             style={{
               marginTop: '12px',
-              backgroundColor: theme.colors.green,
+              backgroundColor: theme.colors.teal,
               color: theme.colors.white,
               border: 'none',
               borderRadius: '6px',

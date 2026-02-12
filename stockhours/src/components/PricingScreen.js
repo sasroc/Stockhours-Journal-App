@@ -81,7 +81,7 @@ const PricingScreen = () => {
           <button
             onClick={() => navigate('/login')}
             style={{
-              backgroundColor: theme.colors.green,
+              backgroundColor: theme.colors.teal,
               border: 'none',
               color: theme.colors.white,
               padding: '8px 16px',
@@ -157,7 +157,7 @@ const PricingScreen = () => {
                 onClick={() => navigate('/login')}
                 style={{
                   width: '100%',
-                  backgroundColor: plan.highlight ? '#1b66ff' : theme.colors.green,
+                  backgroundColor: plan.highlight ? '#1b66ff' : theme.colors.teal,
                   border: 'none',
                   color: theme.colors.white,
                   padding: '12px 16px',

@@ -80,6 +80,7 @@ function AppRoutes() {
   const [currentScreen, setCurrentScreen] = useState('Dashboard');
   const [dateRange, setDateRange] = useState(getYTDRange()); // Default to Year-to-Date
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [hoveredSidebarItem, setHoveredSidebarItem] = useState(null);
 
   const dashboardButtonRef = useRef(null);
   const dashboardTooltipRef = useRef(null);
@@ -774,7 +775,7 @@ function AppRoutes() {
               onClick={() => navigate('/admin/invitations')}
               style={{
                 padding: '8px 16px',
-                backgroundColor: theme.colors.green,
+                backgroundColor: theme.colors.teal,
                 color: theme.colors.white,
                 border: 'none',
                 borderRadius: '4px',
@@ -798,14 +799,14 @@ function AppRoutes() {
           height: 'calc(100% - 71px)',
           backgroundColor: '#1B2B43',
           display: (isHalfScreen && !isSidebarOpen) ? 'none' : 'flex',
-          padding: '20px 0',
+          padding: '12px 0',
           boxSizing: 'border-box',
           zIndex: 900,
           flexDirection: 'column',
         }}
       >
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
           <label
             htmlFor="sidebar-file-upload"
             onMouseEnter={(e) => { e.target.querySelector('.tooltip').style.visibility = 'visible'; }}
@@ -814,14 +815,13 @@ function AppRoutes() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              backgroundColor: theme.colors.green,
-              borderRadius: '50%',
+              width: '36px',
+              height: '36px',
+              backgroundColor: theme.colors.teal,
+              borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '24px',
+              fontSize: '22px',
               color: theme.colors.white,
-              marginBottom: '20px',
               position: 'relative',
             }}
           >
@@ -856,23 +856,23 @@ function AppRoutes() {
           />
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <div
             ref={dashboardButtonRef}
             onClick={handleDashboardClick}
-            onMouseEnter={(e) => { dashboardTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { dashboardTooltipRef.current.style.visibility = 'hidden'; }}
+            onMouseEnter={() => { dashboardTooltipRef.current.style.visibility = 'visible'; setHoveredSidebarItem('dashboard'); }}
+            onMouseLeave={() => { dashboardTooltipRef.current.style.visibility = 'hidden'; setHoveredSidebarItem(null); }}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              backgroundColor: theme.colors.green,
-              borderRadius: '50%',
+              width: '100%',
+              height: '44px',
+              backgroundColor: location.pathname === '/dashboard' ? theme.colors.tealLight : (hoveredSidebarItem === 'dashboard' ? theme.colors.tealSubtle : 'transparent'),
+              borderLeft: location.pathname === '/dashboard' ? `3px solid ${theme.colors.teal}` : '3px solid transparent',
               cursor: 'pointer',
-              marginBottom: '20px',
               position: 'relative',
+              transition: 'background-color 0.15s ease',
             }}
           >
             <svg
@@ -880,11 +880,10 @@ function AppRoutes() {
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
+              stroke={location.pathname === '/dashboard' ? theme.colors.teal : theme.colors.gray}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ position: 'absolute' }}
             >
               <path d="M3 10.5L12 3l9 7.5" />
               <path d="M6 9.5V21h12V9.5" />
@@ -913,23 +912,23 @@ function AppRoutes() {
           </div>
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <div
             ref={dailyStatsButtonRef}
             onClick={handleDailyStatsClick}
-            onMouseEnter={(e) => { dailyStatsTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { dailyStatsTooltipRef.current.style.visibility = 'hidden'; }}
+            onMouseEnter={() => { dailyStatsTooltipRef.current.style.visibility = 'visible'; setHoveredSidebarItem('dailyStats'); }}
+            onMouseLeave={() => { dailyStatsTooltipRef.current.style.visibility = 'hidden'; setHoveredSidebarItem(null); }}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              backgroundColor: theme.colors.green,
-              borderRadius: '50%',
+              width: '100%',
+              height: '44px',
+              backgroundColor: location.pathname === '/dailystats' ? theme.colors.tealLight : (hoveredSidebarItem === 'dailyStats' ? theme.colors.tealSubtle : 'transparent'),
+              borderLeft: location.pathname === '/dailystats' ? `3px solid ${theme.colors.teal}` : '3px solid transparent',
               cursor: 'pointer',
-              marginBottom: '20px',
               position: 'relative',
+              transition: 'background-color 0.15s ease',
             }}
           >
             <svg
@@ -937,11 +936,10 @@ function AppRoutes() {
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
+              stroke={location.pathname === '/dailystats' ? theme.colors.teal : theme.colors.gray}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ position: 'absolute' }}
             >
               <line x1="8" y1="4" x2="8" y2="8" />
               <rect x="6" y="8" width="4" height="8" />
@@ -973,23 +971,23 @@ function AppRoutes() {
           </div>
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <div
             ref={allTradesButtonRef}
             onClick={handleAllTradesClick}
-            onMouseEnter={(e) => { allTradesTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { allTradesTooltipRef.current.style.visibility = 'hidden'; }}
+            onMouseEnter={() => { allTradesTooltipRef.current.style.visibility = 'visible'; setHoveredSidebarItem('allTrades'); }}
+            onMouseLeave={() => { allTradesTooltipRef.current.style.visibility = 'hidden'; setHoveredSidebarItem(null); }}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              backgroundColor: theme.colors.green,
-              borderRadius: '50%',
+              width: '100%',
+              height: '44px',
+              backgroundColor: location.pathname === '/alltrades' ? theme.colors.tealLight : (hoveredSidebarItem === 'allTrades' ? theme.colors.tealSubtle : 'transparent'),
+              borderLeft: location.pathname === '/alltrades' ? `3px solid ${theme.colors.teal}` : '3px solid transparent',
               cursor: 'pointer',
-              marginBottom: '20px',
               position: 'relative',
+              transition: 'background-color 0.15s ease',
             }}
           >
             <svg
@@ -997,11 +995,10 @@ function AppRoutes() {
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
+              stroke={location.pathname === '/alltrades' ? theme.colors.teal : theme.colors.gray}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ position: 'absolute' }}
             >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -1032,23 +1029,23 @@ function AppRoutes() {
           </div>
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <div
             ref={reportsButtonRef}
             onClick={handleReportsClick}
-            onMouseEnter={(e) => { reportsTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { reportsTooltipRef.current.style.visibility = 'hidden'; }}
+            onMouseEnter={() => { reportsTooltipRef.current.style.visibility = 'visible'; setHoveredSidebarItem('reports'); }}
+            onMouseLeave={() => { reportsTooltipRef.current.style.visibility = 'hidden'; setHoveredSidebarItem(null); }}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              backgroundColor: theme.colors.green,
-              borderRadius: '50%',
+              width: '100%',
+              height: '44px',
+              backgroundColor: location.pathname === '/reports' ? theme.colors.tealLight : (hoveredSidebarItem === 'reports' ? theme.colors.tealSubtle : 'transparent'),
+              borderLeft: location.pathname === '/reports' ? `3px solid ${theme.colors.teal}` : '3px solid transparent',
               cursor: 'pointer',
-              marginBottom: '20px',
               position: 'relative',
+              transition: 'background-color 0.15s ease',
             }}
           >
             <svg
@@ -1056,11 +1053,10 @@ function AppRoutes() {
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
+              stroke={location.pathname === '/reports' ? theme.colors.teal : theme.colors.gray}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ position: 'absolute' }}
             >
               <line x1="4" y1="20" x2="20" y2="20" />
               <rect x="5" y="12" width="4" height="8" rx="1" />
@@ -1090,23 +1086,23 @@ function AppRoutes() {
           </div>
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <div
             ref={weeklyReviewButtonRef}
             onClick={handleWeeklyReviewsClick}
-            onMouseEnter={(e) => { weeklyReviewTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { weeklyReviewTooltipRef.current.style.visibility = 'hidden'; }}
+            onMouseEnter={() => { weeklyReviewTooltipRef.current.style.visibility = 'visible'; setHoveredSidebarItem('weeklyReview'); }}
+            onMouseLeave={() => { weeklyReviewTooltipRef.current.style.visibility = 'hidden'; setHoveredSidebarItem(null); }}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              backgroundColor: theme.colors.green,
-              borderRadius: '50%',
+              width: '100%',
+              height: '44px',
+              backgroundColor: location.pathname === '/weekly-reviews' ? theme.colors.tealLight : (hoveredSidebarItem === 'weeklyReview' ? theme.colors.tealSubtle : 'transparent'),
+              borderLeft: location.pathname === '/weekly-reviews' ? `3px solid ${theme.colors.teal}` : '3px solid transparent',
               cursor: 'pointer',
-              marginBottom: '20px',
               position: 'relative',
+              transition: 'background-color 0.15s ease',
             }}
           >
             <svg
@@ -1114,11 +1110,10 @@ function AppRoutes() {
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
+              stroke={location.pathname === '/weekly-reviews' ? theme.colors.teal : theme.colors.gray}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ position: 'absolute' }}
             >
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
@@ -1149,23 +1144,23 @@ function AppRoutes() {
           </div>
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <div
             ref={importsButtonRef}
             onClick={handleImportsClick}
-            onMouseEnter={(e) => { importsTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { importsTooltipRef.current.style.visibility = 'hidden'; }}
+            onMouseEnter={() => { importsTooltipRef.current.style.visibility = 'visible'; setHoveredSidebarItem('imports'); }}
+            onMouseLeave={() => { importsTooltipRef.current.style.visibility = 'hidden'; setHoveredSidebarItem(null); }}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              backgroundColor: theme.colors.green,
-              borderRadius: '50%',
+              width: '100%',
+              height: '44px',
+              backgroundColor: location.pathname === '/imports' ? theme.colors.tealLight : (hoveredSidebarItem === 'imports' ? theme.colors.tealSubtle : 'transparent'),
+              borderLeft: location.pathname === '/imports' ? `3px solid ${theme.colors.teal}` : '3px solid transparent',
               cursor: 'pointer',
-              marginBottom: '20px',
               position: 'relative',
+              transition: 'background-color 0.15s ease',
             }}
           >
             <svg
@@ -1173,11 +1168,10 @@ function AppRoutes() {
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
+              stroke={location.pathname === '/imports' ? theme.colors.teal : theme.colors.gray}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ position: 'absolute' }}
             >
               <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
               <path d="M15 2H9v4" />
@@ -1207,23 +1201,23 @@ function AppRoutes() {
           </div>
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', marginTop: 'auto', paddingBottom: '0' }}>
+        <div style={{ position: 'relative', width: '100%', marginTop: 'auto', paddingBottom: '0' }}>
           <div
             ref={profileButtonRef}
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            onMouseEnter={(e) => { profileTooltipRef.current.style.visibility = 'visible'; }}
-            onMouseLeave={(e) => { profileTooltipRef.current.style.visibility = 'hidden'; }}
+            onMouseEnter={() => { profileTooltipRef.current.style.visibility = 'visible'; setHoveredSidebarItem('profile'); }}
+            onMouseLeave={() => { profileTooltipRef.current.style.visibility = 'hidden'; setHoveredSidebarItem(null); }}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              backgroundColor: theme.colors.green,
-              borderRadius: '50%',
+              width: '100%',
+              height: '44px',
+              backgroundColor: location.pathname === '/profile-settings' ? theme.colors.tealLight : (hoveredSidebarItem === 'profile' ? theme.colors.tealSubtle : 'transparent'),
+              borderLeft: location.pathname === '/profile-settings' ? `3px solid ${theme.colors.teal}` : '3px solid transparent',
               cursor: 'pointer',
-              marginBottom: '0',
               position: 'relative',
+              transition: 'background-color 0.15s ease',
             }}
           >
             <svg
@@ -1231,11 +1225,10 @@ function AppRoutes() {
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
+              stroke={location.pathname === '/profile-settings' ? theme.colors.teal : theme.colors.gray}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ position: 'absolute' }}
             >
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />

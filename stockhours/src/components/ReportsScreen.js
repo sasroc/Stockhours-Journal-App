@@ -2299,13 +2299,15 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
               onMouseLeave={() => setHoveredReport(null)}
               style={{
                 padding: '10px',
-                color: selectedReport === 'Overview' ? theme.colors.green : theme.colors.white,
+                color: selectedReport === 'Overview' ? theme.colors.teal : theme.colors.white,
                 cursor: 'pointer',
-                border: hoveredReport === 'Overview' ? '1px solid white' : '1px solid transparent',
+                backgroundColor: selectedReport === 'Overview' ? theme.colors.tealLight : (hoveredReport === 'Overview' ? theme.colors.tealSubtle : 'transparent'),
+                borderLeft: selectedReport === 'Overview' ? `3px solid ${theme.colors.teal}` : '3px solid transparent',
                 borderRadius: '4px',
                 marginBottom: '5px',
                 fontWeight: 'bold',
                 fontSize: '16px',
+                transition: 'background-color 0.15s ease',
               }}
             >
               <span style={{ marginRight: '8px' }}>
@@ -2374,11 +2376,13 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
                         onMouseLeave={() => setHoveredReport(null)}
                         style={{
                           padding: '8px 10px',
-                          color: selectedReport === report ? theme.colors.green : '#B0B0B0',
+                          color: selectedReport === report ? theme.colors.teal : '#B0B0B0',
                           cursor: 'pointer',
-                          border: hoveredReport === report ? '1px solid white' : '1px solid transparent',
+                          backgroundColor: selectedReport === report ? theme.colors.tealLight : (hoveredReport === report ? theme.colors.tealSubtle : 'transparent'),
+                          borderLeft: selectedReport === report ? `3px solid ${theme.colors.teal}` : '3px solid transparent',
                           borderRadius: '4px',
                           marginBottom: '5px',
+                          transition: 'background-color 0.15s ease',
                         }}
                       >
                         {report}

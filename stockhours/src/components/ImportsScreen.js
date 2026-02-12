@@ -302,7 +302,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
                   onClick={handleSync}
                   disabled={syncing}
                   style={{
-                    backgroundColor: theme.colors.green,
+                    backgroundColor: theme.colors.teal,
                     color: theme.colors.white,
                     border: 'none',
                     borderRadius: '6px',
@@ -426,7 +426,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
                   onClick={handleWebullSync}
                   disabled={webullSyncing}
                   style={{
-                    backgroundColor: theme.colors.green,
+                    backgroundColor: theme.colors.teal,
                     color: theme.colors.white,
                     border: 'none',
                     borderRadius: '6px',

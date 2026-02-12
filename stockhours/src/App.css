@@ -73,7 +73,7 @@ label:hover .tooltip {
 }
 
 .dark-date-range .rdrDayToday .rdrDayNumber span:after {
-  background: #52C41A !important; /* Green for today's date underline */
+  background: #2DD4BF !important; /* Teal for today's date underline */
 }
 
 .dark-date-range .rdrDayPassive .rdrDayNumber span {
@@ -87,7 +87,7 @@ label:hover .tooltip {
 .dark-date-range .rdrDayStartPreview,
 .dark-date-range .rdrDayEndPreview,
 .dark-date-range .rdrDayInPreview {
-  background-color: rgba(82, 196, 26, 0.3) !important; /* Green highlight for the range preview */
+  background-color: rgba(45, 212, 191, 0.3) !important; /* Teal highlight for the range preview */
   border: none !important;
 }
 
@@ -98,12 +98,12 @@ label:hover .tooltip {
 
 .dark-date-range .rdrDayStart,
 .dark-date-range .rdrDayEnd {
-  background-color: #52C41A !important; /* Green highlight for start and end dates */
+  background-color: #2DD4BF !important; /* Teal highlight for start and end dates */
 }
 
 .dark-date-range .rdrDayStart .rdrDayNumber,
 .dark-date-range .rdrDayEnd .rdrDayNumber {
-  background-color: #52C41A !important; /* Ensure the number background is green */
+  background-color: #2DD4BF !important; /* Ensure the number background is teal */
 }
 
 .dark-date-range .rdrDayStart .rdrDayNumber span,

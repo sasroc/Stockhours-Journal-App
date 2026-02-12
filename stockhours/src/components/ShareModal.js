@@ -206,7 +206,7 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
           <button
             onClick={handleDownload}
             style={{
-              backgroundColor: theme.colors.green,
+              backgroundColor: theme.colors.teal,
               color: 'white',
               border: 'none',
               borderRadius: '4px',

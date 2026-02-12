@@ -585,7 +585,7 @@ const DailyStatsScreen = ({ tradeData }) => {
                     setNoteModalOpen(true);
                   }}
                   style={{
-                    backgroundColor: notes[standardizedDate] ? '#3D5070' : theme.colors.green,
+                    backgroundColor: notes[standardizedDate] ? '#3D5070' : theme.colors.teal,
                     color: theme.colors.white,
                     border: 'none',
                     borderRadius: '4px',
@@ -606,7 +606,7 @@ const DailyStatsScreen = ({ tradeData }) => {
                     setShareModalOpen(true);
                   }}
                   style={{
-                    backgroundColor: theme.colors.green,
+                    backgroundColor: theme.colors.teal,
                     color: theme.colors.white,
                     border: 'none',
                     borderRadius: '4px',

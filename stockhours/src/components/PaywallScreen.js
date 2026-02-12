@@ -115,7 +115,7 @@ const PaywallScreen = () => {
           <button
             onClick={handleManageSubscription}
             style={{
-              backgroundColor: theme.colors.green,
+              backgroundColor: theme.colors.teal,
               border: 'none',
               color: theme.colors.white,
               padding: '8px 16px',
@@ -177,7 +177,7 @@ const PaywallScreen = () => {
             <button
               onClick={() => startCheckout('basic')}
               style={{
-                backgroundColor: theme.colors.green,
+                backgroundColor: theme.colors.teal,
                 border: 'none',
                 color: theme.colors.white,
                 padding: '10px 16px',

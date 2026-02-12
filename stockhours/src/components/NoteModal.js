@@ -151,7 +151,7 @@ const NoteModal = ({ isOpen, onClose, date, existingNote = '', onNoteSaved }) =>
           <button
             onClick={handleSave}
             style={{
-              backgroundColor: theme.colors.green,
+              backgroundColor: theme.colors.teal,
               color: theme.colors.white,
               border: 'none',
               borderRadius: '6px',

@@ -315,16 +315,13 @@ const TagSelectionModal = ({ isOpen, onClose, onSave, setupsTags, mistakesTags, 
             onClick={handleSave}
             style={{
               padding: '10px 20px',
-              backgroundColor: theme.colors.green,
+              backgroundColor: theme.colors.teal,
               color: theme.colors.white,
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
               fontSize: '14px',
               transition: 'background-color 0.2s ease',
-              ':hover': {
-                backgroundColor: '#2ecc71'
-              }
             }}
           >
             Save

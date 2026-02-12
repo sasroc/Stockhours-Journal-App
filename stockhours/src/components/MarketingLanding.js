@@ -127,7 +127,7 @@ const MarketingLanding = () => {
           <button
             onClick={() => navigate('/login')}
             style={{
-              backgroundColor: theme.colors.green,
+              backgroundColor: theme.colors.teal,
               border: 'none',
               color: theme.colors.white,
               padding: '8px 16px',
@@ -177,7 +177,7 @@ const MarketingLanding = () => {
               <button
                 onClick={() => navigate('/login')}
                 style={{
-                  backgroundColor: theme.colors.green,
+                  backgroundColor: theme.colors.teal,
                   border: 'none',
                   color: theme.colors.white,
                   padding: '12px 22px',
@@ -185,7 +185,7 @@ const MarketingLanding = () => {
                   cursor: 'pointer',
                   fontSize: '15px',
                   fontWeight: 600,
-                  boxShadow: '0 12px 24px rgba(16, 185, 129, 0.25)'
+                  boxShadow: '0 12px 24px rgba(45, 212, 191, 0.25)'
                 }}
               >
                 Start free
@@ -323,7 +323,7 @@ const MarketingLanding = () => {
             <button
               onClick={() => navigate('/login')}
               style={{
-                backgroundColor: theme.colors.green,
+                backgroundColor: theme.colors.teal,
                 border: 'none',
                 color: theme.colors.white,
                 padding: '10px 20px',

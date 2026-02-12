@@ -666,7 +666,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                 setNoteModalOpen(true);
               }}
               style={{
-                backgroundColor: notes[dayData.date] ? '#3D5070' : theme.colors.green,
+                backgroundColor: notes[dayData.date] ? '#3D5070' : theme.colors.teal,
                 color: theme.colors.white,
                 border: 'none',
                 borderRadius: '4px',
@@ -998,7 +998,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             <button
               onClick={onClose}
               style={{
-                backgroundColor: theme.colors.green,
+                backgroundColor: theme.colors.teal,
                 color: theme.colors.white,
                 border: 'none',
                 borderRadius: '6px',
