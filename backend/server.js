@@ -69,8 +69,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 const getPlanForPrice = (priceId) => {
   if (!priceId) return 'none';
-  if (priceId === process.env.STRIPE_PRICE_BASIC_ID) return 'basic';
-  if (priceId === process.env.STRIPE_PRICE_PRO_ID) return 'pro';
+  if (priceId === process.env.STRIPE_PRICE_BASIC_ID || priceId === process.env.STRIPE_PRICE_BASIC_YEARLY_ID) return 'basic';
+  if (priceId === process.env.STRIPE_PRICE_PRO_ID || priceId === process.env.STRIPE_PRICE_PRO_YEARLY_ID) return 'pro';
   return 'none';
 };
 
@@ -79,6 +79,7 @@ const updateUserSubscription = async (userRef, data) => {
     subscription: {
       status: data.status || 'inactive',
       plan: data.plan || 'none',
+      interval: data.interval || 'monthly',
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     },
     stripeCustomerId: data.stripeCustomerId || null
@@ -116,13 +117,21 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/stripe/checkout', verifyFirebaseToken, async (req, res) => {
   try {
-    const { plan } = req.body;
+    const { plan, billing = 'monthly' } = req.body;
     if (!['basic', 'pro'].includes(plan)) {
       return res.status(400).json({ error: 'Invalid plan selected.' });
+    }
+    if (!['monthly', 'yearly'].includes(billing)) {
+      return res.status(400).json({ error: 'Invalid billing cycle.' });
     }
 
     if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PRICE_BASIC_ID || !process.env.STRIPE_PRICE_PRO_ID) {
       return res.status(500).json({ error: 'Stripe is not configured on the server.' });
+    }
+
+    // Check yearly price IDs if yearly billing is requested
+    if (billing === 'yearly' && (!process.env.STRIPE_PRICE_BASIC_YEARLY_ID || !process.env.STRIPE_PRICE_PRO_YEARLY_ID)) {
+      return res.status(500).json({ error: 'Yearly pricing is not configured on the server.' });
     }
 
     const userRef = db.collection('users').doc(req.user.uid);
@@ -142,9 +151,16 @@ app.post('/api/stripe/checkout', verifyFirebaseToken, async (req, res) => {
       await userRef.set({ stripeCustomerId }, { merge: true });
     }
 
-    const priceId = plan === 'basic'
-      ? process.env.STRIPE_PRICE_BASIC_ID
-      : process.env.STRIPE_PRICE_PRO_ID;
+    let priceId;
+    if (billing === 'yearly') {
+      priceId = plan === 'basic'
+        ? process.env.STRIPE_PRICE_BASIC_YEARLY_ID
+        : process.env.STRIPE_PRICE_PRO_YEARLY_ID;
+    } else {
+      priceId = plan === 'basic'
+        ? process.env.STRIPE_PRICE_BASIC_ID
+        : process.env.STRIPE_PRICE_PRO_ID;
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -155,7 +171,8 @@ app.post('/api/stripe/checkout', verifyFirebaseToken, async (req, res) => {
       cancel_url: `${primaryFrontendUrl}/paywall?checkout=cancel`,
       metadata: {
         uid: req.user.uid,
-        plan
+        plan,
+        billing
       }
     });
 
@@ -203,13 +220,20 @@ app.post('/api/stripe/portal', verifyFirebaseToken, async (req, res) => {
 
 app.post('/api/stripe/change-plan', verifyFirebaseToken, async (req, res) => {
   try {
-    const { plan } = req.body;
+    const { plan, billing = 'monthly' } = req.body;
     if (!['basic', 'pro'].includes(plan)) {
       return res.status(400).json({ error: 'Invalid plan. Must be "basic" or "pro".' });
+    }
+    if (!['monthly', 'yearly'].includes(billing)) {
+      return res.status(400).json({ error: 'Invalid billing cycle.' });
     }
 
     if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PRICE_BASIC_ID || !process.env.STRIPE_PRICE_PRO_ID) {
       return res.status(500).json({ error: 'Stripe is not configured on the server.' });
+    }
+
+    if (billing === 'yearly' && (!process.env.STRIPE_PRICE_BASIC_YEARLY_ID || !process.env.STRIPE_PRICE_PRO_YEARLY_ID)) {
+      return res.status(500).json({ error: 'Yearly pricing is not configured on the server.' });
     }
 
     const userRef = db.collection('users').doc(req.user.uid);
@@ -236,9 +260,17 @@ app.post('/api/stripe/change-plan', verifyFirebaseToken, async (req, res) => {
 
     const subscription = subscriptions.data[0];
     const itemId = subscription.items.data[0].id;
-    const newPriceId = plan === 'basic'
-      ? process.env.STRIPE_PRICE_BASIC_ID
-      : process.env.STRIPE_PRICE_PRO_ID;
+
+    let newPriceId;
+    if (billing === 'yearly') {
+      newPriceId = plan === 'basic'
+        ? process.env.STRIPE_PRICE_BASIC_YEARLY_ID
+        : process.env.STRIPE_PRICE_PRO_YEARLY_ID;
+    } else {
+      newPriceId = plan === 'basic'
+        ? process.env.STRIPE_PRICE_BASIC_ID
+        : process.env.STRIPE_PRICE_PRO_ID;
+    }
 
     const updated = await stripe.subscriptions.update(subscription.id, {
       items: [{ id: itemId, price: newPriceId }],
@@ -251,7 +283,7 @@ app.post('/api/stripe/change-plan', verifyFirebaseToken, async (req, res) => {
       stripeCustomerId
     });
 
-    res.json({ success: true, plan, status: updated.status });
+    res.json({ success: true, plan, billing, status: updated.status });
   } catch (error) {
     console.error('Change plan error:', error);
     res.status(500).json({ error: 'Failed to change subscription plan.' });
@@ -280,6 +312,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
         const subscription = await stripe.subscriptions.retrieve(session.subscription);
         const priceId = subscription.items.data[0]?.price?.id;
         const plan = getPlanForPrice(priceId);
+        const interval = subscription.items.data[0]?.price?.recurring?.interval; // 'month' or 'year'
         const uid = session.metadata?.uid;
 
         if (uid) {
@@ -287,6 +320,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
           await updateUserSubscription(userRef, {
             status: subscription.status,
             plan,
+            interval: interval === 'year' ? 'yearly' : 'monthly',
             stripeCustomerId: session.customer
           });
         }
@@ -297,11 +331,13 @@ app.post('/api/stripe/webhook', async (req, res) => {
         const subscription = event.data.object;
         const priceId = subscription.items.data[0]?.price?.id;
         const plan = getPlanForPrice(priceId);
+        const interval = subscription.items.data[0]?.price?.recurring?.interval; // 'month' or 'year'
         const userDoc = await getUserByCustomerId(subscription.customer);
         if (userDoc) {
           await updateUserSubscription(userDoc.ref, {
             status: subscription.status,
             plan,
+            interval: interval === 'year' ? 'yearly' : 'monthly',
             stripeCustomerId: subscription.customer
           });
         }

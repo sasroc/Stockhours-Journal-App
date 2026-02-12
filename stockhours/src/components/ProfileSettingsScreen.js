@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { theme } from '../theme';
 
 const ProfileSettingsScreen = ({ currentUser, subscription }) => {
+  const navigate = useNavigate();
   const userEmail = currentUser?.email || 'Unknown';
   const userId = currentUser?.uid || 'Unknown';
   const planName = subscription?.plan || 'none';
   const statusName = subscription?.status || 'inactive';
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState('');
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
-  const [upgradeError, setUpgradeError] = useState('');
 
   const apiBase = process.env.REACT_APP_STRIPE_API_URL || '';
 
@@ -41,37 +41,6 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
       setPortalError(error.message || 'Unable to open portal.');
     } finally {
       setPortalLoading(false);
-    }
-  };
-
-  const handleChangePlan = async (newPlan) => {
-    setUpgradeError('');
-    setUpgradeLoading(true);
-    try {
-      if (!apiBase) {
-        setUpgradeError('Stripe API is not configured.');
-        return;
-      }
-      const token = await currentUser.getIdToken();
-      const response = await fetch(`${apiBase}/api/stripe/change-plan`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ plan: newPlan })
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || 'Failed to change plan.');
-      }
-
-      window.location.reload();
-    } catch (error) {
-      setUpgradeError(error.message || 'Failed to change plan.');
-    } finally {
-      setUpgradeLoading(false);
     }
   };
 
@@ -151,82 +120,35 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
         </div>
       </div>
 
-      {isActive && planName === 'basic' && (
+      {isActive && (
         <div
           style={{
             marginTop: '24px',
-            background: 'linear-gradient(135deg, #4a1a8a 0%, #6c3ce0 100%)',
-            borderRadius: '10px',
-            padding: '20px',
-          }}
-        >
-          <h3 style={{ marginTop: 0, fontSize: '18px', color: '#fff' }}>Upgrade to Pro</h3>
-          <p style={{ color: '#ddd', margin: '8px 0 12px', fontSize: '14px', lineHeight: '1.5' }}>
-            Unlock the full power of TradeBetter:
-          </p>
-          <ul style={{ color: '#ddd', margin: '0 0 16px', paddingLeft: '20px', fontSize: '13px', lineHeight: '1.8' }}>
-            <li>AI Trade Reviews &mdash; personalized coaching on every trade</li>
-            <li>AI Pattern Detection &mdash; spot trends across your history</li>
-            <li>AI Weekly Reviews &mdash; weekly performance summaries</li>
-            <li>AI Daily Debrief &mdash; end-of-day journal coaching</li>
-          </ul>
-          <button
-            onClick={() => handleChangePlan('pro')}
-            disabled={upgradeLoading}
-            style={{
-              backgroundColor: '#fff',
-              color: '#4a1a8a',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '10px 20px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 600,
-            }}
-          >
-            {upgradeLoading ? 'Upgrading...' : 'Upgrade to Pro \u2014 $45/mo'}
-          </button>
-          {upgradeError && (
-            <div style={{ marginTop: '10px', color: '#ff6b6b', fontSize: '12px' }}>
-              {upgradeError}
-            </div>
-          )}
-        </div>
-      )}
-
-      {isActive && planName === 'pro' && (
-        <div
-          style={{
-            marginTop: '24px',
+            backgroundColor: '#121F35',
             borderRadius: '8px',
             padding: '16px',
             border: '1px solid #233350',
           }}
         >
-          <p style={{ margin: 0, fontSize: '14px', color: '#aaa' }}>
-            You're on the <strong style={{ color: '#fff' }}>Pro</strong> plan.
+          <p style={{ margin: '0 0 12px', fontSize: '14px', color: '#aaa' }}>
+            You're on the <strong style={{ color: '#fff', textTransform: 'capitalize' }}>{planName}</strong> plan.
+            {planName === 'basic' && ' Upgrade to Pro for AI-powered insights.'}
           </p>
           <button
-            onClick={() => handleChangePlan('basic')}
-            disabled={upgradeLoading}
+            onClick={() => navigate('/pricing')}
             style={{
-              marginTop: '10px',
-              backgroundColor: 'transparent',
-              color: '#888',
+              backgroundColor: theme.colors.teal,
+              color: theme.colors.white,
               border: 'none',
-              padding: 0,
+              borderRadius: '6px',
+              padding: '10px 20px',
               cursor: 'pointer',
-              fontSize: '13px',
-              textDecoration: 'underline',
+              fontSize: '14px',
+              fontWeight: 500,
             }}
           >
-            {upgradeLoading ? 'Switching...' : 'Switch to Basic \u2014 $20/mo'}
+            Change Plan
           </button>
-          {upgradeError && (
-            <div style={{ marginTop: '10px', color: '#ff6b6b', fontSize: '12px' }}>
-              {upgradeError}
-            </div>
-          )}
         </div>
       )}
 
