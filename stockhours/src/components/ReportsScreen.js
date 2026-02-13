@@ -199,6 +199,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
             profitLoss,
             totalVolume,
             firstBuyPrice,
+            totalBuyCost,
           });
 
           position.totalQuantity = 0;
@@ -1535,6 +1536,20 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       const avgWinningTrade = winningTrades.length > 0 ? winningTrades.reduce((sum, trade) => sum + trade.profitLoss, 0) / winningTrades.length : 0;
       const avgLosingTrade = losingTrades.length > 0 ? losingTrades.reduce((sum, trade) => sum + trade.profitLoss, 0) / losingTrades.length : 0;
 
+      // Calculate average winning/losing trade % gain/loss
+      const avgWinningTradePercent = winningTrades.length > 0
+        ? winningTrades.reduce((sum, trade) => {
+            const roi = trade.totalBuyCost > 0 ? (trade.profitLoss / trade.totalBuyCost) * 100 : 0;
+            return sum + roi;
+          }, 0) / winningTrades.length
+        : 0;
+      const avgLosingTradePercent = losingTrades.length > 0
+        ? losingTrades.reduce((sum, trade) => {
+            const roi = trade.totalBuyCost > 0 ? (trade.profitLoss / trade.totalBuyCost) * 100 : 0;
+            return sum + roi;
+          }, 0) / losingTrades.length
+        : 0;
+
       // Calculate average hold times
       const avgHoldTimeAll = processedTrades.reduce((sum, trade) => {
         const duration = (new Date(trade.ExitTime) - new Date(trade.FirstBuyExecTime)) / (1000 * 60); // in minutes
@@ -1719,6 +1734,14 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
                 <span style={{ color: '#888' }}>Average losing trade</span>
                 <span style={{ color: theme.colors.red }}>${avgLosingTrade.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Avg winning trade % gain</span>
+                <span style={{ color: theme.colors.green }}>+{avgWinningTradePercent.toFixed(2)}%</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                <span style={{ color: '#888' }}>Avg losing trade % loss</span>
+                <span style={{ color: theme.colors.red }}>{avgLosingTradePercent.toFixed(2)}%</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
                 <span style={{ color: '#888' }}>Total number of trades</span>
