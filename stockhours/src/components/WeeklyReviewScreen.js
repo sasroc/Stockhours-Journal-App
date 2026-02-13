@@ -380,9 +380,10 @@ const WeeklyReviewScreen = ({ tradeData }) => {
   if (!isPro) {
     return (
       <div style={{ padding: '40px 20px', textAlign: 'center', color: '#8899AA' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>&#10024;</div>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
         <h2 style={{ color: '#fff', marginBottom: '8px' }}>Weekly Reviews</h2>
-        <p>AI Weekly Reviews are available on the Pro plan.</p>
+        <p style={{ marginBottom: '20px' }}>Upgrade for AI Weekly Reviews</p>
+        <p style={{ fontSize: '14px', color: '#666' }}>Get AI-powered analysis of your weekly trading performance.</p>
       </div>
     );
   }

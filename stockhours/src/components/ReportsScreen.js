@@ -2155,13 +2155,10 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       if (!isPro) {
         return (
           <div style={{ marginTop: '20px', backgroundColor: '#1A2B44', borderRadius: '12px', padding: '30px', border: '1px solid #2B3D55', textAlign: 'center' }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b388ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '12px' }}>
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>AI Pattern Detection</div>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔒</div>
+            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Upgrade for AI Insights</div>
             <div style={{ color: '#b3b3c6', fontSize: '14px' }}>
-              Upgrade to the <span style={{ color: '#b388ff', fontWeight: 'bold' }}>Pro plan</span> to unlock AI-powered pattern detection across your full trade history.
+              Unlock AI-powered pattern detection across your full trade history.
             </div>
           </div>
         );

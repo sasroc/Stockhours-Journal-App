@@ -617,7 +617,7 @@ const DailyStatsScreen = ({ tradeData }) => {
                 >
                   Share
                 </button>
-                {isPro && (
+                {isPro ? (
                   <button
                     onClick={() => {
                       if (debriefs[date]) {
@@ -653,6 +653,26 @@ const DailyStatsScreen = ({ tradeData }) => {
                     ) : (
                       <>{'✨ AI Debrief'}</>
                     )}
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    style={{
+                      background: '#2B3D55',
+                      color: '#888',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '5px 10px',
+                      cursor: 'not-allowed',
+                      marginRight: '10px',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                    }}
+                  >
+                    <span style={{ fontSize: '13px' }}>🔒</span>
+                    Upgrade for AI Debrief
                   </button>
                 )}
                 <button

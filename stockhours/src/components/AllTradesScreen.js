@@ -460,10 +460,25 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
             AI Trade Review
           </button>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#666e80', fontSize: 14 }}>
+          <button
+            disabled
+            style={{
+              background: '#2B3D55',
+              color: '#888',
+              border: 'none',
+              borderRadius: 10,
+              padding: '12px 28px',
+              cursor: 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 15,
+              fontWeight: 700,
+            }}
+          >
             <span style={{ fontSize: 16 }}>{'\uD83D\uDD12'}</span>
-            <span>AI Trade Review is available on the <span style={{ color: '#b388ff', fontWeight: 600 }}>Pro plan</span></span>
-          </div>
+            Upgrade for AI Trade Review
+          </button>
         )}
       </div>
     </div>
