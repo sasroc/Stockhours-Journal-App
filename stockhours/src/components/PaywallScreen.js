@@ -25,7 +25,8 @@ const PaywallScreen = () => {
         'Trade imports',
         'Daily stats + reports',
         'Tagging, notes, ratings',
-        'Full access to trade data'
+        'Full access to trade data',
+        '1 broker connection'
       ],
       highlight: false
     },
@@ -40,7 +41,8 @@ const PaywallScreen = () => {
         'Everything in Basic',
         'AI trade review prompts',
         'Pattern detection insights',
-        'Strategy summaries'
+        'Strategy summaries',
+        'Unlimited broker connections'
       ],
       highlight: true
     }

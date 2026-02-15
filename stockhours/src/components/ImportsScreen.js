@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
 
 const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync, onWebullSync }) => {
+  const { subscription } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [schwabStatus, setSchwabStatus] = useState({ connected: false, lastSync: null });
   const [webullStatus, setWebullStatus] = useState({ connected: false, lastSync: null });
@@ -17,6 +20,11 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
   const schwabRedirectUri = process.env.REACT_APP_SCHWAB_REDIRECT_URI || '';
   const webullClientId = process.env.REACT_APP_WEBULL_CLIENT_ID || '';
   const webullRedirectUri = process.env.REACT_APP_WEBULL_REDIRECT_URI || '';
+
+  // Broker lock: Basic users can only connect 1 broker
+  const isPro = subscription?.plan === 'pro' && (subscription?.status === 'active' || subscription?.status === 'trialing');
+  const schwabLocked = !isPro && webullStatus.connected;
+  const webullLocked = !isPro && schwabStatus.connected;
 
   // Check URL params for callback messages
   useEffect(() => {
@@ -587,22 +595,41 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
                   )}
                 </div>
               </div>
-              <button
-                onClick={handleConnect}
-                disabled={!schwabClientId || schwabStatus.connected}
-                style={{
-                  backgroundColor: schwabStatus.connected ? '#344563' : '#1B6AC9',
-                  color: theme.colors.white,
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 16px',
-                  cursor: (!schwabClientId || schwabStatus.connected) ? 'not-allowed' : 'pointer',
-                  fontSize: '13px',
-                  opacity: (!schwabClientId || schwabStatus.connected) ? 0.5 : 1,
-                }}
-              >
-                {schwabStatus.connected ? 'Connected' : 'Connect'}
-              </button>
+              {schwabLocked ? (
+                <span style={{
+                  fontSize: '12px',
+                  color: '#8899AA',
+                  backgroundColor: '#1B2B43',
+                  padding: '6px 12px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8899AA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  Pro only
+                </span>
+              ) : (
+                <button
+                  onClick={handleConnect}
+                  disabled={!schwabClientId || schwabStatus.connected}
+                  style={{
+                    backgroundColor: schwabStatus.connected ? '#344563' : '#1B6AC9',
+                    color: theme.colors.white,
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 16px',
+                    cursor: (!schwabClientId || schwabStatus.connected) ? 'not-allowed' : 'pointer',
+                    fontSize: '13px',
+                    opacity: (!schwabClientId || schwabStatus.connected) ? 0.5 : 1,
+                  }}
+                >
+                  {schwabStatus.connected ? 'Connected' : 'Connect'}
+                </button>
+              )}
             </div>
 
             {/* Webull */}
@@ -642,22 +669,41 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
                   )}
                 </div>
               </div>
-              <button
-                onClick={handleWebullConnect}
-                disabled={!webullClientId || webullStatus.connected}
-                style={{
-                  backgroundColor: webullStatus.connected ? '#344563' : '#E63946',
-                  color: theme.colors.white,
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 16px',
-                  cursor: (!webullClientId || webullStatus.connected) ? 'not-allowed' : 'pointer',
-                  fontSize: '13px',
-                  opacity: (!webullClientId || webullStatus.connected) ? 0.5 : 1,
-                }}
-              >
-                {webullStatus.connected ? 'Connected' : 'Connect'}
-              </button>
+              {webullLocked ? (
+                <span style={{
+                  fontSize: '12px',
+                  color: '#8899AA',
+                  backgroundColor: '#1B2B43',
+                  padding: '6px 12px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8899AA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  Pro only
+                </span>
+              ) : (
+                <button
+                  onClick={handleWebullConnect}
+                  disabled={!webullClientId || webullStatus.connected}
+                  style={{
+                    backgroundColor: webullStatus.connected ? '#344563' : '#E63946',
+                    color: theme.colors.white,
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 16px',
+                    cursor: (!webullClientId || webullStatus.connected) ? 'not-allowed' : 'pointer',
+                    fontSize: '13px',
+                    opacity: (!webullClientId || webullStatus.connected) ? 0.5 : 1,
+                  }}
+                >
+                  {webullStatus.connected ? 'Connected' : 'Connect'}
+                </button>
+              )}
             </div>
 
             {/* IBKR - Coming Soon */}
@@ -704,6 +750,42 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
                 Coming Soon
               </span>
             </div>
+
+            {/* Upgrade banner when a broker is locked */}
+            {(schwabLocked || webullLocked) && (
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(45, 212, 191, 0.1)',
+                  border: `1px solid ${theme.colors.teal}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span style={{ fontSize: '13px', color: theme.colors.teal }}>
+                  Upgrade to Pro for unlimited broker connections
+                </span>
+                <button
+                  onClick={() => { setShowBrokerModal(false); navigate('/pricing'); }}
+                  style={{
+                    backgroundColor: theme.colors.teal,
+                    color: theme.colors.white,
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 14px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Upgrade
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

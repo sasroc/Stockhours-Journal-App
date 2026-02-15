@@ -6,6 +6,7 @@ const admin = require('firebase-admin');
 const fs = require('fs');
 const fetch = require('node-fetch');
 const OpenAI = require('openai');
+const rateLimit = require('express-rate-limit');
 
 dotenv.config();
 
@@ -66,6 +67,15 @@ const initializeFirebaseAdmin = () => {
 initializeFirebaseAdmin();
 const db = admin.firestore();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
+
+const aiRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 25,
+  keyGenerator: (req) => req.user.uid,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'You have reached the AI request limit. Please try again later.' },
+});
 
 const getPlanForPrice = (priceId) => {
   if (!priceId) return 'none';
@@ -551,6 +561,15 @@ const refreshSchwabTokenIfNeeded = async (userRef, tokenDoc) => {
 // POST /api/schwab/token – exchange auth code for tokens
 app.post('/api/schwab/token', verifyFirebaseToken, async (req, res) => {
   try {
+    // Broker limit: Basic users can only connect 1 broker
+    const userDoc = await db.collection('users').doc(req.user.uid).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const sub = userData.subscription || {};
+    const isPro = sub.plan === 'pro' && (sub.status === 'active' || sub.status === 'trialing');
+    if (!isPro && userData.webullConnected === true) {
+      return res.status(403).json({ error: 'Basic plan supports 1 broker connection. Upgrade to Pro for unlimited brokers.' });
+    }
+
     const { code } = req.body;
     if (!code) {
       return res.status(400).json({ error: 'Missing authorization code.' });
@@ -935,6 +954,15 @@ const refreshWebullTokenIfNeeded = async (userRef, tokenDoc) => {
 // POST /api/webull/token – exchange auth code for tokens
 app.post('/api/webull/token', verifyFirebaseToken, async (req, res) => {
   try {
+    // Broker limit: Basic users can only connect 1 broker
+    const userDoc = await db.collection('users').doc(req.user.uid).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const sub = userData.subscription || {};
+    const isPro = sub.plan === 'pro' && (sub.status === 'active' || sub.status === 'trialing');
+    if (!isPro && userData.schwabConnected === true) {
+      return res.status(403).json({ error: 'Basic plan supports 1 broker connection. Upgrade to Pro for unlimited brokers.' });
+    }
+
     const { code } = req.body;
     if (!code) {
       return res.status(400).json({ error: 'Missing authorization code.' });
@@ -1083,7 +1111,7 @@ app.post('/api/webull/disconnect', verifyFirebaseToken, async (req, res) => {
 
 // ── AI Trade Review ─────────────────────────────────────────────────────
 
-app.post('/api/ai/trade-review', verifyFirebaseToken, async (req, res) => {
+app.post('/api/ai/trade-review', verifyFirebaseToken, aiRateLimiter, async (req, res) => {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: 'AI review is not configured on the server.' });
@@ -1177,7 +1205,7 @@ Trader Self-Assessment:
 
 // ── AI Daily Debrief ────────────────────────────────────────────────────
 
-app.post('/api/ai/daily-debrief', verifyFirebaseToken, async (req, res) => {
+app.post('/api/ai/daily-debrief', verifyFirebaseToken, aiRateLimiter, async (req, res) => {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: 'AI service is not configured on the server.' });
@@ -1265,7 +1293,7 @@ Rules: Max 200 words total. Be specific to THIS trader's data, never generic. Co
 
 // ── AI Pattern Detection ─────────────────────────────────────────────────
 
-app.post('/api/ai/pattern-detection', verifyFirebaseToken, async (req, res) => {
+app.post('/api/ai/pattern-detection', verifyFirebaseToken, aiRateLimiter, async (req, res) => {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: 'AI service is not configured on the server.' });
@@ -1399,7 +1427,7 @@ Keep the total response around 600 words. Be direct, specific, and constructive.
 });
 
 // AI Weekly Review endpoint
-app.post('/api/ai/weekly-review', verifyFirebaseToken, async (req, res) => {
+app.post('/api/ai/weekly-review', verifyFirebaseToken, aiRateLimiter, async (req, res) => {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: 'AI service is not configured on the server.' });
