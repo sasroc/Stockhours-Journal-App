@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
+import schwabLogo from '../assets/schwab-logo.png';
+import webullLogo from '../assets/webull-logo.jpg';
+import ibkrLogo from '../assets/ibkr-logo.png';
 
 const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync, onWebullSync }) => {
   const { subscription } = useAuth();
@@ -293,21 +296,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '8px',
-                  backgroundColor: '#1B6AC9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  fontSize: '14px',
-                }}
-              >
-                CS
-              </div>
+              <img src={schwabLogo} alt="Charles Schwab" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />
               <div>
                 <div style={{ fontWeight: 600 }}>Charles Schwab</div>
                 <div style={{ fontSize: '13px', color: '#2ecc71', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -390,21 +379,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '8px',
-                  backgroundColor: '#E63946',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  fontSize: '14px',
-                }}
-              >
-                WB
-              </div>
+              <img src={webullLogo} alt="Webull" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
               <div>
                 <div style={{ fontWeight: 600 }}>Webull</div>
                 <div style={{ fontSize: '13px', color: '#2ecc71', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -572,22 +547,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    backgroundColor: '#1B6AC9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '14px',
-                    color: theme.colors.white,
-                  }}
-                >
-                  CS
-                </div>
+                <img src={schwabLogo} alt="Charles Schwab" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '15px', color: theme.colors.white }}>Charles Schwab</div>
                   {schwabStatus.connected && (
@@ -646,22 +606,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    backgroundColor: '#E63946',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '14px',
-                    color: theme.colors.white,
-                  }}
-                >
-                  WB
-                </div>
+                <img src={webullLogo} alt="Webull" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '15px', color: theme.colors.white }}>Webull</div>
                   {webullStatus.connected && (
@@ -720,22 +665,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    backgroundColor: '#8B0000',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '14px',
-                    color: theme.colors.white,
-                  }}
-                >
-                  IB
-                </div>
+                <img src={ibkrLogo} alt="Interactive Brokers" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
                 <div style={{ fontWeight: 600, fontSize: '15px', color: theme.colors.white }}>Interactive Brokers</div>
               </div>
               <span
