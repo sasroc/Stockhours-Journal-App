@@ -1,273 +1,254 @@
-# TradeBetter App
+# TradeBetter
 
-A comprehensive day trading journal application designed to track, analyze, and visualize trading performance. Built specifically for options traders, the app provides detailed trade analytics, performance metrics, and organizational tools to help traders improve their strategies and learn from their trading history.
+An AI-powered trading journal for options traders. Import trades from your broker or CSV files, get detailed analytics on your performance, and use GPT-4o coaching to identify patterns, fix mistakes, and trade with more discipline.
 
-## Overview
+**Web app** built with React + Express. **iOS app** built with SwiftUI (separate repo). Both sync through Firebase in real time.
 
-TradeBetter App is a React-based web application that allows traders to import their trade data from Excel/CSV files, automatically process and calculate profit/loss metrics, and visualize performance through interactive dashboards and reports. The app features a modern dark-themed UI optimized for both desktop and mobile devices.
+---
 
-## Key Features
+## Why TradeBetter?
 
-### 📊 **Trade Data Management**
-- **Import Trades**: Upload trade history from Excel (.xlsx, .xls) or CSV files
-- **Automatic Processing**: Intelligently processes transactions to match OPEN/CLOSE pairs and calculate accurate P&L
-- **Multi-File Support**: Manage multiple import files and track which trades came from which files
-- **Data Persistence**: All trade data is automatically saved to Firebase (for authenticated users) or localStorage (for guests)
+Most traders lose money not because of bad strategies, but because they repeat the same mistakes without realizing it. TradeBetter gives you the data and AI feedback to break that cycle:
 
-### 📈 **Performance Analytics**
+- **Import in minutes** — Connect your Schwab or Webull account for automatic trade syncing, or upload a CSV/Excel file.
+- **See your real edge** — Win rate, profit factor, average win/loss, streaks, time-of-day patterns, and more — all calculated automatically.
+- **Fix recurring mistakes** — Tag trades with setups and mistakes, then filter your reports to see exactly which patterns make or lose you money.
+- **Get AI coaching** — GPT-4o reviews your trades, debriefs your day, detects patterns across your history, and writes weekly reviews with actionable goals.
 
-#### Dashboard
-- **Overview Statistics**: Total trades, win rate, profit factor, gross P&L, and more
-- **Interactive Calendar**: Visual calendar heatmap showing daily P&L performance
-- **Performance Charts**: 
-  - Cumulative P&L line chart
-  - Win/Loss distribution charts
-  - Daily/weekly/monthly performance breakdowns
-- **Quick Metrics**: Win rate, average win/loss, largest win/loss, and streak tracking
+---
 
-#### Daily Stats Screen
-- **Day-by-Day Breakdown**: View all trades organized by trading date
-- **Cumulative P&L Charts**: Line graphs showing intraday P&L progression
-- **Daily Metrics**: Total trades, winners, losers, gross P&L, volume, and profit factor per day
-- **Expandable Trade Details**: Click to view detailed trade information for each day
-- **Share Functionality**: Generate and download shareable images of daily performance
+## Features
 
-#### All Trades Screen
-- **Complete Trade List**: View all processed trades in a sortable, paginated table
-- **Trade Details View**: Click any trade to see comprehensive details including:
-  - Entry/exit prices and quantities
-  - Net P&L and ROI calculations
-  - Trade timing and duration
-  - Option contract details (strike, expiration, type)
-- **TradingView Integration**: View price charts for each trade's underlying symbol
-- **Pagination**: Navigate through large trade lists efficiently (50 trades per page)
+### Trade Imports
 
-#### Reports Screen
-- **Advanced Analytics**: Multiple report types including:
-  - Overview reports with key performance indicators
-  - Tag-based analysis (filter by setups and mistakes)
-  - Time-based analysis (hourly, daily, weekly patterns)
-  - Performance by symbol, strike, expiration, and option type
-- **Interactive Charts**: Bar charts and visualizations for various metrics
-- **Filterable Data**: Expandable categories to drill down into specific trade attributes
+| Method | Details |
+|--------|---------|
+| **Schwab** | OAuth connection, auto-syncs last 60 days of trades |
+| **Webull** | OAuth connection, auto-syncs filled orders |
+| **CSV / Excel** | Upload `.csv`, `.xlsx`, or `.xls` files exported from any broker |
 
-### 🏷️ **Trade Organization & Tagging**
+Trades are automatically processed using FIFO matching — OPEN/CLOSE pairs are matched, P&L and ROI are calculated, and everything is organized by date, symbol, and contract.
 
-#### Tag System
-- **Setup Tags**: Categorize trades by trading setups (e.g., "Breakout", "Reversal", "Support Bounce")
-- **Mistake Tags**: Tag trades with mistakes made (e.g., "Overtrading", "FOMO", "Poor Entry")
-- **Custom Tags**: Create and manage your own custom tag lists
-- **Tag Management**: Add, remove, and edit tags directly from the trade views
-- **Tag-Based Filtering**: Filter and analyze trades by specific tags in the Reports screen
+### Dashboard
 
-#### Trade Ratings
-- **Star Rating System**: Rate trades from 1-5 stars (supports half-star ratings)
-- **Visual Feedback**: Gold stars indicate trade quality
-- **Persistent Storage**: Ratings are saved per trade and persist across sessions
+- Total trades, win rate, profit factor, gross P&L, best/worst trade
+- Calendar heatmap showing daily P&L at a glance
+- Cumulative P&L line chart tracking your equity curve
+- Win/loss distribution and streak tracking
 
-### 📝 **Notes & Documentation**
+### Daily Stats
 
-#### Daily Notes
-- **Rich Text Editor**: Add formatted notes for each trading day using a WYSIWYG editor
-- **Date-Specific Notes**: Link notes to specific dates for easy reference
-- **Persistent Storage**: Notes are saved to Firebase or localStorage
-- **Quick Access**: Add or view notes directly from the Daily Stats screen
+- Day-by-day trade summaries with intraday P&L charts
+- Expandable trade details for each day
+- Add rich-text daily notes (what you observed, felt, planned)
+- Share daily performance as a branded PNG image for social media
+- Request an AI Daily Debrief (Pro) for end-of-day coaching
 
-### 📅 **Date Range Filtering**
+### All Trades
 
-- **Year-to-Date Default**: App defaults to showing current year's data (prevents mixing data from different years)
-- **Flexible Date Selection**: 
-  - Custom date range picker with calendar interface
-  - Quick select options: Today, This Week, This Month, Last 30 Days, Last Month, This Quarter, Year to Date
-  - All-time view available by clearing the date filter
-- **Real-Time Filtering**: All screens update instantly when date range changes
+- Paginated table of every completed trade (50 per page)
+- Click any trade to see full details: entry/exit, timing, option specs, P&L, ROI
+- Embedded TradingView chart for the underlying symbol
+- Rate trades 1-5 stars (half-star support) for self-assessment
+- Request an AI Trade Review (Pro) for per-trade coaching
 
-### 👥 **User Management**
+### Reports
 
-#### Authentication
-- **Firebase Authentication**: Secure user authentication system
-- **Multiple Sign-In Methods**: Email/password, Google, and Apple
-- **Protected Routes**: All app features require authentication
-- **User Profiles**: Individual user accounts with isolated data
+- **Overview**: Key performance indicators across your filtered date range
+- **By Tag**: See how each setup or mistake tag performs (win rate, avg P&L, frequency)
+- **By Time**: Hourly and day-of-week breakdowns to find your best trading windows
+- **By Symbol / Strike / Expiration / Option Type**: Drill into what you trade most and what works
+- **AI Insights** (Pro): Pattern detection across your entire history, powered by GPT-4o
 
-### 🎨 **User Interface**
+### Weekly Reviews
 
-- **Dark Theme**: Modern dark-themed interface optimized for extended viewing
-- **Responsive Design**: Fully responsive layout that works on desktop, tablet, and mobile devices
-- **Intuitive Navigation**: Sidebar navigation with tooltips for easy access to all features
-- **Visual Feedback**: Color-coded P&L (green for profits, red for losses) throughout the app
-- **Interactive Elements**: Hover effects, tooltips, and smooth transitions
+- Weekly summaries with P&L, trade count, win rate, and profit factor
+- Daily breakdown within each week
+- AI Weekly Review (Pro) generates structured feedback with "What Worked", "Key Observation", and "Next Week's Goals"
+- Edit and persist your own weekly goals alongside AI suggestions
 
-### 📤 **Sharing & Export**
+### Tagging System
 
-- **Shareable Images**: Generate branded images of daily trading performance
-- **Download Functionality**: Download share images as PNG files
-- **Branded Design**: Images include TradeBetter App branding and logo
+- **Setup tags**: Label trades by strategy (e.g., Breakout, Reversal, Support Bounce)
+- **Mistake tags**: Label trades where you made errors (e.g., FOMO, Overtrading, Poor Entry)
+- Create custom tags, manage them from any trade view, and filter reports by tag to see which setups and mistakes actually affect your bottom line
 
-## Technology Stack
+---
 
-- **Frontend Framework**: React 19.0.0
-- **Routing**: React Router DOM 7.3.0
-- **Charts**: Chart.js 4.4.8 with react-chartjs-2
-- **Date Handling**: date-fns 2.30.0
-- **File Processing**: xlsx 0.18.5 (Excel/CSV parsing)
-- **Backend**: Firebase (Authentication & Firestore)
-- **Rich Text Editor**: React Quill
-- **Date Picker**: react-date-range
-- **Styling**: Styled Components 6.1.15
-- **Icons**: React Icons 5.5.0
+## AI Features (Pro Plan)
 
-## Core Functionality
+All AI features use GPT-4o and are rate-limited to 25 requests per hour per user.
 
-### Trade Processing Logic
+| Feature | What it does |
+|---------|-------------|
+| **Trade Review** | Analyzes a single trade (entry/exit, P&L, your rating, your tags) and returns a 4-part coaching response: Recap, Wins, Improvements, Key Lesson |
+| **Daily Debrief** | Reviews all trades from a single day plus your daily notes, then delivers: Day Review, Standout Trades, Patterns, Tomorrow's Focus |
+| **Pattern Detection** | Synthesizes your full trade history — time-of-day stats, day-of-week stats, per-symbol stats, tag stats — into 5-8 specific, data-backed pattern insights |
+| **Weekly Review** | Summarizes the week's trades and your daily notes into: The Week in Brief, What Worked, Key Observation, Next Week's Goals |
 
-The app uses sophisticated algorithms to process raw transaction data:
+Basic plan users see these features locked with an upgrade prompt. No AI calls are made for Basic users.
 
-1. **Transaction Grouping**: Groups transactions by symbol, strike, and expiration
-2. **OPEN/CLOSE Matching**: Matches OPEN (buy) transactions with CLOSE (sell) transactions
-3. **FIFO Processing**: Uses First-In-First-Out logic to match transactions correctly
-4. **P&L Calculation**: Calculates accurate profit/loss using contract multipliers (100 for options)
-5. **ROI Calculation**: Computes net ROI percentage for each completed trade
-6. **Date Standardization**: Handles various date formats and standardizes them for consistent processing
+---
+
+## Subscription Plans
+
+|  | Basic | Pro |
+|--|-------|-----|
+| **Monthly** | $20/mo | $45/mo |
+| **Yearly** | $17/mo ($204/yr) | $38/mo ($456/yr) |
+| Trade imports (file + broker) | Yes | Yes |
+| Dashboard, Daily Stats, Reports | Yes | Yes |
+| Tagging, notes, ratings | Yes | Yes |
+| Broker connections | 1 | Unlimited |
+| AI Trade Review | - | Yes |
+| AI Daily Debrief | - | Yes |
+| AI Pattern Detection | - | Yes |
+| AI Weekly Review | - | Yes |
+
+Billing is handled through Stripe with support for promo codes, mid-cycle plan changes with prorated billing, and a self-service customer portal.
+
+---
+
+## Architecture
+
+```
+stockhours/          React frontend (Create React App)
+backend/             Express API server
+```
+
+### Frontend
+
+- **React 19** with React Router for SPA navigation
+- **Firebase SDK** for authentication (email/password, Google, Apple) and Firestore reads
+- **Chart.js** for all data visualizations (line, bar, calendar heatmap)
+- **xlsx** for client-side Excel/CSV parsing
+- Dark theme with inline styles, fully responsive
+
+### Backend
+
+- **Express** server with Firebase Admin SDK for auth verification and Firestore writes
+- **Stripe** for subscription billing and webhook handling
+- **OpenAI** (GPT-4o) for all AI endpoints
+- **Schwab & Webull APIs** for OAuth token exchange, trade syncing, and token refresh
+- **express-rate-limit** for per-user AI rate limiting (25 req/hr)
 
 ### Data Flow
 
-1. **Import**: User uploads Excel/CSV file containing trade history
-2. **Parsing**: App parses the file and extracts transaction data
-3. **Transformation**: Raw data is transformed into structured transaction objects
-4. **Processing**: Transactions are grouped and matched to create completed trades
-5. **Storage**: Processed trades are saved to Firebase (authenticated) or localStorage (guest)
-6. **Filtering**: Date range filters are applied to show relevant trades
-7. **Display**: Filtered trades are displayed across various screens with analytics
+1. User imports trades (broker sync or file upload)
+2. Frontend parses and processes transactions — groups by symbol/strike/expiration, matches OPEN/CLOSE pairs via FIFO, calculates P&L and ROI
+3. Processed trades are stored in Firestore under `users/{uid}`
+4. All screens read from the same trade data, applying date range filters
+5. AI endpoints receive trade data from the frontend, call GPT-4o, and return structured coaching responses
+6. Broker tokens are stored in Firestore subcollections and automatically refreshed on sync
 
-### Data Persistence
+### Security
 
-- **Authenticated Users**: All data (trades, tags, ratings, notes) is stored in Firebase Firestore
-- **Guest Users**: Data is stored in browser localStorage
-- **Automatic Sync**: Changes are automatically saved in real-time
-- **Data Isolation**: Each user's data is completely isolated
+- All API endpoints require a valid Firebase ID token (`verifyFirebaseToken` middleware)
+- User data is fully isolated by UID
+- AI endpoints are rate-limited (25 requests/hour per user) to prevent cost abuse
+- Broker tokens are stored server-side in Firestore, never exposed to the client
+- Stripe webhooks are verified via signature before processing
+- Basic plan users are server-side gated from connecting more than 1 broker
 
-## File Format Support
-
-The app supports trade data exported from broker platforms in Excel or CSV format. Expected columns include:
-- Exec Time
-- Trade Date
-- Side (BUY/SELL)
-- Quantity
-- Symbol
-- Expiration
-- Strike
-- Price
-- Order Type
-- Pos Effect (OPEN/CLOSE)
-- Type (CALL/PUT)
+---
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- npm or yarn
-- Firebase project with Firestore enabled
+- Node.js v14+
+- A Firebase project with Authentication and Firestore enabled
+- A Stripe account (for subscription billing)
+- An OpenAI API key (for AI features)
+- Schwab and/or Webull developer credentials (for broker integrations, optional)
 
-### Installation
+### Frontend Setup
 
-1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd TradeBetter-App/stockhours
-```
-
-2. Install dependencies:
-```bash
+cd stockhours
 npm install
 ```
 
-3. Set up Firebase configuration:
-   - Create a `.env` file in the `stockhours` directory
-   - Add your Firebase configuration:
-   ```
-   REACT_APP_FIREBASE_API_KEY=your_api_key
-   REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain
-   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-   REACT_APP_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-   REACT_APP_FIREBASE_APP_ID=your_app_id
-   ```
+Create `stockhours/.env`:
 
-4. Start the development server:
+```
+REACT_APP_FIREBASE_API_KEY=your_api_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+REACT_APP_STRIPE_API_URL=http://localhost:4242
+REACT_APP_SCHWAB_CLIENT_ID=your_schwab_client_id
+REACT_APP_SCHWAB_REDIRECT_URI=http://localhost:3000/imports
+REACT_APP_WEBULL_CLIENT_ID=your_webull_client_id
+REACT_APP_WEBULL_REDIRECT_URI=http://localhost:3000/imports
+```
+
 ```bash
 npm start
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+### Backend Setup
+
+```bash
+cd backend
+npm install
+```
+
+Create `backend/.env`:
+
+```
+FRONTEND_URL=http://localhost:3000
+STRIPE_SECRET_KEY=sk_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_BASIC_ID=price_...
+STRIPE_PRICE_BASIC_YEARLY_ID=price_...
+STRIPE_PRICE_PRO_ID=price_...
+STRIPE_PRICE_PRO_YEARLY_ID=price_...
+FIREBASE_SERVICE_ACCOUNT=base64_encoded_service_account_json
+OPENAI_API_KEY=sk-...
+SCHWAB_CLIENT_ID=your_schwab_client_id
+SCHWAB_CLIENT_SECRET=your_schwab_client_secret
+SCHWAB_REDIRECT_URI=http://localhost:4242/api/schwab/callback
+WEBULL_CLIENT_ID=your_webull_client_id
+WEBULL_CLIENT_SECRET=your_webull_client_secret
+WEBULL_REDIRECT_URI=http://localhost:4242/api/webull/callback
+```
+
+```bash
+npm run dev
+```
 
 ### Building for Production
 
 ```bash
+cd stockhours
 npm run build
 ```
 
-## Usage
+---
 
-1. **Sign Up/Login**: Create an account or log in with email/password, Google, or Apple
-2. **Import Trades**: Click the "+" button in the sidebar to upload your trade history file
-3. **View Dashboard**: Navigate to Dashboard to see overview statistics and calendar
-4. **Analyze Daily Stats**: Go to Daily Stats to see day-by-day breakdowns
-5. **Review All Trades**: Visit All Trades to see a complete list of all your trades
-6. **Generate Reports**: Use the Reports screen for detailed analytics
-7. **Tag Trades**: Click the tag icon on any trade to add setup/mistake tags
-8. **Add Notes**: Click "Add Note" on any day to add trading notes
-9. **Filter by Date**: Use the date range picker to filter trades by specific time periods
+## File Format Support
 
-## Features by Screen
+For manual CSV/Excel imports, the app expects columns matching standard broker export formats:
 
-### Dashboard
-- Performance overview with key metrics
-- Interactive calendar heatmap
-- Cumulative P&L visualization
-- Win/loss statistics
-- Quick navigation to detailed views
+| Column | Description |
+|--------|-------------|
+| Exec Time | Execution timestamp |
+| Trade Date | Date of the trade |
+| Side | BUY or SELL |
+| Quantity | Number of contracts |
+| Symbol | Underlying ticker |
+| Expiration | Option expiration date |
+| Strike | Strike price |
+| Price | Fill price |
+| Order Type | Order type (MARKET, LIMIT, etc.) |
+| Pos Effect | OPEN or CLOSE |
+| Type | CALL or PUT |
 
-### Daily Stats
-- Daily trade summaries
-- Intraday P&L charts
-- Expandable trade details
-- Tag management per trade
-- Daily notes
-- Share functionality
-
-### All Trades
-- Complete trade list with pagination
-- Detailed trade view with TradingView charts
-- Trade ratings
-- Tag management
-- Sortable columns
-
-### Reports
-- Multiple report types
-- Tag-based filtering
-- Time-based analysis
-- Performance by various attributes
-- Interactive charts and visualizations
-
-### Imports
-- View uploaded files
-- Delete files
-- Track file sources
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
+---
 
 ## License
 
 See LICENSE file for details.
-
-## Contributing
-
-This is a private project. For questions or issues, please contact the project maintainers.
-
