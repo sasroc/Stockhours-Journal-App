@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
@@ -8,10 +8,13 @@ const WebullCallback = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('Connecting your Webull account...');
+  const exchangedRef = useRef(false);
 
   const apiBase = process.env.REACT_APP_STRIPE_API_URL || '';
 
   useEffect(() => {
+    if (exchangedRef.current) return;
+
     const exchangeCode = async () => {
       const code = searchParams.get('code');
       const error = searchParams.get('error');
@@ -27,9 +30,10 @@ const WebullCallback = () => {
       }
 
       if (!currentUser) {
-        navigate('/imports?webull=error&message=Not+authenticated');
         return;
       }
+
+      exchangedRef.current = true;
 
       try {
         setStatus('Exchanging authorization code...');
