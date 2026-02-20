@@ -48,27 +48,27 @@ const renderMarkdown = (text) => {
   return text.split('\n').map((line, i) => {
     // Bold headers: **text**
     if (/^\*\*(.+)\*\*$/.test(line.trim())) {
-      return <div key={i} style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px', marginTop: i > 0 ? '14px' : '0', marginBottom: '4px' }}>{line.trim().replace(/^\*\*|\*\*$/g, '')}</div>;
+      return <div key={i} style={{ color: '#f0f6ff', fontWeight: 700, fontSize: '13.5px', marginTop: i > 0 ? '18px' : '0', marginBottom: '6px', paddingLeft: '11px', borderLeft: '2px solid #2DD4BF' }}>{line.trim().replace(/^\*\*|\*\*$/g, '')}</div>;
     }
     // Numbered items: 1. text
     if (/^\d+\.\s/.test(line.trim())) {
-      return <div key={i} style={{ paddingLeft: '8px', marginBottom: '4px' }}>{renderInlineBold(line.trim())}</div>;
+      return <div key={i} style={{ paddingLeft: '6px', marginBottom: '5px' }}>{renderInlineBold(line.trim())}</div>;
     }
     // Bullet points
     if (/^[-•]\s/.test(line.trim())) {
-      return <div key={i} style={{ paddingLeft: '16px', position: 'relative', marginBottom: '2px' }}><span style={{ position: 'absolute', left: '4px' }}>&bull;</span>{renderInlineBold(line.trim().replace(/^[-•]\s/, ''))}</div>;
+      return <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '5px', paddingLeft: '4px' }}><span style={{ color: '#2DD4BF', flexShrink: 0, lineHeight: '1.78' }}>›</span><span>{renderInlineBold(line.trim().replace(/^[-•]\s/, ''))}</span></div>;
     }
     // Empty lines
     if (!line.trim()) return <div key={i} style={{ height: '8px' }} />;
     // Inline bold
-    return <div key={i} style={{ marginBottom: '2px' }}>{renderInlineBold(line)}</div>;
+    return <div key={i} style={{ marginBottom: '4px' }}>{renderInlineBold(line)}</div>;
   });
 };
 
 const renderInlineBold = (text) => {
   const parts = text.split(/\*\*(.+?)\*\*/g);
   return parts.map((part, j) =>
-    j % 2 === 1 ? <strong key={j} style={{ color: '#fff' }}>{part}</strong> : <span key={j}>{part}</span>
+    j % 2 === 1 ? <strong key={j} style={{ color: '#e2eaf4', fontWeight: 600 }}>{part}</strong> : <span key={j}>{part}</span>
   );
 };
 
@@ -379,11 +379,10 @@ const WeeklyReviewScreen = ({ tradeData }) => {
 
   if (!isPro) {
     return (
-      <div style={{ padding: '40px 20px', textAlign: 'center', color: '#8899AA' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-        <h2 style={{ color: '#fff', marginBottom: '8px' }}>Weekly Reviews</h2>
-        <p style={{ marginBottom: '20px' }}>Upgrade for AI Weekly Reviews</p>
-        <p style={{ fontSize: '14px', color: '#666' }}>Get AI-powered analysis of your weekly trading performance.</p>
+      <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+        <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', margin: '0 auto 20px' }}>🔒</div>
+        <h2 style={{ color: '#fff', margin: '0 0 10px', fontSize: '20px', fontWeight: 700 }}>Weekly Reviews</h2>
+        <p style={{ color: '#6b7f96', fontSize: '13.5px', margin: '0 auto', maxWidth: '320px', lineHeight: 1.65 }}>Upgrade to Pro to unlock AI-powered analysis of your weekly trading performance.</p>
       </div>
     );
   }
@@ -424,7 +423,7 @@ const WeeklyReviewScreen = ({ tradeData }) => {
             style={{
               backgroundColor: '#1A2B44',
               border: '1px solid #2B3D55',
-              borderLeft: isCurrent ? '3px solid #b388ff' : '1px solid #2B3D55',
+              borderLeft: isCurrent ? '3px solid #2DD4BF' : '1px solid #2B3D55',
               borderRadius: '12px',
               marginBottom: '12px',
               overflow: 'hidden',
@@ -445,7 +444,7 @@ const WeeklyReviewScreen = ({ tradeData }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ color: '#8899AA', fontSize: '14px', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>&#9654;</span>
                 <span style={{ color: '#fff', fontWeight: '600', fontSize: '15px' }}>{label}</span>
-                {isCurrent && <span style={{ color: '#b388ff', fontSize: '11px', backgroundColor: 'rgba(179, 136, 255, 0.15)', padding: '2px 8px', borderRadius: '10px' }}>This Week</span>}
+                {isCurrent && <span style={{ color: '#2DD4BF', fontSize: '11px', backgroundColor: 'rgba(45,212,191,0.1)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>This Week</span>}
                 {weekData.tradeCount > 0 && (
                   <span style={{ color: '#8899AA', fontSize: '13px' }}>
                     {weekData.tradeCount} trades &middot; <span style={{ color: weekData.weeklyStats.totalPL >= 0 ? theme.colors.green : theme.colors.red }}>${weekData.weeklyStats.totalPL.toFixed(2)}</span>
@@ -454,7 +453,7 @@ const WeeklyReviewScreen = ({ tradeData }) => {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {review ? (
-                  <span style={{ color: '#b388ff', fontSize: '12px' }}>&#10024; Reviewed</span>
+                  <span style={{ color: '#2DD4BF', fontSize: '12px', fontWeight: 600 }}>✓ Reviewed</span>
                 ) : weekData.tradeCount > 0 ? (
                   <span style={{ color: '#8899AA', fontSize: '12px' }}>Ready for review</span>
                 ) : null}
@@ -465,34 +464,36 @@ const WeeklyReviewScreen = ({ tradeData }) => {
             {isExpanded && (
               <div style={{ padding: '0 20px 20px' }}>
                 {!review ? (
-                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <div style={{ textAlign: 'center', padding: '24px 0 8px' }}>
                     {weekData.tradeCount === 0 ? (
-                      <p style={{ color: '#8899AA', fontSize: '14px' }}>No trades this week.</p>
+                      <p style={{ color: '#4a5e72', fontSize: '13.5px', margin: 0 }}>No trades this week.</p>
                     ) : (
                       <button
                         onClick={() => handleGenerateReview(weekKey)}
                         disabled={loading}
                         style={{
-                          background: loading ? '#555' : 'linear-gradient(135deg, #667eea, #764ba2)',
-                          color: '#fff',
+                          background: loading ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #2DD4BF 0%, #6366f1 100%)',
+                          color: loading ? '#6b7f96' : '#fff',
                           border: 'none',
                           padding: '12px 28px',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600',
+                          borderRadius: '10px',
+                          fontSize: '13.5px',
+                          fontWeight: 700,
                           cursor: loading ? 'not-allowed' : 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '8px',
+                          gap: '9px',
+                          boxShadow: loading ? 'none' : '0 4px 18px rgba(45,212,191,0.22), 0 2px 8px rgba(99,102,241,0.18)',
+                          letterSpacing: 0.2,
                         }}
                       >
                         {loading ? (
                           <>
-                            <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'aiSpin 1s linear infinite', display: 'inline-block' }} />
+                            <span style={{ width: '14px', height: '14px', border: '2px solid rgba(45,212,191,0.3)', borderTopColor: '#2DD4BF', borderRadius: '50%', animation: 'aiSpin 0.8s linear infinite', display: 'inline-block' }} />
                             Generating...
                           </>
                         ) : (
-                          <>&#10024; Generate Weekly Review</>
+                          <><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Generate Weekly Review</>
                         )}
                       </button>
                     )}
@@ -500,27 +501,41 @@ const WeeklyReviewScreen = ({ tradeData }) => {
                 ) : (
                   <>
                     {/* Review content */}
-                    <div style={{ color: '#d0d0e0', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
-                      {renderMarkdown(review.review)}
+                    <div style={{
+                      background: 'linear-gradient(160deg, rgba(10,20,42,0.6) 0%, rgba(12,18,38,0.6) 100%)',
+                      border: '1px solid rgba(45,212,191,0.1)',
+                      borderRadius: '12px',
+                      padding: '18px 20px',
+                      marginBottom: '14px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'linear-gradient(135deg, #2DD4BF, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>✨</div>
+                        <span style={{ color: '#fff', fontWeight: 700, fontSize: '12.5px', letterSpacing: 0.1 }}>Weekly Review</span>
+                        <span style={{ color: 'rgba(45,212,191,0.7)', fontSize: '10px', background: 'rgba(45,212,191,0.08)', padding: '2px 7px', borderRadius: '20px' }}>GPT-4o</span>
+                      </div>
+                      <div style={{ color: '#c8d6e5', fontSize: '13.5px', lineHeight: '1.78' }}>
+                        {renderMarkdown(review.review)}
+                      </div>
                     </div>
 
                     {/* Goals section */}
                     <div style={{
-                      backgroundColor: '#0F1D2F',
-                      border: '1px dashed #2B3D55',
-                      borderRadius: '10px',
-                      padding: '16px',
-                      marginBottom: '16px',
+                      background: 'rgba(45,212,191,0.03)',
+                      border: '1px solid rgba(45,212,191,0.12)',
+                      borderRadius: '12px',
+                      padding: '16px 18px',
+                      marginBottom: '14px',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span style={{ color: '#b388ff', fontWeight: '600', fontSize: '15px' }}>Goals for Next Week</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          <span style={{ color: '#2DD4BF', fontWeight: 700, fontSize: '12.5px', letterSpacing: 0.1 }}>Goals for Next Week</span>
+                        </div>
                         {editingGoals !== weekKey && (
                           <button
                             onClick={() => { setEditingGoals(weekKey); setGoalsText(review.goals || ''); }}
-                            style={{ background: 'none', border: '1px solid #2B3D55', color: '#8899AA', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}
-                          >
-                            Edit
-                          </button>
+                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#7a90a8', padding: '4px 12px', borderRadius: '6px', fontSize: '11.5px', cursor: 'pointer', fontWeight: 500 }}
+                          >Edit</button>
                         )}
                       </div>
                       {editingGoals === weekKey ? (
@@ -530,95 +545,58 @@ const WeeklyReviewScreen = ({ tradeData }) => {
                             onChange={(e) => setGoalsText(e.target.value)}
                             style={{
                               width: '100%',
-                              minHeight: '120px',
-                              backgroundColor: '#1A2B44',
-                              border: '1px solid #2B3D55',
+                              minHeight: '110px',
+                              background: 'rgba(10,20,42,0.8)',
+                              border: '1px solid rgba(45,212,191,0.15)',
                               borderRadius: '8px',
-                              color: '#d0d0e0',
+                              color: '#c8d6e5',
                               padding: '12px',
-                              fontSize: '14px',
-                              lineHeight: '1.6',
+                              fontSize: '13.5px',
+                              lineHeight: '1.7',
                               resize: 'vertical',
                               fontFamily: 'inherit',
                               boxSizing: 'border-box',
+                              outline: 'none',
                             }}
                           />
                           <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                             <button
                               onClick={() => handleSaveGoals(weekKey)}
                               disabled={savingGoals}
-                              style={{
-                                background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                                color: '#fff',
-                                border: 'none',
-                                padding: '6px 16px',
-                                borderRadius: '6px',
-                                fontSize: '13px',
-                                cursor: savingGoals ? 'not-allowed' : 'pointer',
-                              }}
-                            >
-                              {savingGoals ? 'Saving...' : 'Save'}
-                            </button>
+                              style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #6366f1 100%)', color: '#fff', border: 'none', padding: '7px 18px', borderRadius: '7px', fontSize: '12.5px', fontWeight: 700, cursor: savingGoals ? 'not-allowed' : 'pointer', boxShadow: '0 2px 10px rgba(45,212,191,0.2)' }}
+                            >{savingGoals ? 'Saving...' : 'Save'}</button>
                             <button
                               onClick={() => setEditingGoals(null)}
-                              style={{ background: 'none', border: '1px solid #2B3D55', color: '#8899AA', padding: '6px 16px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
-                            >
-                              Cancel
-                            </button>
+                              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#7a90a8', padding: '7px 16px', borderRadius: '7px', fontSize: '12.5px', cursor: 'pointer' }}
+                            >Cancel</button>
                           </div>
                         </div>
                       ) : (
-                        <div style={{ color: '#d0d0e0', fontSize: '14px', lineHeight: '1.6' }}>
-                          {review.goals ? renderMarkdown(review.goals) : <span style={{ color: '#556677' }}>No goals set. Click Edit to add goals.</span>}
+                        <div style={{ color: '#c8d6e5', fontSize: '13.5px', lineHeight: '1.72' }}>
+                          {review.goals ? renderMarkdown(review.goals) : <span style={{ color: '#4a5e72', fontStyle: 'italic' }}>No goals set yet. Click Edit to add goals for next week.</span>}
                         </div>
                       )}
                     </div>
 
                     {/* Action buttons */}
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <button
                         onClick={() => handleGenerateReview(weekKey)}
                         disabled={loading}
-                        style={{
-                          background: 'none',
-                          border: '1px solid #2B3D55',
-                          color: '#8899AA',
-                          padding: '6px 16px',
-                          borderRadius: '6px',
-                          fontSize: '13px',
-                          cursor: loading ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#7a90a8', padding: '6px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                       >
                         {loading ? (
-                          <>
-                            <span style={{ width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'aiSpin 1s linear infinite', display: 'inline-block' }} />
-                            Regenerating...
-                          </>
-                        ) : (
-                          'Regenerate'
-                        )}
+                          <><span style={{ width: '11px', height: '11px', border: '2px solid rgba(45,212,191,0.3)', borderTopColor: '#2DD4BF', borderRadius: '50%', animation: 'aiSpin 0.8s linear infinite', display: 'inline-block' }} />Regenerating...</>
+                        ) : 'Regenerate'}
                       </button>
                       <button
                         onClick={() => handleDeleteReview(weekKey)}
-                        style={{
-                          background: 'none',
-                          border: '1px solid rgba(255, 87, 87, 0.3)',
-                          color: '#ff5757',
-                          padding: '6px 16px',
-                          borderRadius: '6px',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Delete
-                      </button>
+                        style={{ background: 'rgba(255,77,79,0.07)', border: '1px solid rgba(255,77,79,0.18)', color: '#ff6b6b', padding: '6px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}
+                      >Delete</button>
                     </div>
 
                     {review.generatedAt && (
-                      <div style={{ color: '#556677', fontSize: '11px', marginTop: '12px' }}>
+                      <div style={{ color: '#3a4e62', fontSize: '11px', marginTop: '10px' }}>
                         Generated {new Date(review.generatedAt).toLocaleString()}
                       </div>
                     )}

@@ -628,52 +628,56 @@ const DailyStatsScreen = ({ tradeData }) => {
                     }}
                     disabled={debriefLoading === date}
                     style={{
-                      background: debriefLoading === date ? '#555'
-                        : debriefs[date] ? 'linear-gradient(135deg, #667eea, #764ba2)'
-                        : 'linear-gradient(135deg, #667eea, #764ba2)',
-                      color: '#fff',
-                      border: debriefs[date] && !debriefVisible[date] ? '1px solid #764ba2' : 'none',
-                      borderRadius: '4px',
-                      padding: '5px 10px',
+                      background: debriefLoading === date
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'linear-gradient(135deg, #2DD4BF 0%, #6366f1 100%)',
+                      color: debriefLoading === date ? '#6b7f96' : '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 14px',
                       cursor: debriefLoading === date ? 'not-allowed' : 'pointer',
                       marginRight: '10px',
-                      fontSize: '13px',
+                      fontSize: '12.5px',
+                      fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '5px',
+                      gap: '6px',
+                      boxShadow: debriefLoading === date ? 'none' : '0 2px 10px rgba(45,212,191,0.2)',
+                      transition: 'all 0.2s ease',
+                      letterSpacing: 0.1,
                     }}
                   >
                     {debriefLoading === date ? (
                       <>
-                        <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'aiSpin 0.8s linear infinite' }} />
+                        <span style={{ display: 'inline-block', width: '11px', height: '11px', border: '2px solid rgba(45,212,191,0.3)', borderTopColor: '#2DD4BF', borderRadius: '50%', animation: 'aiSpin 0.8s linear infinite' }} />
                         Analyzing...
                       </>
                     ) : debriefs[date] ? (
-                      debriefVisible[date] ? <>{'✨ Hide Debrief'}</> : <>{'✨ View Debrief'}</>
+                      debriefVisible[date]
+                        ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>Hide Debrief</>
+                        : <><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>View Debrief</>
                     ) : (
-                      <>{'✨ AI Debrief'}</>
+                      <><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>AI Debrief</>
                     )}
                   </button>
                 ) : (
-                  <button
-                    disabled
+                  <div
                     style={{
-                      background: '#2B3D55',
-                      color: '#888',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '5px 10px',
-                      cursor: 'not-allowed',
-                      marginRight: '10px',
-                      fontSize: '13px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '5px',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                      borderRadius: '8px',
+                      padding: '5px 12px',
+                      marginRight: '10px',
+                      fontSize: '12px',
+                      color: '#4a5e72',
                     }}
                   >
-                    <span style={{ fontSize: '13px' }}>🔒</span>
-                    Upgrade for AI Debrief
-                  </button>
+                    <span style={{ fontSize: '12px' }}>🔒</span>
+                    AI Debrief
+                  </div>
                 )}
                 <button
                   style={{
@@ -701,26 +705,32 @@ const DailyStatsScreen = ({ tradeData }) => {
               {/* AI Debrief Error */}
               {debriefError && debriefError.date === date && (
                 <div style={{
-                  backgroundColor: 'rgba(255, 82, 82, 0.1)',
-                  border: '1px solid rgba(255, 82, 82, 0.3)',
-                  borderRadius: '8px',
+                  background: 'rgba(255,77,79,0.06)',
+                  border: '1px solid rgba(255,77,79,0.18)',
+                  borderRadius: '12px',
                   padding: '12px 16px',
                   marginBottom: '15px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  gap: '12px',
                 }}>
-                  <span style={{ color: '#ff5252', fontSize: '14px' }}>{debriefError.message}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '14px' }}>⚠️</span>
+                    <span style={{ color: '#ff6b6b', fontSize: '13px' }}>{debriefError.message}</span>
+                  </div>
                   <button
                     onClick={() => { setDebriefError(null); handleDailyDebrief(date); }}
                     style={{
-                      background: 'rgba(255, 82, 82, 0.2)',
-                      color: '#ff5252',
-                      border: '1px solid rgba(255, 82, 82, 0.4)',
-                      borderRadius: '4px',
+                      background: 'rgba(255,77,79,0.12)',
+                      color: '#ff6b6b',
+                      border: '1px solid rgba(255,77,79,0.25)',
+                      borderRadius: '7px',
                       padding: '4px 12px',
                       cursor: 'pointer',
-                      fontSize: '13px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     Retry
@@ -787,30 +797,30 @@ const DailyStatsScreen = ({ tradeData }) => {
               {/* AI Daily Debrief Result */}
               {debriefs[date] && debriefVisible[date] && (
                 <div style={{
-                  backgroundColor: '#1A2B44',
-                  border: '1px solid #2B3D55',
-                  borderRadius: '8px',
-                  padding: '16px',
+                  background: 'linear-gradient(160deg, rgba(10,20,42,0.98) 0%, rgba(12,18,38,0.98) 100%)',
+                  border: '1px solid rgba(45,212,191,0.15)',
+                  borderRadius: '14px',
+                  overflow: 'hidden',
                   marginBottom: '15px',
                   marginTop: '15px',
+                  boxShadow: '0 6px 28px rgba(0,0,0,0.3), 0 0 0 1px rgba(45,212,191,0.04)',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <span style={{ color: '#b388ff', fontSize: '15px', fontWeight: 'bold' }}>{'✨ AI Daily Debrief'}</span>
+                  <div style={{
+                    padding: '12px 16px',
+                    background: 'linear-gradient(90deg, rgba(45,212,191,0.07) 0%, rgba(99,102,241,0.04) 100%)',
+                    borderBottom: '1px solid rgba(45,212,191,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #2DD4BF, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' }}>✨</div>
+                      <span style={{ color: '#fff', fontWeight: 700, fontSize: '13px', letterSpacing: 0.1 }}>AI Daily Debrief</span>
+                      <span style={{ color: 'rgba(45,212,191,0.7)', fontSize: '10px', background: 'rgba(45,212,191,0.08)', padding: '2px 7px', borderRadius: '20px', letterSpacing: 0.3 }}>GPT-4o</span>
+                    </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button
                         onClick={() => { handleDailyDebrief(date); }}
-                        style={{
-                          background: 'rgba(255,255,255,0.08)',
-                          color: '#b3b3c6',
-                          border: 'none',
-                          borderRadius: '4px',
-                          padding: '4px 10px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                        }}
-                      >
-                        Regenerate
-                      </button>
+                        style={{ background: 'rgba(255,255,255,0.04)', color: '#7a90a8', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 10px', cursor: 'pointer', fontSize: '11px', fontWeight: 500 }}
+                      >Regenerate</button>
                       <button
                         onClick={() => {
                           setDebriefs(prev => { const next = { ...prev }; delete next[date]; return next; });
@@ -821,53 +831,27 @@ const DailyStatsScreen = ({ tradeData }) => {
                             updateDoc(userDocRef, { dailyDebriefs: updated });
                           }
                         }}
-                        style={{
-                          background: 'rgba(255, 82, 82, 0.15)',
-                          color: '#ff5252',
-                          border: 'none',
-                          borderRadius: '4px',
-                          padding: '4px 10px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                        }}
-                      >
-                        Delete
-                      </button>
+                        style={{ background: 'rgba(255,77,79,0.08)', color: '#ff6b6b', border: '1px solid rgba(255,77,79,0.2)', borderRadius: '6px', padding: '3px 10px', cursor: 'pointer', fontSize: '11px', fontWeight: 500 }}
+                      >Delete</button>
                       <button
                         onClick={() => setDebriefVisible(prev => ({ ...prev, [date]: false }))}
-                        style={{
-                          background: 'rgba(255,255,255,0.08)',
-                          color: '#b3b3c6',
-                          border: 'none',
-                          borderRadius: '4px',
-                          padding: '4px 10px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                        }}
-                      >
-                        Hide
-                      </button>
+                        style={{ background: 'rgba(255,255,255,0.04)', color: '#7a90a8', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 10px', cursor: 'pointer', fontSize: '11px', fontWeight: 500 }}
+                      >Hide</button>
                     </div>
                   </div>
-                  <div style={{ color: '#d0d0e0', fontSize: '14px', lineHeight: '1.6' }}>
+                  <div style={{ padding: '16px 18px', color: '#c8d6e5', fontSize: '13.5px', lineHeight: '1.78' }}>
                     {debriefs[date].split('\n').map((line, i) => {
                       if (/^\*\*(.+)\*\*$/.test(line.trim())) {
-                        return <div key={i} style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px', marginTop: i > 0 ? '14px' : '0', marginBottom: '4px', paddingLeft: '10px', borderLeft: '3px solid #b388ff' }}>{line.trim().replace(/^\*\*|\*\*$/g, '')}</div>;
+                        return <div key={i} style={{ color: '#f0f6ff', fontWeight: 700, fontSize: '13.5px', marginTop: i > 0 ? '16px' : '0', marginBottom: '6px', paddingLeft: '11px', borderLeft: '2px solid #2DD4BF' }}>{line.trim().replace(/^\*\*|\*\*$/g, '')}</div>;
                       }
                       if (/^[-•]\s/.test(line.trim())) {
                         const text = line.trim().replace(/^[-•]\s/, '');
                         const parts = text.split(/\*\*(.+?)\*\*/g);
-                        return <div key={i} style={{ paddingLeft: '16px', position: 'relative', marginBottom: '2px' }}><span style={{ position: 'absolute', left: '4px' }}>&bull;</span>{parts.map((part, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#fff' }}>{part}</strong> : <span key={j}>{part}</span>)}</div>;
+                        return <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '5px', paddingLeft: '4px' }}><span style={{ color: '#2DD4BF', flexShrink: 0, lineHeight: '1.78' }}>›</span><span>{parts.map((part, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#e2eaf4', fontWeight: 600 }}>{part}</strong> : <span key={j}>{part}</span>)}</span></div>;
                       }
-                      if (!line.trim()) return <div key={i} style={{ height: '6px' }} />;
+                      if (!line.trim()) return <div key={i} style={{ height: '8px' }} />;
                       const parts = line.split(/\*\*(.+?)\*\*/g);
-                      return (
-                        <div key={i} style={{ marginBottom: '2px' }}>
-                          {parts.map((part, j) =>
-                            j % 2 === 1 ? <strong key={j} style={{ color: '#fff' }}>{part}</strong> : <span key={j}>{part}</span>
-                          )}
-                        </div>
-                      );
+                      return <div key={i} style={{ marginBottom: '4px' }}>{parts.map((part, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#e2eaf4', fontWeight: 600 }}>{part}</strong> : <span key={j}>{part}</span>)}</div>;
                     })}
                   </div>
                 </div>

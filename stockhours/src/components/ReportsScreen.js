@@ -2154,10 +2154,10 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       // Not Pro — locked message
       if (!isPro) {
         return (
-          <div style={{ marginTop: '20px', backgroundColor: '#1A2B44', borderRadius: '12px', padding: '30px', border: '1px solid #2B3D55', textAlign: 'center' }}>
-            <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔒</div>
-            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Upgrade for AI Insights</div>
-            <div style={{ color: '#b3b3c6', fontSize: '14px' }}>
+          <div style={{ marginTop: '20px', background: 'linear-gradient(135deg, rgba(10,20,42,0.9) 0%, rgba(12,18,38,0.9) 100%)', borderRadius: '16px', padding: '36px 30px', border: '1px solid rgba(45,212,191,0.12)', textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', margin: '0 auto 16px' }}>🔒</div>
+            <div style={{ color: '#fff', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>AI Insights — Pro only</div>
+            <div style={{ color: '#6b7f96', fontSize: '13.5px', maxWidth: '320px', margin: '0 auto', lineHeight: 1.6 }}>
               Unlock AI-powered pattern detection across your full trade history.
             </div>
           </div>
@@ -2167,11 +2167,13 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       // Loading state
       if (patternLoading) {
         return (
-          <div style={{ marginTop: '20px', backgroundColor: '#1A2B44', borderRadius: '12px', padding: '30px', border: '1px solid #2B3D55', textAlign: 'center' }}>
-            <div style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid #2B3D55', borderTop: '3px solid #b388ff', borderRadius: '50%', animation: 'aiSpin 1s linear infinite', marginBottom: '12px' }} />
-            <div style={{ color: '#d0d0e0', fontSize: '16px' }}>Analyzing your trade history...</div>
-            <div style={{ color: '#b3b3c6', fontSize: '13px', marginTop: '6px' }}>This may take a few seconds</div>
+          <div style={{ marginTop: '20px', background: 'linear-gradient(135deg, rgba(45,212,191,0.05) 0%, rgba(99,102,241,0.05) 100%)', borderRadius: '16px', padding: '40px 30px', border: '1px solid rgba(45,212,191,0.15)', textAlign: 'center' }}>
             <style>{`@keyframes aiSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(45,212,191,0.12), rgba(99,102,241,0.12))', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+              <div style={{ width: '24px', height: '24px', border: '2.5px solid rgba(45,212,191,0.3)', borderTopColor: '#2DD4BF', borderRadius: '50%', animation: 'aiSpin 0.9s linear infinite' }} />
+            </div>
+            <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '6px' }}>Analyzing your trade history...</div>
+            <div style={{ color: '#6b7f96', fontSize: '13px' }}>GPT-4o is scanning patterns across all your trades</div>
           </div>
         );
       }
@@ -2179,11 +2181,14 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       // Error state
       if (patternError) {
         return (
-          <div style={{ marginTop: '20px', backgroundColor: '#2a1a1a', borderRadius: '12px', padding: '20px', border: '1px solid #5a2a2a' }}>
-            <div style={{ color: '#ff6b6b', fontSize: '14px', marginBottom: '12px' }}>{patternError}</div>
+          <div style={{ marginTop: '20px', background: 'rgba(255,77,79,0.06)', borderRadius: '16px', padding: '20px 24px', border: '1px solid rgba(255,77,79,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '16px' }}>⚠️</span>
+              <span style={{ color: '#ff6b6b', fontSize: '13.5px' }}>{patternError}</span>
+            </div>
             <button
               onClick={handlePatternDetection}
-              style={{ padding: '8px 20px', backgroundColor: 'transparent', color: '#ff6b6b', border: '1px solid #ff6b6b', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
+              style={{ padding: '7px 18px', background: 'rgba(255,77,79,0.12)', color: '#ff6b6b', border: '1px solid rgba(255,77,79,0.25)', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}
             >
               Retry
             </button>
@@ -2195,44 +2200,46 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       if (patternInsights) {
         return (
           <div style={{ marginTop: '20px' }}>
-            <div style={{ backgroundColor: '#1A2B44', borderRadius: '12px', border: '1px solid #2B3D55', overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #2B3D55' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b388ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span style={{ color: '#b388ff', fontWeight: 'bold', fontSize: '16px' }}>AI Pattern Insights</span>
+            <div style={{ background: 'linear-gradient(160deg, rgba(10,20,42,0.98) 0%, rgba(12,18,38,0.98) 100%)', borderRadius: '16px', border: '1px solid rgba(45,212,191,0.15)', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(45,212,191,0.05)' }}>
+              <div style={{ padding: '14px 20px', background: 'linear-gradient(90deg, rgba(45,212,191,0.07) 0%, rgba(99,102,241,0.04) 100%)', borderBottom: '1px solid rgba(45,212,191,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #2DD4BF, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  </div>
+                  <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px', letterSpacing: 0.1 }}>AI Pattern Insights</span>
+                  <span style={{ color: 'rgba(45,212,191,0.7)', fontSize: '11px', background: 'rgba(45,212,191,0.08)', padding: '2px 8px', borderRadius: '20px', letterSpacing: 0.3 }}>GPT-4o</span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     onClick={handlePatternDetection}
-                    style={{ padding: '6px 14px', backgroundColor: 'transparent', color: '#b388ff', border: '1px solid #b388ff', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
-                  >
-                    Regenerate
-                  </button>
+                    style={{ padding: '5px 13px', background: 'rgba(255,255,255,0.04)', color: '#7a90a8', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}
+                  >Regenerate</button>
                   <button
                     onClick={handleDeletePatternInsights}
-                    style={{ padding: '6px 14px', backgroundColor: 'transparent', color: '#ff6b6b', border: '1px solid #ff6b6b', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
-                  >
-                    Delete
-                  </button>
+                    style={{ padding: '5px 13px', background: 'rgba(255,77,79,0.08)', color: '#ff6b6b', border: '1px solid rgba(255,77,79,0.2)', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}
+                  >Delete</button>
                 </div>
               </div>
-              <div style={{ padding: '20px', color: '#d0d0e0', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
+              <div style={{ padding: '22px 24px', color: '#c8d6e5', fontSize: '13.5px', lineHeight: '1.78' }}>
                 {patternInsights.split('\n').map((line, i) => {
                   if (line.startsWith('**') && line.includes('**')) {
                     const match = line.match(/^\*\*(.+?)\*\*(.*)/);
                     if (match) {
                       return (
-                        <div key={i} style={{ marginTop: i > 0 ? '16px' : '0' }}>
-                          <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px' }}>{match[1]}</span>
-                          {match[2] && <span>{match[2]}</span>}
+                        <div key={i} style={{ marginTop: i > 0 ? '20px' : '0', marginBottom: '7px', paddingLeft: '11px', borderLeft: '2px solid #2DD4BF' }}>
+                          <span style={{ color: '#f0f6ff', fontWeight: 700, fontSize: '13.5px' }}>{match[1]}</span>
+                          {match[2] && <span style={{ color: '#c8d6e5' }}>{match[2]}</span>}
                         </div>
                       );
                     }
                   }
                   if (line.trim() === '') return <div key={i} style={{ height: '8px' }} />;
-                  return <div key={i}>{line}</div>;
+                  if (/^[-•]\s/.test(line.trim())) {
+                    const text = line.trim().replace(/^[-•]\s/, '');
+                    const parts = text.split(/\*\*(.+?)\*\*/g);
+                    return <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '5px', paddingLeft: '4px' }}><span style={{ color: '#2DD4BF', flexShrink: 0, lineHeight: '1.78' }}>›</span><span>{parts.map((p, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#e2eaf4', fontWeight: 600 }}>{p}</strong> : <span key={j}>{p}</span>)}</span></div>;
+                  }
+                  return <div key={i} style={{ marginBottom: '4px' }}>{line}</div>;
                 })}
               </div>
             </div>
@@ -2242,39 +2249,42 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
 
       // No insights yet — show generate button
       return (
-        <div style={{ marginTop: '20px', textAlign: 'center' }}>
-          <div style={{ backgroundColor: '#1A2B44', borderRadius: '12px', padding: '40px 30px', border: '1px solid #2B3D55' }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#b388ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}>
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Discover Your Trading Patterns</div>
-            <div style={{ color: '#b3b3c6', fontSize: '14px', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
+        <div style={{ marginTop: '20px' }}>
+          <div style={{ background: 'linear-gradient(160deg, rgba(10,20,42,0.96) 0%, rgba(12,18,38,0.96) 100%)', borderRadius: '16px', padding: '44px 30px', border: '1px solid rgba(45,212,191,0.12)', textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(45,212,191,0.15), rgba(99,102,241,0.15))', border: '1px solid rgba(45,212,191,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#aiGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <defs><linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#2DD4BF"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '10px', letterSpacing: -0.2 }}>Discover Your Trading Patterns</div>
+            <div style={{ color: '#6b7f96', fontSize: '13.5px', marginBottom: '28px', maxWidth: '380px', margin: '0 auto 28px', lineHeight: 1.65 }}>
               AI analyzes your full trade history to surface behavioral insights, timing edges, and strategy effectiveness.
             </div>
             <button
               onClick={handlePatternDetection}
               disabled={processedTrades.length === 0}
               style={{
-                padding: '12px 32px',
-                background: processedTrades.length === 0 ? '#555' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '10px',
+                padding: '13px 32px',
+                background: processedTrades.length === 0 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #2DD4BF 0%, #6366f1 100%)',
+                color: processedTrades.length === 0 ? '#4a5e72' : '#fff',
+                border: processedTrades.length === 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                borderRadius: '12px',
                 cursor: processedTrades.length === 0 ? 'not-allowed' : 'pointer',
-                fontSize: '15px',
-                fontWeight: 'bold',
+                fontSize: '14px',
+                fontWeight: 700,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '9px',
+                boxShadow: processedTrades.length === 0 ? 'none' : '0 4px 20px rgba(45,212,191,0.25), 0 2px 8px rgba(99,102,241,0.2)',
+                letterSpacing: 0.2,
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               Detect Patterns
             </button>
             {processedTrades.length === 0 && (
-              <div style={{ color: '#b3b3c6', fontSize: '12px', marginTop: '12px' }}>Import some trades first to use this feature.</div>
+              <div style={{ color: '#4a5e72', fontSize: '12px', marginTop: '14px' }}>Import some trades first to use this feature.</div>
             )}
           </div>
         </div>

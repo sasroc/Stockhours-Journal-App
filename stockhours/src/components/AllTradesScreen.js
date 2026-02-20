@@ -399,47 +399,71 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
         </div>
       </div>
       {/* AI Trade Review Section */}
+      <style>{`@keyframes aiSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
       <div style={{ marginTop: 24 }}>
         {aiLoading ? (
-          <div style={{ background: '#1A2B44', border: '1px solid #2B3D55', borderRadius: 12, padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{
-              display: 'inline-block', width: 20, height: 20, border: '3px solid #667eea', borderTop: '3px solid transparent', borderRadius: '50%',
-              animation: 'aiSpin 1s linear infinite',
-            }} />
-            <style>{`@keyframes aiSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-            <span style={{ color: '#d0d0e0', fontSize: 15 }}>Analyzing your trade...</span>
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(45,212,191,0.05) 0%, rgba(99,102,241,0.05) 100%)',
+            border: '1px solid rgba(45,212,191,0.18)',
+            borderRadius: 16, padding: '22px 24px',
+            display: 'flex', alignItems: 'center', gap: 16,
+          }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: 'linear-gradient(135deg, rgba(45,212,191,0.12), rgba(99,102,241,0.12))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ display: 'inline-block', width: 18, height: 18, border: '2.5px solid rgba(45,212,191,0.3)', borderTopColor: '#2DD4BF', borderRadius: '50%', animation: 'aiSpin 0.8s linear infinite' }} />
+            </div>
+            <div>
+              <div style={{ color: '#fff', fontSize: 14, fontWeight: 600, marginBottom: 3 }}>Analyzing your trade...</div>
+              <div style={{ color: 'rgba(200,214,229,0.55)', fontSize: 12 }}>GPT-4o is reviewing your entry, exit, and execution</div>
+            </div>
           </div>
         ) : aiError ? (
-          <div style={{ background: 'rgba(255, 77, 79, 0.08)', border: '1px solid rgba(255, 77, 79, 0.3)', borderRadius: 12, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ color: '#ff6b6b', fontSize: 14 }}>{aiError}</span>
-            <button
-              onClick={handleAIReview}
-              style={{ background: '#667eea', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}
-            >Retry</button>
+          <div style={{
+            background: 'rgba(255,77,79,0.06)', border: '1px solid rgba(255,77,79,0.18)',
+            borderRadius: 16, padding: '14px 18px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <span style={{ fontSize: 15 }}>⚠️</span>
+              <span style={{ color: '#ff6b6b', fontSize: 13 }}>{aiError}</span>
+            </div>
+            <button onClick={handleAIReview} style={{ background: 'rgba(255,77,79,0.12)', color: '#ff6b6b', border: '1px solid rgba(255,77,79,0.25)', borderRadius: 8, padding: '5px 14px', fontWeight: 600, cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>Retry</button>
           </div>
         ) : aiReview ? (
-          <div style={{ background: '#1A2B44', border: '1px solid #2B3D55', borderRadius: 12, padding: '20px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <span style={{ color: '#b388ff', fontWeight: 700, fontSize: 16 }}>AI Trade Review</span>
-              <button
-                onClick={() => setAiReview(null)}
-                style={{ background: 'none', border: '1px solid #2B3D55', color: '#b3b3c6', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 13 }}
-              >Dismiss</button>
+          <div style={{
+            background: 'linear-gradient(160deg, rgba(10,20,42,0.98) 0%, rgba(12,18,38,0.98) 100%)',
+            border: '1px solid rgba(45,212,191,0.15)',
+            borderRadius: 16, overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(45,212,191,0.05)',
+          }}>
+            <div style={{
+              padding: '13px 18px',
+              background: 'linear-gradient(90deg, rgba(45,212,191,0.07) 0%, rgba(99,102,241,0.04) 100%)',
+              borderBottom: '1px solid rgba(45,212,191,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <div style={{ width: 26, height: 26, borderRadius: 7, background: 'linear-gradient(135deg, #2DD4BF, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>✨</div>
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: 13.5, letterSpacing: 0.1 }}>AI Trade Review</span>
+                <span style={{ color: 'rgba(45,212,191,0.7)', fontSize: 10.5, background: 'rgba(45,212,191,0.08)', padding: '2px 7px', borderRadius: 20, letterSpacing: 0.3 }}>GPT-4o</span>
+              </div>
+              <button onClick={() => setAiReview(null)} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#6b7f96', borderRadius: 7, padding: '4px 11px', cursor: 'pointer', fontSize: 11.5 }}>Dismiss</button>
             </div>
-            <div style={{ color: '#d0d0e0', fontSize: 14, lineHeight: 1.7 }}>
+            <div style={{ padding: '18px 22px', color: '#c8d6e5', fontSize: 13.5, lineHeight: 1.78 }}>
               {aiReview.split('\n').map((line, i) => {
                 const boldMatch = line.trim().match(/^\*\*(.+?)\*\*$/);
-                if (boldMatch) {
-                  return <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: 15, marginTop: i > 0 ? 14 : 0, marginBottom: 4, paddingLeft: 10, borderLeft: '3px solid #b388ff' }}>{boldMatch[1]}</div>;
-                }
+                if (boldMatch) return <div key={i} style={{ color: '#f0f6ff', fontWeight: 700, fontSize: 13.5, marginTop: i > 0 ? 18 : 0, marginBottom: 7, paddingLeft: 11, borderLeft: '2px solid #2DD4BF' }}>{boldMatch[1]}</div>;
                 if (/^[-•]\s/.test(line.trim())) {
                   const text = line.trim().replace(/^[-•]\s/, '');
                   const parts = text.split(/\*\*(.+?)\*\*/g);
-                  return <div key={i} style={{ paddingLeft: 14, position: 'relative', marginBottom: 2 }}><span style={{ position: 'absolute', left: 2 }}>{'\u2022'}</span>{parts.map((p, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#fff' }}>{p}</strong> : <span key={j}>{p}</span>)}</div>;
+                  return <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 5, paddingLeft: 4 }}><span style={{ color: '#2DD4BF', flexShrink: 0, lineHeight: 1.78 }}>›</span><span>{parts.map((p, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#e2eaf4', fontWeight: 600 }}>{p}</strong> : <span key={j}>{p}</span>)}</span></div>;
                 }
-                if (!line.trim()) return <div key={i} style={{ height: 6 }} />;
+                if (!line.trim()) return <div key={i} style={{ height: 8 }} />;
                 const parts = line.split(/\*\*(.+?)\*\*/g);
-                return <div key={i} style={{ marginBottom: 2 }}>{parts.map((p, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#fff' }}>{p}</strong> : <span key={j}>{p}</span>)}</div>;
+                return <div key={i} style={{ marginBottom: 4 }}>{parts.map((p, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#e2eaf4', fontWeight: 600 }}>{p}</strong> : <span key={j}>{p}</span>)}</div>;
               })}
             </div>
           </div>
@@ -447,38 +471,24 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
           <button
             onClick={handleAIReview}
             style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px',
-              fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-              boxShadow: '0 2px 12px rgba(102, 126, 234, 0.3)',
-              transition: 'opacity 0.2s',
+              background: 'linear-gradient(135deg, #2DD4BF 0%, #6366f1 100%)',
+              color: '#fff', border: 'none', borderRadius: 12, padding: '13px 26px',
+              fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: 9,
+              boxShadow: '0 4px 20px rgba(45,212,191,0.22), 0 2px 8px rgba(99,102,241,0.18)',
+              transition: 'all 0.22s ease', letterSpacing: 0.2,
             }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 7px 28px rgba(45,212,191,0.32), 0 4px 14px rgba(99,102,241,0.26)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(45,212,191,0.22), 0 2px 8px rgba(99,102,241,0.18)'; }}
           >
-            <span style={{ fontSize: 18 }}>{'\u2728'}</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             AI Trade Review
           </button>
         ) : (
-          <button
-            disabled
-            style={{
-              background: '#2B3D55',
-              color: '#888',
-              border: 'none',
-              borderRadius: 10,
-              padding: '12px 28px',
-              cursor: 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 15,
-              fontWeight: 700,
-            }}
-          >
-            <span style={{ fontSize: 16 }}>{'\uD83D\uDD12'}</span>
-            Upgrade for AI Trade Review
-          </button>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '12px 18px', color: '#4a5e72', fontSize: 13.5 }}>
+            <span style={{ fontSize: 14 }}>🔒</span>
+            AI Trade Review — <span style={{ color: '#2DD4BF', marginLeft: 3 }}>Pro only</span>
+          </div>
         )}
       </div>
     </div>
