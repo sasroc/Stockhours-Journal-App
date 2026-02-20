@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
 import primaryLogo from '../assets/3.png';
 import secondaryLogo from '../assets/2.png';
@@ -82,6 +83,7 @@ const processItems = [
 
 const MarketingLanding = () => {
   const navigate = useNavigate();
+  const { currentUser, logout } = useAuth();
   const [activeShotIndex, setActiveShotIndex] = useState(0);
   const activeShot = screenshotItems[activeShotIndex];
 
@@ -701,32 +703,88 @@ const MarketingLanding = () => {
           >
             Pricing
           </button>
-          <button
-            onClick={() => navigate('/login')}
-            style={{
-              background: 'none',
-              border: '1px solid #333',
-              color: theme.colors.white,
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            Log in
-          </button>
-          <button
-            onClick={() => navigate('/login')}
-            style={{
-              backgroundColor: theme.colors.teal,
-              border: 'none',
-              color: theme.colors.white,
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            Get started
-          </button>
+          {currentUser ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  backgroundColor: theme.colors.teal,
+                  color: '#000',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  flexShrink: 0
+                }}>
+                  {(currentUser.displayName || currentUser.email || '').charAt(0).toUpperCase()}
+                </div>
+                <span style={{ fontSize: '13px', color: '#aaa', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentUser.email}
+                </span>
+              </div>
+              <button
+                onClick={() => navigate('/paywall')}
+                style={{
+                  backgroundColor: theme.colors.teal,
+                  border: 'none',
+                  color: '#000',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '13px'
+                }}
+              >
+                Subscribe
+              </button>
+              <button
+                onClick={async () => { await logout(); navigate('/login'); }}
+                style={{
+                  background: 'none',
+                  border: '1px solid #333',
+                  color: '#888',
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate('/login')}
+                style={{
+                  background: 'none',
+                  border: '1px solid #333',
+                  color: theme.colors.white,
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                Log in
+              </button>
+              <button
+                onClick={() => navigate('/login')}
+                style={{
+                  backgroundColor: theme.colors.teal,
+                  border: 'none',
+                  color: theme.colors.white,
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                Get started
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -741,7 +799,7 @@ const MarketingLanding = () => {
             </p>
 
             <div className="ml-cta-row">
-              <button className="ml-btn ml-btn-primary" onClick={() => navigate('/login')}>Try TradeBetter</button>
+              <button className="ml-btn ml-btn-primary" onClick={() => navigate(currentUser ? '/paywall' : '/login')}>Try TradeBetter</button>
               <button className="ml-btn" onClick={() => navigate('/pricing')}>View plans</button>
             </div>
             <div className="ml-note">Cancel anytime. Keep your data. No bloated setup process.</div>
@@ -901,7 +959,7 @@ const MarketingLanding = () => {
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <button className="ml-btn" onClick={() => navigate('/pricing')}>Compare plans</button>
-            <button className="ml-btn ml-btn-primary" onClick={() => navigate('/login')}>Get started</button>
+            <button className="ml-btn ml-btn-primary" onClick={() => navigate(currentUser ? '/paywall' : '/login')}>Get started</button>
           </div>
         </section>
 

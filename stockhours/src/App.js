@@ -1508,10 +1508,11 @@ function AppRoutesWrapper() {
     }
     return isSubscribed ? <Navigate to="/dashboard" replace /> : <Navigate to="/paywall" replace />;
   };
-  
+
   return (
     <Routes>
       <Route path="/" element={<HomeRoute />} />
+      <Route path="/home" element={<MarketingLanding />} />
       <Route path="/pricing" element={<PricingScreen />} />
       <Route path="/login" element={<Login />} />
       <Route path="/paywall" element={<ProtectedRoute requireSubscription={false}><PaywallScreen /></ProtectedRoute>} />

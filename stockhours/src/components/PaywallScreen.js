@@ -5,7 +5,7 @@ import { theme } from '../theme';
 import primaryLogo from '../assets/3.png';
 
 const PaywallScreen = () => {
-  const { currentUser, subscription, refreshSubscription, subscriptionLoading, isSubscribed } = useAuth();
+  const { currentUser, subscription, refreshSubscription, subscriptionLoading, isSubscribed, logout } = useAuth();
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState('');
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -128,6 +128,14 @@ const PaywallScreen = () => {
     }
   }, [isSubscribed, navigate]);
 
+  const handleSignOut = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const userDisplayName = currentUser?.displayName || currentUser?.email || '';
+  const userInitial = userDisplayName.charAt(0).toUpperCase();
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#000', color: theme.colors.white }}>
       <header
@@ -140,10 +148,37 @@ const PaywallScreen = () => {
           backgroundColor: '#0d0d0d'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img src={primaryLogo} alt="TradeBetter Logo" style={{ height: '42px' }} />
-          <span style={{ fontSize: '20px', fontWeight: 600 }}>TradeBetter</span>
+        {/* Left: logo + back to home */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img src={primaryLogo} alt="TradeBetter Logo" style={{ height: '42px' }} />
+            <span style={{ fontSize: '20px', fontWeight: 600 }}>TradeBetter</span>
+          </div>
+          <button
+            onClick={() => navigate('/home')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#888',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 0',
+              transition: 'color 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+            onMouseLeave={e => e.currentTarget.style.color = '#888'}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to home
+          </button>
         </div>
+
+        {/* Right: user info + actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
             onClick={refreshSubscription}
@@ -153,7 +188,8 @@ const PaywallScreen = () => {
               color: theme.colors.white,
               padding: '8px 16px',
               borderRadius: '6px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize: '13px'
             }}
             disabled={subscriptionLoading}
           >
@@ -164,14 +200,59 @@ const PaywallScreen = () => {
             style={{
               backgroundColor: theme.colors.teal,
               border: 'none',
-              color: theme.colors.white,
+              color: '#000',
               padding: '8px 16px',
               borderRadius: '6px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '13px'
             }}
             disabled={actionLoading === 'portal'}
           >
             {actionLoading === 'portal' ? 'Opening...' : 'Manage subscription'}
+          </button>
+
+          {/* Divider */}
+          <div style={{ width: '1px', height: '28px', backgroundColor: '#333' }} />
+
+          {/* Signed-in user */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              backgroundColor: theme.colors.teal,
+              color: '#000',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '13px',
+              fontWeight: 700,
+              flexShrink: 0
+            }}>
+              {userInitial}
+            </div>
+            <span style={{ fontSize: '13px', color: '#aaa', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {currentUser?.email}
+            </span>
+          </div>
+
+          <button
+            onClick={handleSignOut}
+            style={{
+              background: 'none',
+              border: '1px solid #333',
+              color: '#888',
+              padding: '8px 14px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#666'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#888'; }}
+          >
+            Sign out
           </button>
         </div>
       </header>
