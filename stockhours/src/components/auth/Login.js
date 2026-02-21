@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import styled, { keyframes } from 'styled-components';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import logo from '../../assets/3.png';
 
 /* ───── Animations ───── */
@@ -652,7 +652,12 @@ export default function Login() {
         </CardBorder>
       </CardOuter>
 
-      <Footer>&copy; 2026 TradeBetter</Footer>
+      <Footer>
+        &copy; 2026 TradeBetter &nbsp;·&nbsp;{' '}
+        <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.25)', textDecoration: 'none' }}>Privacy</Link>
+        {' '}&nbsp;·&nbsp;{' '}
+        <Link to="/terms" style={{ color: 'rgba(255,255,255,0.25)', textDecoration: 'none' }}>Terms</Link>
+      </Footer>
     </LoginContainer>
   );
 }

@@ -35,6 +35,8 @@ import PricingScreen from './components/PricingScreen';
 import SchwabCallback from './components/SchwabCallback';
 import WebullCallback from './components/WebullCallback';
 import WeeklyReviewScreen from './components/WeeklyReviewScreen';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -1514,6 +1516,8 @@ function AppRoutesWrapper() {
       <Route path="/" element={<HomeRoute />} />
       <Route path="/home" element={<MarketingLanding />} />
       <Route path="/pricing" element={<PricingScreen />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
       <Route path="/login" element={<Login />} />
       <Route path="/paywall" element={<ProtectedRoute requireSubscription={false}><PaywallScreen /></ProtectedRoute>} />
       <Route path="/admin/invitations" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
