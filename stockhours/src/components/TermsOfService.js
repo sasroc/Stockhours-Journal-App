@@ -99,7 +99,7 @@ export default function TermsOfService() {
             'No partial refunds are issued for unused time within a billing period',
           ]} />
           <P><strong style={{ color: '#e2eaf4' }}>Refunds</strong></P>
-          <P>We offer refunds at our discretion within 7 days of the initial subscription charge if you have not meaningfully used the Service. Contact us at support@tradebetter.app to request a refund.</P>
+          <P>We offer refunds at our discretion within 7 days of the initial subscription charge if you have not meaningfully used the Service. Contact us at rsassanimarketing@gmail.com to request a refund.</P>
         </Section>
 
         <Section title="5. Acceptable Use">
@@ -153,7 +153,7 @@ export default function TermsOfService() {
           <P>Questions about these Terms? Contact us at:</P>
           <div style={{ background: 'rgba(45,212,191,0.05)', border: '1px solid rgba(45,212,191,0.12)', borderRadius: '10px', padding: '16px 20px', fontSize: '0.88rem' }}>
             <div style={{ color: '#fff', fontWeight: 700, marginBottom: '4px' }}>TradeBetter</div>
-            <div style={{ color: '#6b7f96' }}>support@tradebetter.app</div>
+            <div style={{ color: '#6b7f96' }}>rsassanimarketing@gmail.com</div>
           </div>
         </Section>
       </main>

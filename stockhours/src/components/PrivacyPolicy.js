@@ -149,7 +149,7 @@ export default function PrivacyPolicy() {
           <P>If you have questions about this Privacy Policy or your data, please contact us at:</P>
           <div style={{ background: 'rgba(45,212,191,0.05)', border: '1px solid rgba(45,212,191,0.12)', borderRadius: '10px', padding: '16px 20px', fontSize: '0.88rem' }}>
             <div style={{ color: '#fff', fontWeight: 700, marginBottom: '4px' }}>TradeBetter</div>
-            <div style={{ color: '#6b7f96' }}>support@tradebetter.app</div>
+            <div style={{ color: '#6b7f96' }}>rsassanimarketing@gmail.com</div>
           </div>
         </Section>
       </main>
