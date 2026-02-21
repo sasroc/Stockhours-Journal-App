@@ -1531,6 +1531,49 @@ The "---GOALS---" delimiter MUST appear on its own line exactly as shown.`;
   }
 });
 
+// ── Account Deletion ─────────────────────────────────────────────────────
+
+app.delete('/api/user/account', verifyFirebaseToken, async (req, res) => {
+  const uid = req.user.uid;
+  try {
+    const userRef = db.collection('users').doc(uid);
+    const userSnap = await userRef.get();
+
+    // Cancel any active Stripe subscriptions before deleting
+    if (userSnap.exists) {
+      const { stripeCustomerId } = userSnap.data();
+      if (stripeCustomerId) {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: stripeCustomerId,
+          status: 'active',
+          limit: 10
+        });
+        await Promise.all(subscriptions.data.map(sub => stripe.subscriptions.cancel(sub.id)));
+
+        // Also catch trialing subscriptions
+        const trialing = await stripe.subscriptions.list({
+          customer: stripeCustomerId,
+          status: 'trialing',
+          limit: 10
+        });
+        await Promise.all(trialing.data.map(sub => stripe.subscriptions.cancel(sub.id)));
+      }
+    }
+
+    // Delete broker token subcollections
+    await userRef.collection('schwabTokens').doc('primary').delete();
+    await userRef.collection('webullTokens').doc('primary').delete();
+    // Delete main user document
+    await userRef.delete();
+    // Delete Firebase Auth user
+    await admin.auth().deleteUser(uid);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Account deletion error:', error);
+    res.status(500).json({ error: 'Failed to delete account. Please try again.' });
+  }
+});
+
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);

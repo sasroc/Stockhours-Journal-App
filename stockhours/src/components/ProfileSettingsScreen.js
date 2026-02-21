@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
 
 const ProfileSettingsScreen = ({ currentUser, subscription }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const userEmail = currentUser?.email || 'Unknown';
-  const userId = currentUser?.uid || 'Unknown';
   const planName = subscription?.plan || 'none';
   const statusName = subscription?.status || 'inactive';
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const apiBase = process.env.REACT_APP_STRIPE_API_URL || '';
 
@@ -44,6 +48,27 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setDeleteError('');
+    setDeleteLoading(true);
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`${apiBase}/api/user/account`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || 'Failed to delete account.');
+      }
+      await logout();
+      navigate('/home');
+    } catch (error) {
+      setDeleteError(error.message || 'Failed to delete account. Please try again.');
+      setDeleteLoading(false);
+    }
+  };
+
   const isActive = statusName === 'active' || statusName === 'trialing';
 
   return (
@@ -71,17 +96,6 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
         >
           <div style={{ fontSize: '12px', color: '#888', marginBottom: '6px' }}>Email</div>
           <div style={{ fontSize: '15px' }}>{userEmail}</div>
-        </div>
-        <div
-          style={{
-            backgroundColor: '#121F35',
-            borderRadius: '8px',
-            padding: '16px',
-            border: '1px solid #233350',
-          }}
-        >
-          <div style={{ fontSize: '12px', color: '#888', marginBottom: '6px' }}>User ID</div>
-          <div style={{ fontSize: '15px', wordBreak: 'break-all' }}>{userId}</div>
         </div>
         <div
           style={{
@@ -152,19 +166,90 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
         </div>
       )}
 
+      {/* Danger Zone */}
       <div
         style={{
-          marginTop: '24px',
+          marginTop: '32px',
           backgroundColor: '#121F35',
           borderRadius: '8px',
-          padding: '16px',
-          border: '1px solid #233350',
+          padding: '20px',
+          border: '1px solid #4a1c1c',
         }}
       >
-        <h3 style={{ marginTop: 0, fontSize: '18px' }}>Preferences</h3>
-        <p style={{ color: '#888', margin: 0 }}>
-          Profile preferences will appear here as they are added.
+        <h3 style={{ marginTop: 0, marginBottom: '8px', fontSize: '16px', color: '#FF4D4F' }}>
+          Danger Zone
+        </h3>
+        <p style={{ color: '#888', margin: '0 0 16px', fontSize: '14px' }}>
+          Permanently delete your account and all associated data. This action cannot be undone.
         </p>
+
+        {!showDeleteConfirm ? (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{
+              backgroundColor: 'transparent',
+              color: '#FF4D4F',
+              border: '1px solid #FF4D4F',
+              borderRadius: '6px',
+              padding: '8px 16px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            Delete Account
+          </button>
+        ) : (
+          <div
+            style={{
+              backgroundColor: '#1a0f0f',
+              borderRadius: '6px',
+              padding: '16px',
+              border: '1px solid #4a1c1c',
+            }}
+          >
+            <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#ffb3b3' }}>
+              Are you sure? This will permanently delete your account, all trade data, and cancel any active subscription. This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading}
+                style={{
+                  backgroundColor: '#FF4D4F',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  cursor: deleteLoading ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  opacity: deleteLoading ? 0.7 : 1,
+                }}
+              >
+                {deleteLoading ? 'Deleting...' : 'Yes, delete my account'}
+              </button>
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteError(''); }}
+                disabled={deleteLoading}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#888',
+                  border: '1px solid #333',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+            {deleteError && (
+              <div style={{ marginTop: '10px', color: '#FF4D4F', fontSize: '12px' }}>
+                {deleteError}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
