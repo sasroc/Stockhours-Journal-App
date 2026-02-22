@@ -5,7 +5,7 @@ import { theme } from '../theme';
 import primaryLogo from '../assets/3.png';
 
 const PaywallScreen = () => {
-  const { currentUser, subscription, refreshSubscription, subscriptionLoading, isSubscribed, logout } = useAuth();
+  const { currentUser, displayName, subscription, refreshSubscription, subscriptionLoading, isSubscribed, logout } = useAuth();
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState('');
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -133,7 +133,7 @@ const PaywallScreen = () => {
     navigate('/login');
   };
 
-  const userDisplayName = currentUser?.displayName || currentUser?.email || '';
+  const userDisplayName = displayName || currentUser?.email || '';
   const userInitial = userDisplayName.charAt(0).toUpperCase();
 
   return (

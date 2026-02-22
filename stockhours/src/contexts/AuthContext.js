@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signInWithPopup,
-  signOut, 
+  signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
   GoogleAuthProvider,
-  OAuthProvider
+  OAuthProvider,
+  updateProfile
 } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -20,6 +21,7 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [subscription, setSubscription] = useState({ status: 'inactive', plan: 'none' });
@@ -34,6 +36,7 @@ export function AuthProvider({ children }) {
     const userRef = doc(db, 'users', user.uid);
     await setDoc(userRef, {
       email: email || user.email || '',
+      displayName: user.displayName || '',
       isAdmin: false,
       createdAt: serverTimestamp(),
       lastLogin: serverTimestamp(),
@@ -59,6 +62,7 @@ export function AuthProvider({ children }) {
           if (userDoc.exists()) {
             const userData = userDoc.data();
             setIsAdmin(userData.isAdmin === true);
+            setDisplayName(userData.displayName || user.displayName || '');
             const nextSubscription = userData.subscription || getDefaultSubscription();
             setSubscription({
               status: nextSubscription.status || 'inactive',
@@ -69,6 +73,7 @@ export function AuthProvider({ children }) {
             }
           } else {
             setIsAdmin(false);
+            setDisplayName(user.displayName || '');
             setSubscription(getDefaultSubscription());
           }
         } catch (error) {
@@ -183,6 +188,14 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const updateDisplayName = async (name) => {
+    if (!currentUser) return;
+    await updateProfile(currentUser, { displayName: name });
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    await updateDoc(userDocRef, { displayName: name });
+    setDisplayName(name);
+  };
+
   const isSubscribed = subscription.status === 'active' || subscription.status === 'trialing';
   const isPro = isSubscribed && subscription.plan === 'pro';
 
@@ -209,6 +222,7 @@ export function AuthProvider({ children }) {
 
   const value = {
     currentUser,
+    displayName,
     isAdmin,
     loading,
     subscription,
@@ -216,6 +230,7 @@ export function AuthProvider({ children }) {
     isSubscribed,
     isPro,
     refreshSubscription,
+    updateDisplayName,
     signup,
     login,
     signInWithGoogle,

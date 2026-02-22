@@ -5,7 +5,7 @@ import { theme } from '../theme';
 
 const ProfileSettingsScreen = ({ currentUser, subscription }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, displayName, updateDisplayName } = useAuth();
   const userEmail = currentUser?.email || 'Unknown';
   const planName = subscription?.plan || 'none';
   const statusName = subscription?.status || 'inactive';
@@ -14,6 +14,31 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState('');
+
+  const handleEditName = () => {
+    setNameInput(displayName);
+    setNameError('');
+    setEditingName(true);
+  };
+
+  const handleSaveName = async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed) { setNameError('Display name cannot be empty.'); return; }
+    setNameSaving(true);
+    setNameError('');
+    try {
+      await updateDisplayName(trimmed);
+      setEditingName(false);
+    } catch (e) {
+      setNameError('Failed to save. Please try again.');
+    } finally {
+      setNameSaving(false);
+    }
+  };
 
   const apiBase = process.env.REACT_APP_STRIPE_API_URL || '';
 
@@ -86,6 +111,90 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
           gap: '16px',
         }}
       >
+        <div
+          style={{
+            backgroundColor: '#121F35',
+            borderRadius: '8px',
+            padding: '16px',
+            border: '1px solid #233350',
+          }}
+        >
+          <div style={{ fontSize: '12px', color: '#888', marginBottom: '6px' }}>Display Name</div>
+          {editingName ? (
+            <div>
+              <input
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false); }}
+                autoFocus
+                maxLength={50}
+                style={{
+                  width: '100%',
+                  backgroundColor: '#0A1628',
+                  color: '#fff',
+                  border: '1px solid #2DD4BF',
+                  borderRadius: '6px',
+                  padding: '6px 10px',
+                  fontSize: '15px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {nameError && <div style={{ color: '#FF4D4F', fontSize: '12px', marginTop: '4px' }}>{nameError}</div>}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                <button
+                  onClick={handleSaveName}
+                  disabled={nameSaving}
+                  style={{
+                    backgroundColor: theme.colors.teal,
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 14px',
+                    cursor: nameSaving ? 'not-allowed' : 'pointer',
+                    fontSize: '13px',
+                    opacity: nameSaving ? 0.7 : 1,
+                  }}
+                >
+                  {nameSaving ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setEditingName(false)}
+                  disabled={nameSaving}
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: '#888',
+                    border: '1px solid #333',
+                    borderRadius: '6px',
+                    padding: '6px 14px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '15px' }}>{displayName || <span style={{ color: '#555' }}>Not set</span>}</div>
+              <button
+                onClick={handleEditName}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: theme.colors.teal,
+                  border: '1px solid ' + theme.colors.teal,
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                Edit
+              </button>
+            </div>
+          )}
+        </div>
         <div
           style={{
             backgroundColor: '#121F35',

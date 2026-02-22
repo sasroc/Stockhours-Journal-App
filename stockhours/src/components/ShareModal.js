@@ -1,10 +1,13 @@
 import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
 import backgroundImage from '../assets/bg1.png';
 import primaryLogo from '../assets/3.png';
+import qrCode from '../assets/qrcode_tradebetter.net.png';
 import secondaryLogo from '../assets/2.png';
 
 const ShareModal = ({ isOpen, onClose, dayStats }) => {
+  const { displayName } = useAuth();
   if (!isOpen) return null;
 
   const handleDownload = () => {
@@ -13,9 +16,10 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
     const img = new Image();
     const brandLogo = new Image();
     const accentLogo = new Image();
+    const qrImg = new Image();
 
     let loadedImages = 0;
-    const totalImages = 3;
+    const totalImages = 4;
 
     const drawWhenAllLoaded = () => {
       loadedImages++;
@@ -59,15 +63,17 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
         ctx.fillStyle = 'white';
         ctx.fillText('TradeBetter', logoX + containerSize + 20, logoY + containerSize / 2 + 10);
 
-        // Draw secondary logo on right side
-        const clockSize = canvas.height * 0.4; // 40% of canvas height
-        ctx.drawImage(
-          accentLogo,
-          canvas.width - clockSize - canvas.width * 0.1,
-          (canvas.height - clockSize) / 2,
-          clockSize,
-          clockSize
-        );
+        // Draw date — top right
+        const [month, day, year] = dayStats.date.split('/');
+        const formattedDate = new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        ctx.font = `bold ${Math.floor(canvas.height * 0.04)}px Arial`;
+        ctx.textAlign = 'right';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 5;
+        ctx.strokeText(formattedDate, canvas.width - 40, logoY + containerSize / 2 + 10);
+        ctx.fillStyle = 'white';
+        ctx.fillText(formattedDate, canvas.width - 40, logoY + containerSize / 2 + 10);
+
 
         // Configure text style for trade data
         const leftMargin = canvas.width * 0.1; // 10% of canvas width
@@ -114,6 +120,23 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
           centerY + canvas.height * 0.25
         );
 
+        // Draw QR code — bottom right
+        const qrSize = canvas.height * 0.2;
+        const qrMargin = 30;
+
+        // Draw display name — bottom left
+        if (displayName) {
+          ctx.font = `bold ${Math.floor(canvas.height * 0.04)}px Arial`;
+          ctx.textAlign = 'left';
+          ctx.lineJoin = 'round';
+          ctx.lineWidth = 5;
+          ctx.strokeStyle = 'black';
+          ctx.strokeText(displayName, qrMargin, canvas.height - qrMargin);
+          ctx.fillStyle = 'white';
+          ctx.fillText(displayName, qrMargin, canvas.height - qrMargin);
+        }
+        ctx.drawImage(qrImg, canvas.width - qrSize - qrMargin, canvas.height - qrSize - qrMargin, qrSize, qrSize);
+
         // Convert to blob and download
         canvas.toBlob((blob) => {
           const url = URL.createObjectURL(blob);
@@ -131,14 +154,22 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
     img.onload = drawWhenAllLoaded;
     brandLogo.onload = drawWhenAllLoaded;
     accentLogo.onload = drawWhenAllLoaded;
+    qrImg.onload = drawWhenAllLoaded;
 
     img.src = backgroundImage;
     brandLogo.src = secondaryLogo;
     accentLogo.src = primaryLogo;
+    qrImg.src = qrCode;
   };
 
   // Calculate total ROI for preview
   const totalROI = dayStats.trades.reduce((sum, trade) => sum + trade.netROI, 0);
+
+  // Format date for display (MM/DD/YYYY → "February 21, 2026")
+  const formatDate = (dateStr) => {
+    const [month, day, year] = dateStr.split('/');
+    return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
 
   return (
     <div
@@ -180,6 +211,43 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
             padding: '20px',
           }}
         >
+          {/* Display name - bottom left */}
+          {displayName && (
+            <div style={{
+              position: 'absolute',
+              bottom: 20,
+              left: 20,
+              color: 'white',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000',
+            }}>
+              {displayName}
+            </div>
+          )}
+
+          {/* QR code - bottom right */}
+          <img src={qrCode} alt="QR Code" style={{
+            position: 'absolute',
+            bottom: 20,
+            right: 20,
+            width: '90px',
+            height: '90px',
+          }} />
+
+          {/* Date - top right */}
+          <div style={{
+            position: 'absolute',
+            top: 20,
+            right: 20,
+            color: 'white',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000',
+          }}>
+            {formatDate(dayStats.date)}
+          </div>
+
           {/* TradeBetter Logo and Text */}
           <div style={{
             position: 'absolute',
@@ -244,10 +312,6 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
             </div>
           </div>
 
-          {/* Right side - Secondary Logo */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <img src={primaryLogo} alt="TradeBetter Logo" style={{ height: '180px' }} />
-          </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>

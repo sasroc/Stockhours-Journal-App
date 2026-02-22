@@ -83,7 +83,7 @@ const processItems = [
 
 const MarketingLanding = () => {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, displayName, logout } = useAuth();
   const [activeShotIndex, setActiveShotIndex] = useState(0);
   const activeShot = screenshotItems[activeShotIndex];
 
@@ -718,7 +718,7 @@ const MarketingLanding = () => {
                   fontWeight: 700,
                   flexShrink: 0
                 }}>
-                  {(currentUser.displayName || currentUser.email || '').charAt(0).toUpperCase()}
+                  {(displayName || currentUser.email || '').charAt(0).toUpperCase()}
                 </div>
                 <span style={{ fontSize: '13px', color: '#aaa', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {currentUser.email}
