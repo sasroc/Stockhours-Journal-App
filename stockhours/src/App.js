@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocat
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './components/auth/Login';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import InvitationManager from './components/admin/InvitationManager';
 import StatsDashboard from './components/StatsDashboard';
 import ReportsScreen from './components/ReportsScreen';
 import ImportsScreen from './components/ImportsScreen';
@@ -70,7 +69,7 @@ const FullScreenLoader = ({ message = 'Loading...' }) => (
 );
 
 function AppRoutes() {
-  const { currentUser, loading, isAdmin, logout, subscription } = useAuth();
+  const { currentUser, loading, logout, subscription } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [tradeData, setTradeData] = useState([]);
@@ -184,9 +183,7 @@ function AppRoutes() {
 
   useEffect(() => {
     const path = location.pathname;
-    if (path === '/admin/invitations') {
-      setCurrentScreen('Invitations');
-    } else if (path === '/dashboard') {
+    if (path === '/dashboard') {
       setCurrentScreen('Dashboard');
     } else if (path === '/reports') {
       setCurrentScreen('Reports');
@@ -772,22 +769,6 @@ function AppRoutes() {
           </h2>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '20px' }}>
-          {isAdmin && (
-            <button
-              onClick={() => navigate('/admin/invitations')}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: theme.colors.teal,
-                color: theme.colors.white,
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-            >
-              Manage Invitations
-            </button>
-          )}
           <DateRangePicker onDateChange={handleDateChange} />
         </div>
       </header>
@@ -1350,21 +1331,7 @@ function AppRoutes() {
           transition: 'margin-left 0.3s ease',
         }}
       >
-        {location.pathname === '/admin/invitations' ? (
-          <div
-            style={{
-              width: '100%',
-              maxWidth: '1400px',
-              backgroundColor: '#0F1D2F',
-              borderRadius: '8px',
-              padding: '20px',
-              margin: '0 auto',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
-            }}
-          >
-            <InvitationManager />
-          </div>
-        ) : location.pathname === '/dashboard' ? (
+        {location.pathname === '/dashboard' ? (
           <>
             <div
               style={{
@@ -1520,7 +1487,6 @@ function AppRoutesWrapper() {
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/login" element={<Login />} />
       <Route path="/paywall" element={<ProtectedRoute requireSubscription={false}><PaywallScreen /></ProtectedRoute>} />
-      <Route path="/admin/invitations" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
       <Route path="/imports" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />

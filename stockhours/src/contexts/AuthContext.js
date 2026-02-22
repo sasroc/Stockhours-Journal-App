@@ -23,7 +23,6 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [subscription, setSubscription] = useState({ status: 'inactive', plan: 'none' });
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
@@ -37,7 +36,6 @@ export function AuthProvider({ children }) {
     await setDoc(userRef, {
       email: email || user.email || '',
       displayName: user.displayName || '',
-      isAdmin: false,
       createdAt: serverTimestamp(),
       lastLogin: serverTimestamp(),
       tradeData: [],
@@ -61,7 +59,6 @@ export function AuthProvider({ children }) {
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            setIsAdmin(userData.isAdmin === true);
             setDisplayName(userData.displayName || user.displayName || '');
             const nextSubscription = userData.subscription || getDefaultSubscription();
             setSubscription({
@@ -72,17 +69,14 @@ export function AuthProvider({ children }) {
               await updateDoc(userDocRef, { subscription: { ...getDefaultSubscription(), updatedAt: serverTimestamp() } });
             }
           } else {
-            setIsAdmin(false);
             setDisplayName(user.displayName || '');
             setSubscription(getDefaultSubscription());
           }
         } catch (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
+          console.error('Error fetching user data:', error);
           setSubscription(getDefaultSubscription());
         }
       } else {
-        setIsAdmin(false);
         setSubscription(getDefaultSubscription());
       }
       setCurrentUser(user);
@@ -223,7 +217,6 @@ export function AuthProvider({ children }) {
   const value = {
     currentUser,
     displayName,
-    isAdmin,
     loading,
     subscription,
     subscriptionLoading,
