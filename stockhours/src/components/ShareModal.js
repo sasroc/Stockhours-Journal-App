@@ -27,13 +27,33 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
         // Draw background
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        // Draw TradeBetter logo and text
-        const logoSize = canvas.height * 0.1; // 10% of canvas height
-        ctx.drawImage(brandLogo, 40, 40, logoSize, logoSize);
+        // Draw TradeBetter logo — replicate sidebar style (rounded container, zoomed image)
+        const containerSize = canvas.height * 0.1; // matches 54px at preview scale
+        const logoX = 40;
+        const logoY = 40;
+        const borderRadius = containerSize * (14 / 54);
+
+        // Draw rounded rect background and clip
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(logoX, logoY, containerSize, containerSize, borderRadius);
+        ctx.fillStyle = '#0C1829';
+        ctx.fill();
+        ctx.clip();
+
+        // Draw logo zoomed inside the container (scale 1.1 * 66/54 ≈ 1.34x)
+        const zoomFactor = 1.1 * (66 / 54);
+        const drawSize = containerSize * zoomFactor;
+        const centerOffset = (drawSize - containerSize) / 2;
+        const translateX = containerSize * (-5 / 54); // shift left to center logo visually
+        const translateY = containerSize * (-5 / 54);  // shift up to center logo visually
+        ctx.drawImage(brandLogo, logoX - centerOffset + translateX, logoY - centerOffset + translateY, drawSize, drawSize);
+        ctx.restore();
+
         ctx.font = `bold ${Math.floor(canvas.height * 0.05)}px Arial`;
         ctx.fillStyle = 'white';
         ctx.textAlign = 'left';
-        ctx.fillText('TradeBetter', logoSize + 60, 40 + (logoSize / 2) + 10);
+        ctx.fillText('TradeBetter', logoX + containerSize + 20, logoY + containerSize / 2 + 10);
 
         // Draw secondary logo on right side
         const clockSize = canvas.height * 0.4; // 40% of canvas height
@@ -140,7 +160,7 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
           }}
         >
           {/* TradeBetter Logo and Text */}
-          <div style={{ 
+          <div style={{
             position: 'absolute',
             top: 20,
             left: 20,
@@ -148,7 +168,25 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
             alignItems: 'center',
             gap: '10px'
           }}>
-            <img src={secondaryLogo} alt="TradeBetter Logo" style={{ height: '45px' }} />
+            <div style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '14px',
+              overflow: 'hidden',
+              backgroundColor: '#0C1829',
+              border: '1px solid #1E2D48',
+              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.6), 0 0 18px rgba(0, 123, 255, 0.25)',
+              flexShrink: 0,
+            }}>
+              <img src={secondaryLogo} alt="TradeBetter Logo" style={{
+                width: '66px',
+                height: '66px',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                transform: 'scale(1.1) translateX(-5px) translateY(-5px)',
+                display: 'block',
+              }} />
+            </div>
             <span style={{ color: 'white', fontSize: '24px', fontWeight: 'bold' }}>TradeBetter</span>
           </div>
 

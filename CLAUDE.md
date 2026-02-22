@@ -27,13 +27,16 @@ Both must run simultaneously for full functionality. Frontend requires `HTTPS=tr
 - `HTTPS=true`
 - `REACT_APP_STRIPE_API_URL` — backend base URL (e.g., `http://localhost:4242`)
 - Firebase config: `REACT_APP_FIREBASE_API_KEY`, `REACT_APP_FIREBASE_AUTH_DOMAIN`, `REACT_APP_FIREBASE_PROJECT_ID`, `REACT_APP_FIREBASE_STORAGE_BUCKET`, `REACT_APP_FIREBASE_MESSAGING_SENDER_ID`, `REACT_APP_FIREBASE_APP_ID`
+- `REACT_APP_SCHWAB_CLIENT_ID`, `REACT_APP_SCHWAB_REDIRECT_URI`
+- `REACT_APP_WEBULL_CLIENT_ID`, `REACT_APP_WEBULL_REDIRECT_URI`
 
 **`backend/.env`**:
 - `PORT=4242`
 - `FRONTEND_URL` — comma-separated origins for CORS (e.g., `http://localhost:3000,https://localhost:3000`)
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and Stripe price IDs
-- `FIREBASE_SERVICE_ACCOUNT_FILE` — path to Firebase Admin service account JSON
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_BASIC_ID`, `STRIPE_PRICE_BASIC_YEARLY_ID`, `STRIPE_PRICE_PRO_ID`, `STRIPE_PRICE_PRO_YEARLY_ID`
+- `FIREBASE_SERVICE_ACCOUNT` — base64-encoded Firebase Admin service account JSON (production), or place the JSON file directly in `backend/` and reference its path
 - `SCHWAB_CLIENT_ID`, `SCHWAB_CLIENT_SECRET`, `SCHWAB_REDIRECT_URI`
+- `WEBULL_CLIENT_ID`, `WEBULL_CLIENT_SECRET`, `WEBULL_REDIRECT_URI`
 - `OPENAI_API_KEY`
 
 ## Architecture
@@ -41,6 +44,8 @@ Both must run simultaneously for full functionality. Frontend requires `HTTPS=tr
 **Monorepo** with two independently-runnable apps:
 - `stockhours/` — React 19 frontend (Create React App)
 - `backend/` — Express.js API server (`server.js` is the single file containing all endpoints)
+
+Key frontend libraries: **Chart.js** (`react-chartjs-2`) for all data visualizations, **xlsx** for client-side CSV/Excel parsing, **date-fns** for date math, **react-icons** for icons, **styled-components** + inline styles for UI.
 
 ### Navigation Model
 The app has two layers of routing:
