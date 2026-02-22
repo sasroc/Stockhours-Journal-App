@@ -1,6 +1,6 @@
 import React from 'react';
 import { theme } from '../theme';
-import backgroundImage from '../assets/backgroundtrade.jpg';
+import backgroundImage from '../assets/bg1.png';
 import primaryLogo from '../assets/3.png';
 import secondaryLogo from '../assets/2.png';
 
@@ -51,8 +51,12 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
         ctx.restore();
 
         ctx.font = `bold ${Math.floor(canvas.height * 0.05)}px Arial`;
-        ctx.fillStyle = 'white';
         ctx.textAlign = 'left';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = 'black';
+        ctx.strokeText('TradeBetter', logoX + containerSize + 20, logoY + containerSize / 2 + 10);
+        ctx.fillStyle = 'white';
         ctx.fillText('TradeBetter', logoX + containerSize + 20, logoY + containerSize / 2 + 10);
 
         // Draw secondary logo on right side
@@ -71,12 +75,23 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
 
         // Draw ticker(s)
         ctx.font = `bold ${Math.floor(canvas.height * 0.1)}px Arial`;
-        ctx.fillStyle = 'white';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = 'black';
         const tickers = [...new Set(dayStats.trades.map(trade => trade.Symbol))];
+        ctx.strokeText(tickers.join(', '), leftMargin, centerY - canvas.height * 0.15);
+        ctx.fillStyle = 'white';
         ctx.fillText(tickers.join(', '), leftMargin, centerY - canvas.height * 0.15);
 
         // Draw P&L
         ctx.font = `bold ${Math.floor(canvas.height * 0.14)}px Arial`;
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = 'black';
+        ctx.strokeText(
+          `$${dayStats.totalProfitLoss.toFixed(2)}`,
+          leftMargin,
+          centerY + canvas.height * 0.05
+        );
         ctx.fillStyle = dayStats.totalProfitLoss >= 0 ? theme.colors.green : theme.colors.red;
         ctx.fillText(
           `$${dayStats.totalProfitLoss.toFixed(2)}`,
@@ -86,6 +101,12 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
 
         // Calculate total ROI (sum of all trade ROIs)
         const totalROI = dayStats.trades.reduce((sum, trade) => sum + trade.netROI, 0);
+        ctx.strokeStyle = 'black';
+        ctx.strokeText(
+          `${totalROI.toFixed(2)}%`,
+          leftMargin,
+          centerY + canvas.height * 0.25
+        );
         ctx.fillStyle = totalROI >= 0 ? theme.colors.green : theme.colors.red;
         ctx.fillText(
           `${totalROI.toFixed(2)}%`,
@@ -187,13 +208,13 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
                 display: 'block',
               }} />
             </div>
-            <span style={{ color: 'white', fontSize: '24px', fontWeight: 'bold' }}>TradeBetter</span>
+            <span style={{ color: 'white', fontSize: '24px', fontWeight: 'bold', textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000' }}>TradeBetter</span>
           </div>
 
           {/* Left side - Trade Data */}
           <div style={{ flex: 1, paddingLeft: '30px', marginTop: '40px' }}>
             {/* Tickers */}
-            <div style={{ color: 'white', fontSize: '48px', fontWeight: 'bold', marginBottom: '20px' }}>
+            <div style={{ color: 'white', fontSize: '48px', fontWeight: 'bold', marginBottom: '20px', textShadow: '-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000' }}>
               {[...new Set(dayStats.trades.map(trade => trade.Symbol))].join(', ')}
             </div>
 
@@ -204,6 +225,7 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
                 fontSize: '64px',
                 fontWeight: 'bold',
                 marginBottom: '20px',
+                textShadow: '-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000',
               }}
             >
               ${dayStats.totalProfitLoss.toFixed(2)}
@@ -215,6 +237,7 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
                 color: totalROI >= 0 ? theme.colors.green : theme.colors.red,
                 fontSize: '64px',
                 fontWeight: 'bold',
+                textShadow: '-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000',
               }}
             >
               {totalROI.toFixed(2)}%
