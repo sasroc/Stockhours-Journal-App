@@ -10,6 +10,7 @@
     "chart.js": "^4.4.8",
     "date-fns": "^2.30.0",
     "firebase": "^11.6.0",
+    "html2canvas": "^1.4.1",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
     "react-date-range": "^1.4.0",
@@ -45,5 +46,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "html-entities": "^2.6.0"
   }
 }
