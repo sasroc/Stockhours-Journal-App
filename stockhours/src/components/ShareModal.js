@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
 import backgroundImage from '../assets/bg2.png';
 import qrCode from '../assets/qrcode_tradebetter.net.png';
-import secondaryLogo from '../assets/2.png';
+import secondaryLogo from '../assets/logo2.png';
 
 const ShareModal = ({ isOpen, onClose, dayStats }) => {
   const { displayName } = useAuth();
@@ -137,11 +137,9 @@ const ShareModal = ({ isOpen, onClose, dayStats }) => {
               flexShrink: 0,
             }}>
               <img src={secondaryLogo} alt="TradeBetter Logo" style={{
-                width: '80px',
-                height: '80px',
+                width: '54px',
+                height: '54px',
                 display: 'block',
-                marginLeft: '-12px',
-                marginTop: '-11px',
               }} />
             </div>
             <span style={{ color: 'white', fontSize: '24px', fontWeight: 'bold', textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000' }}>TradeBetter</span>
