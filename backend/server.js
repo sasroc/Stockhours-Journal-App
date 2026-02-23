@@ -569,15 +569,6 @@ const refreshSchwabTokenIfNeeded = async (userRef, tokenDoc) => {
 // POST /api/schwab/token – exchange auth code for tokens
 app.post('/api/schwab/token', verifyFirebaseToken, async (req, res) => {
   try {
-    // Broker limit: Basic users can only connect 1 broker
-    const userDoc = await db.collection('users').doc(req.user.uid).get();
-    const userData = userDoc.exists ? userDoc.data() : {};
-    const sub = userData.subscription || {};
-    const isPro = sub.plan === 'pro' && (sub.status === 'active' || sub.status === 'trialing');
-    if (!isPro && userData.webullConnected === true) {
-      return res.status(403).json({ error: 'Basic plan supports 1 broker connection. Upgrade to Pro for unlimited brokers.' });
-    }
-
     const { code } = req.body;
     if (!code) {
       return res.status(400).json({ error: 'Missing authorization code.' });
@@ -585,6 +576,21 @@ app.post('/api/schwab/token', verifyFirebaseToken, async (req, res) => {
     if (!process.env.SCHWAB_CLIENT_ID || !process.env.SCHWAB_CLIENT_SECRET) {
       return res.status(500).json({ error: 'Schwab API is not configured on the server.' });
     }
+
+    const userRef = db.collection('users').doc(req.user.uid);
+
+    // Broker limit: use Firestore transaction to prevent race conditions
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      const userData = userDoc.exists ? userDoc.data() : {};
+      const sub = userData.subscription || {};
+      const isPro = sub.plan === 'pro' && (sub.status === 'active' || sub.status === 'trialing');
+      if (!isPro && userData.webullConnected === true) {
+        throw new Error('BROKER_LIMIT');
+      }
+      // Mark schwabConnected inside the transaction to prevent race conditions
+      transaction.set(userRef, { schwabConnected: true }, { merge: true });
+    });
 
     const resp = await fetch(SCHWAB_TOKEN_URL, {
       method: 'POST',
@@ -602,12 +608,13 @@ app.post('/api/schwab/token', verifyFirebaseToken, async (req, res) => {
     if (!resp.ok) {
       const errBody = await resp.text();
       console.error('Schwab token exchange failed:', errBody);
+      // Roll back the schwabConnected flag since token exchange failed
+      await userRef.set({ schwabConnected: false }, { merge: true });
       return res.status(resp.status).json({ error: 'Failed to exchange authorization code.' });
     }
 
     const tokens = await resp.json();
     const now = new Date();
-    const userRef = db.collection('users').doc(req.user.uid);
 
     await userRef.collection('schwabTokens').doc('primary').set({
       accessToken: tokens.access_token,
@@ -618,10 +625,11 @@ app.post('/api/schwab/token', verifyFirebaseToken, async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    await userRef.set({ schwabConnected: true }, { merge: true });
-
     res.json({ success: true });
   } catch (error) {
+    if (error.message === 'BROKER_LIMIT') {
+      return res.status(403).json({ error: 'Basic plan supports 1 broker connection. Upgrade to Pro for unlimited brokers.' });
+    }
     console.error('Schwab token error:', error);
     res.status(500).json({ error: 'Failed to connect Schwab account.' });
   }
@@ -676,7 +684,6 @@ app.post('/api/schwab/sync', verifyFirebaseToken, async (req, res) => {
     }
 
     const accountNumbers = await accountNumsResp.json();
-    console.log('Schwab accountNumbers response:', JSON.stringify(accountNumbers));
     const allTransactions = [];
 
     // Build date range (last 60 days, the Schwab API maximum)
@@ -692,34 +699,24 @@ app.post('/api/schwab/sync', verifyFirebaseToken, async (req, res) => {
       if (!hashValue) continue;
 
       const txnUrl = `${SCHWAB_TRADER_BASE}/accounts/${hashValue}/transactions?types=TRADE&startDate=${encodeURIComponent(startDateStr)}&endDate=${encodeURIComponent(endDateStr)}`;
-      console.log('Fetching transactions from:', txnUrl);
-
       const txnResp = await fetch(txnUrl, {
         headers: { Authorization: `Bearer ${tokenData.accessToken}` },
       });
 
       if (txnResp.ok) {
         const txns = await txnResp.json();
-        console.log(`Schwab transactions for account ${acct.accountNumber}: ${Array.isArray(txns) ? txns.length : 'not an array'}`);
+        console.log(`Schwab transactions fetched: ${Array.isArray(txns) ? txns.length : 'not an array'}`);
         if (Array.isArray(txns)) {
           allTransactions.push(...txns);
         }
       } else {
         const errText = await txnResp.text();
-        console.error(`Schwab transactions fetch failed for account ${acct.accountNumber} (${txnResp.status}):`, errText);
+        console.error(`Schwab transactions fetch failed (${txnResp.status}):`, errText);
       }
-    }
-
-    // Log a sample raw transaction to understand the structure
-    if (allTransactions.length > 0) {
-      console.log('Sample raw Schwab transaction:', JSON.stringify(allTransactions[0], null, 2));
     }
 
     const schwabGroups = transformSchwabTransactions(allTransactions);
     console.log(`Transform result: ${schwabGroups.length} groups, total transactions: ${schwabGroups.reduce((sum, g) => sum + g.Transactions.length, 0)}`);
-    if (schwabGroups.length > 0) {
-      console.log('Sample transformed group:', JSON.stringify(schwabGroups[0], null, 2));
-    }
 
     // Get existing trade data
     const userSnap = await userRef.get();
@@ -962,15 +959,6 @@ const refreshWebullTokenIfNeeded = async (userRef, tokenDoc) => {
 // POST /api/webull/token – exchange auth code for tokens
 app.post('/api/webull/token', verifyFirebaseToken, async (req, res) => {
   try {
-    // Broker limit: Basic users can only connect 1 broker
-    const userDoc = await db.collection('users').doc(req.user.uid).get();
-    const userData = userDoc.exists ? userDoc.data() : {};
-    const sub = userData.subscription || {};
-    const isPro = sub.plan === 'pro' && (sub.status === 'active' || sub.status === 'trialing');
-    if (!isPro && userData.schwabConnected === true) {
-      return res.status(403).json({ error: 'Basic plan supports 1 broker connection. Upgrade to Pro for unlimited brokers.' });
-    }
-
     const { code } = req.body;
     if (!code) {
       return res.status(400).json({ error: 'Missing authorization code.' });
@@ -978,6 +966,21 @@ app.post('/api/webull/token', verifyFirebaseToken, async (req, res) => {
     if (!process.env.WEBULL_CLIENT_ID || !process.env.WEBULL_CLIENT_SECRET) {
       return res.status(500).json({ error: 'Webull API is not configured on the server.' });
     }
+
+    const userRef = db.collection('users').doc(req.user.uid);
+
+    // Broker limit: use Firestore transaction to prevent race conditions
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      const userData = userDoc.exists ? userDoc.data() : {};
+      const sub = userData.subscription || {};
+      const isPro = sub.plan === 'pro' && (sub.status === 'active' || sub.status === 'trialing');
+      if (!isPro && userData.schwabConnected === true) {
+        throw new Error('BROKER_LIMIT');
+      }
+      // Mark webullConnected inside the transaction to prevent race conditions
+      transaction.set(userRef, { webullConnected: true }, { merge: true });
+    });
 
     const path = '/oauth/token';
     const bodyObj = {
@@ -998,12 +1001,13 @@ app.post('/api/webull/token', verifyFirebaseToken, async (req, res) => {
     if (!resp.ok) {
       const errBody = await resp.text();
       console.error('Webull token exchange failed:', errBody);
+      // Roll back the webullConnected flag since token exchange failed
+      await userRef.set({ webullConnected: false }, { merge: true });
       return res.status(resp.status).json({ error: 'Failed to exchange authorization code.' });
     }
 
     const tokens = await resp.json();
     const now = new Date();
-    const userRef = db.collection('users').doc(req.user.uid);
 
     await userRef.collection('webullTokens').doc('primary').set({
       accessToken: tokens.access_token,
@@ -1014,10 +1018,11 @@ app.post('/api/webull/token', verifyFirebaseToken, async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    await userRef.set({ webullConnected: true }, { merge: true });
-
     res.json({ success: true });
   } catch (error) {
+    if (error.message === 'BROKER_LIMIT') {
+      return res.status(403).json({ error: 'Basic plan supports 1 broker connection. Upgrade to Pro for unlimited brokers.' });
+    }
     console.error('Webull token error:', error);
     res.status(500).json({ error: 'Failed to connect Webull account.' });
   }
@@ -1586,7 +1591,7 @@ app.delete('/api/user/account', verifyFirebaseToken, async (req, res) => {
 app.use((err, req, res, next) => {
   Sentry.captureException(err);
   console.error(err);
-  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+  res.status(err.status || 500).json({ error: 'Internal server error' });
 });
 
 const PORT = process.env.PORT || 4242;

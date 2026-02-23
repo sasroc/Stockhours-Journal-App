@@ -38,9 +38,7 @@ const isCurrentWeek = (weekKey) => {
 
 const stripHtml = (html) => {
   if (!html) return '';
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  return tmp.textContent || tmp.innerText || '';
+  return html.replace(/<[^>]*>/g, '');
 };
 
 const renderMarkdown = (text) => {
