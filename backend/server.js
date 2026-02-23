@@ -7,8 +7,16 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 const OpenAI = require('openai');
 const rateLimit = require('express-rate-limit');
+const Sentry = require('@sentry/node');
 
 dotenv.config();
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  enabled: !!process.env.SENTRY_DSN,
+  tracesSampleRate: 1.0,
+});
 
 const app = express();
 
@@ -1572,6 +1580,13 @@ app.delete('/api/user/account', verifyFirebaseToken, async (req, res) => {
     console.error('Account deletion error:', error);
     res.status(500).json({ error: 'Failed to delete account. Please try again.' });
   }
+});
+
+// Global error handler — captures all unhandled Express errors and reports to Sentry
+app.use((err, req, res, next) => {
+  Sentry.captureException(err);
+  console.error(err);
+  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
 const PORT = process.env.PORT || 4242;
