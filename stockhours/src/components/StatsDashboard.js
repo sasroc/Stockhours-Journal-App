@@ -290,6 +290,62 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           position.totalQuantity = 0;
           position.currentQuantity = 0;
         }
+      } else if (transaction.PosEffect === 'OPEN' && transaction.Side === 'SELL') {
+        // Short option: sell to open
+        position.totalQuantity += transaction.Quantity;
+        position.currentQuantity -= transaction.Quantity;
+        position.sellRecords.push({
+          quantity: transaction.Quantity,
+          price: transaction.Price,
+          tradeDate: transaction.TradeDate,
+          execTime: transaction.ExecTime,
+        });
+      } else if (transaction.PosEffect === 'CLOSE' && transaction.Side === 'BUY') {
+        // Short option: buy to close
+        position.buyRecords.push({
+          quantity: Math.abs(transaction.Quantity),
+          price: transaction.Price,
+          execTime: transaction.ExecTime,
+          tradeDate: transaction.TradeDate,
+        });
+        position.currentQuantity += Math.abs(transaction.Quantity);
+        if (position.currentQuantity === 0) {
+          let totalSellQuantity = 0;
+          let totalSellProceeds = 0;
+          const sellRecordsForCycle = [];
+          while (position.sellRecords.length > 0 && totalSellQuantity < position.totalQuantity) {
+            const sellRecord = position.sellRecords.shift();
+            sellRecordsForCycle.push(sellRecord);
+            totalSellQuantity += sellRecord.quantity;
+            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
+          }
+          let totalBuyQuantity = 0;
+          let totalBuyCost = 0;
+          const buyRecordsForCycle = [];
+          while (position.buyRecords.length > 0 && totalBuyQuantity < totalSellQuantity) {
+            const buyRecord = position.buyRecords.shift();
+            buyRecordsForCycle.push(buyRecord);
+            totalBuyQuantity += buyRecord.quantity;
+            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
+          }
+          const profitLoss = totalSellProceeds - totalBuyCost;
+          const lastBuyRecord = buyRecordsForCycle[buyRecordsForCycle.length - 1];
+          processedTrades.push({
+            Symbol: transaction.Symbol,
+            Strike: transaction.Strike,
+            Expiration: transaction.Expiration,
+            TradeDate: sellRecordsForCycle[0].tradeDate,
+            FirstBuyExecTime: sellRecordsForCycle[0].execTime,
+            LastSellExecTime: lastBuyRecord.execTime,
+            LastSellTradeDate: lastBuyRecord.tradeDate,
+            profitLoss,
+            Type: transaction.Type,
+            Quantity: totalSellQuantity,
+            Price: sellRecordsForCycle[0].price,
+          });
+          position.totalQuantity = 0;
+          position.currentQuantity = 0;
+        }
       }
     });
 

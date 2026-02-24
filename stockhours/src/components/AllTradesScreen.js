@@ -558,7 +558,7 @@ const AllTradesScreen = ({ tradeData }) => {
           if (totalSellQuantity >= totalBuyQuantity) {
             const profitLoss = totalSellProceeds - totalBuyCost;
             const netROI = totalBuyCost > 0 ? (profitLoss / totalBuyCost) * 100 : 0;
-            
+
             processedTrades.push({
               openDate: openTx.TradeDate,
               closeDate: tx.TradeDate,
@@ -573,6 +573,38 @@ const AllTradesScreen = ({ tradeData }) => {
               close: tx,
             });
 
+            // Reset for next trade
+            openTx = null;
+            totalBuyQuantity = 0;
+            totalBuyCost = 0;
+            totalSellQuantity = 0;
+            totalSellProceeds = 0;
+          }
+        } else if (tx.PosEffect === 'OPEN' && tx.Side === 'SELL') {
+          // Short option: sell to open
+          openTx = tx;
+          totalSellQuantity += tx.Quantity;
+          totalSellProceeds += tx.Quantity * tx.Price * CONTRACT_MULTIPLIER;
+        } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'BUY' && openTx) {
+          // Short option: buy to close
+          totalBuyQuantity += Math.abs(tx.Quantity);
+          totalBuyCost += Math.abs(tx.Quantity) * tx.Price * CONTRACT_MULTIPLIER;
+          if (totalBuyQuantity >= totalSellQuantity) {
+            const profitLoss = totalSellProceeds - totalBuyCost;
+            const netROI = totalSellProceeds > 0 ? (profitLoss / totalSellProceeds) * 100 : 0;
+            processedTrades.push({
+              openDate: openTx.TradeDate,
+              closeDate: tx.TradeDate,
+              symbol: openTx.Symbol,
+              entryPrice: openTx.Price,
+              exitPrice: tx.Price,
+              netPL: profitLoss,
+              netROI,
+              status: getStatusAndColors(profitLoss).status,
+              statusColor: getStatusAndColors(profitLoss).color,
+              open: openTx,
+              close: tx,
+            });
             // Reset for next trade
             openTx = null;
             totalBuyQuantity = 0;

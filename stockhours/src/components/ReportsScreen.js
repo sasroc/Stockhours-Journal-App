@@ -205,6 +205,62 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
           position.totalQuantity = 0;
           position.currentQuantity = 0;
         }
+      } else if (transaction.PosEffect === 'OPEN' && transaction.Side === 'SELL') {
+        // Short option: sell to open
+        position.totalQuantity += transaction.Quantity;
+        position.currentQuantity -= transaction.Quantity;
+        position.sellRecords.push({
+          quantity: transaction.Quantity,
+          price: transaction.Price,
+          tradeDate: transaction.TradeDate,
+          execTime: transaction.ExecTime,
+        });
+      } else if (transaction.PosEffect === 'CLOSE' && transaction.Side === 'BUY') {
+        // Short option: buy to close
+        position.buyRecords.push({
+          quantity: Math.abs(transaction.Quantity),
+          price: transaction.Price,
+          execTime: transaction.ExecTime,
+        });
+        position.currentQuantity += Math.abs(transaction.Quantity);
+        if (position.currentQuantity === 0) {
+          let totalSellQuantity = 0;
+          let totalSellProceeds = 0;
+          const sellRecordsForCycle = [];
+          while (position.sellRecords.length > 0 && totalSellQuantity < position.totalQuantity) {
+            const sellRecord = position.sellRecords.shift();
+            sellRecordsForCycle.push(sellRecord);
+            totalSellQuantity += sellRecord.quantity;
+            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
+          }
+          let totalBuyQuantity = 0;
+          let totalBuyCost = 0;
+          const buyRecordsForCycle = [];
+          while (position.buyRecords.length > 0 && totalBuyQuantity < totalSellQuantity) {
+            const buyRecord = position.buyRecords.shift();
+            buyRecordsForCycle.push(buyRecord);
+            totalBuyQuantity += buyRecord.quantity;
+            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
+          }
+          const profitLoss = totalSellProceeds - totalBuyCost;
+          const exitTime = buyRecordsForCycle[buyRecordsForCycle.length - 1].execTime;
+          const totalVolume = totalSellQuantity;
+          const firstBuyPrice = sellRecordsForCycle[0].price;
+          trades.push({
+            Symbol: transaction.Symbol,
+            Strike: transaction.Strike,
+            Expiration: transaction.Expiration,
+            TradeDate: sellRecordsForCycle[0].tradeDate,
+            FirstBuyExecTime: sellRecordsForCycle[0].execTime,
+            ExitTime: exitTime,
+            profitLoss,
+            totalVolume,
+            firstBuyPrice,
+            totalBuyCost,
+          });
+          position.totalQuantity = 0;
+          position.currentQuantity = 0;
+        }
       }
     });
     return trades;
@@ -218,9 +274,10 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       const sorted = [...trade.Transactions].sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
       let openTx = null;
       sorted.forEach(tx => {
-        if (tx.PosEffect === 'OPEN' && tx.Side === 'BUY') {
+        if (tx.PosEffect === 'OPEN') {
           openTx = tx;
-        } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'SELL' && openTx) {
+        } else if (tx.PosEffect === 'CLOSE' && openTx &&
+          ((tx.Side === 'SELL' && openTx.Side === 'BUY') || (tx.Side === 'BUY' && openTx.Side === 'SELL'))) {
           const entryPrice = openTx.Price;
           const exitPrice = tx.Price;
           const quantity = openTx.Quantity;

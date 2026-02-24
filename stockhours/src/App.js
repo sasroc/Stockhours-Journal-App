@@ -296,6 +296,108 @@ function AppRoutes() {
     }
   }, [ratings, currentUser, ratingsLoaded]);
 
+  // --- IBKR Activity Statement CSV parser ---
+  const parseIBKROptionSymbol = (symbolStr) => {
+    // IBKR human-readable format: "SPY 18MAR26 580.0 P" or "TSLA 21MAR26 320.0 C"
+    const MONTH_MAP = { JAN:1, FEB:2, MAR:3, APR:4, MAY:5, JUN:6, JUL:7, AUG:8, SEP:9, OCT:10, NOV:11, DEC:12 };
+    const match = symbolStr.trim().match(
+      /^([A-Z0-9.]+)\s+(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})\s+([\d.]+)\s+([CP])$/i
+    );
+    if (!match) return null;
+    const [, underlying, dd, mon, yy, strikeStr, type] = match;
+    const month = MONTH_MAP[mon.toUpperCase()];
+    const day = parseInt(dd, 10);
+    const year = 2000 + parseInt(yy, 10);
+    const strike = parseFloat(strikeStr);
+    // Match thinkorswim expiration format: "${day} ${month} ${year}"
+    const expiration = `${day} ${month} ${year}`;
+    return { underlying, strike, expiration, type: type.toUpperCase() === 'C' ? 'CALL' : 'PUT' };
+  };
+
+  const parseIBKRData = (data) => {
+    const headerRow = data.find(row => row[0] === 'Trades' && row[1] === 'Header');
+    if (!headerRow) throw new Error('No Trades section found in IBKR file.');
+
+    // Build column index map: header cols start at position 2
+    const colIdx = {};
+    headerRow.slice(2).forEach((col, i) => { colIdx[String(col).trim()] = i + 2; });
+
+    // Only process Order rows for Stocks and Options (skip SubTotal, Total, ClosedLot, etc.)
+    // IBKR sometimes truncates the category to "Equity and Index Opts" so match 'opts' too
+    const tradeRows = data.filter(row => {
+      const cat = String(row[colIdx['Asset Category']] || '').toLowerCase();
+      return (
+        row[0] === 'Trades' &&
+        row[1] === 'Data' &&
+        row[2] === 'Order' &&
+        (cat.includes('stock') || cat.includes('option') || cat.includes('opts'))
+      );
+    });
+
+    if (tradeRows.length === 0) {
+      throw new Error('No trade rows found in IBKR file. Make sure the Activity Statement includes Trades.');
+    }
+
+    return tradeRows.map(row => {
+      const assetCategory = String(row[colIdx['Asset Category']] || '');
+      const isOption = assetCategory.toLowerCase().includes('option') || assetCategory.toLowerCase().includes('opts');
+      const rawSymbol = String(row[colIdx['Symbol']] || '').trim();
+      const rawDateTime = row[colIdx['Date/Time']];
+      const rawQty = row[colIdx['Quantity']];
+      const quantity = typeof rawQty === 'number' ? rawQty : parseFloat(String(rawQty).replace(/,/g, '')) || 0;
+      const price = parseFloat(row[colIdx['T. Price']]) || 0;
+      const code = String(row[colIdx['Code']] || '').trim();
+
+      // IBKR dates arrive as Excel serial numbers (XLSX auto-converts them)
+      // Use the same XLSX.SSF.parse_date_code approach as the thinkorswim parser
+      let execTime, tradeDate;
+      if (typeof rawDateTime === 'number') {
+        const serialDate = rawDateTime;
+        const date = XLSX.SSF.parse_date_code(serialDate);
+        const y = date.y, m = date.m, d = date.d;
+        tradeDate = `${m}/${d}/${y}`;
+        const hours = Math.floor((serialDate % 1) * 24);
+        const minutes = Math.floor(((serialDate % 1) * 24 - hours) * 60);
+        const seconds = Math.floor((((serialDate % 1) * 24 - hours) * 60 - minutes) * 60);
+        const constructed = new Date(y, m - 1, d, hours, minutes, seconds);
+        execTime = isNaN(constructed.getTime())
+          ? new Date(`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}.000Z`).toISOString()
+          : constructed.toISOString();
+      } else {
+        // Fallback: string format "2023-01-20, 09:30:00"
+        const dateTimeStr = String(rawDateTime || '').trim();
+        const parsedDate = new Date(dateTimeStr.replace(', ', 'T'));
+        execTime = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+        tradeDate = isNaN(parsedDate.getTime()) ? 'N/A' :
+          `${parsedDate.getMonth() + 1}/${parsedDate.getDate()}/${parsedDate.getFullYear()}`;
+      }
+
+      // Side from quantity sign; PosEffect from Code (O=open, C=close; may include "O;P", "C;P", "A"=assignment, "Ex"=exercise)
+      const side = quantity >= 0 ? 'BUY' : 'SELL';
+      const absQty = Math.abs(quantity);
+      let posEffect = 'UNKNOWN';
+      if (/^O/i.test(code)) posEffect = 'OPEN';
+      else if (/^C/i.test(code) || code === 'A' || code === 'Ex') posEffect = 'CLOSE';
+
+      if (isOption) {
+        const parsed = parseIBKROptionSymbol(rawSymbol);
+        if (!parsed) return null; // skip unparseable option symbols
+        return {
+          ExecTime: execTime, TradeDate: tradeDate, Side: side, Quantity: absQty,
+          Symbol: parsed.underlying, Expiration: parsed.expiration, Strike: parsed.strike,
+          Price: price, OrderType: 'IBKR', PosEffect: posEffect, Type: parsed.type,
+        };
+      } else {
+        return {
+          ExecTime: execTime, TradeDate: tradeDate, Side: side, Quantity: absQty,
+          Symbol: rawSymbol, Expiration: 'N/A', Strike: 0,
+          Price: price, OrderType: 'IBKR', PosEffect: posEffect, Type: 'EQUITY',
+        };
+      }
+    }).filter(Boolean);
+  };
+  // --- end IBKR parser ---
+
   const generateTransactionKey = (transaction, index) => {
     const execTime = new Date(transaction.ExecTime);
     const normalizedExecTime = new Date(
@@ -336,80 +438,89 @@ function AppRoutes() {
           data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         }
 
-        const tradeHistoryStart = data.findIndex(row => row[0] === 'Account Trade History');
-        if (tradeHistoryStart === -1) {
-          throw new Error('Account Trade History section not found in the CSV');
-        }
+        // Auto-detect broker format
+        const isIBKR = data.some(row => Array.isArray(row) && row[0] === 'Trades' && row[1] === 'Header');
 
-        const sectionHeaders = data[tradeHistoryStart + 1].slice(1);
+        let transformedData;
+        if (isIBKR) {
+          transformedData = parseIBKRData(data);
+        } else {
+          // thinkorswim format
+          const tradeHistoryStart = data.findIndex(row => row[0] === 'Account Trade History');
+          if (tradeHistoryStart === -1) {
+            throw new Error('Unrecognized file format. Please upload a thinkorswim or IBKR Activity Statement CSV.');
+          }
 
-        const tradeDataRaw = data
-          .slice(tradeHistoryStart + 2)
-          .filter(row => row.length >= sectionHeaders.length && (typeof row[1] === 'string' || typeof row[1] === 'number'))
-          .map(row => {
-            const rowData = row.slice(1);
-            const obj = {};
-            sectionHeaders.forEach((header, index) => {
-              obj[header] = rowData[index];
+          const sectionHeaders = data[tradeHistoryStart + 1].slice(1);
+
+          const tradeDataRaw = data
+            .slice(tradeHistoryStart + 2)
+            .filter(row => row.length >= sectionHeaders.length && (typeof row[1] === 'string' || typeof row[1] === 'number'))
+            .map(row => {
+              const rowData = row.slice(1);
+              const obj = {};
+              sectionHeaders.forEach((header, index) => {
+                obj[header] = rowData[index];
+              });
+              return obj;
             });
-            return obj;
+
+          transformedData = tradeDataRaw.map(row => {
+            const posEffect = row['Pos Effect'] || 'UNKNOWN';
+            const symbol = row['Symbol'] || 'UNKNOWN';
+
+            let execTime = row['Exec Time'] || 'N/A';
+            let tradeDate = 'N/A';
+            if (!isNaN(execTime)) {
+              const serialDate = parseFloat(execTime);
+              const date = XLSX.SSF.parse_date_code(serialDate);
+              tradeDate = `${date.m}/${date.d}/${date.y}`;
+              const hours = Math.floor((serialDate % 1) * 24);
+              const minutes = Math.floor(((serialDate % 1) * 24 - hours) * 60);
+              const seconds = Math.floor((((serialDate % 1) * 24 - hours) * 60 - minutes) * 60);
+              execTime = new Date(date.y, date.m - 1, date.d, hours, minutes, seconds).toISOString();
+            } else {
+              const dateTimeParts = execTime.split(' ');
+              const dateParts = dateTimeParts[0].split('/');
+              const timeParts = dateTimeParts[1].split(':');
+              const month = parseInt(dateParts[0], 10) - 1;
+              const day = parseInt(dateParts[1], 10);
+              const year = 2000 + parseInt(dateParts[2], 10);
+              const hours = parseInt(timeParts[0], 10);
+              const minutes = parseInt(timeParts[1], 10);
+              const seconds = parseInt(timeParts[2], 10);
+              execTime = new Date(year, month, day, hours, minutes, seconds).toISOString();
+              tradeDate = `${month + 1}/${day}/${year}`;
+            }
+
+            let expiration = row['Exp'] || 'N/A';
+            if (!isNaN(expiration)) {
+              const date = XLSX.SSF.parse_date_code(parseFloat(expiration));
+              expiration = `${date.d} ${date.m} ${date.y}`;
+            }
+
+            let qty = row['Qty'];
+            if (typeof qty === 'string') {
+              qty = parseInt(qty.replace('+', '')) || 0;
+            } else {
+              qty = parseInt(qty) || 0;
+            }
+
+            return {
+              ExecTime: execTime,
+              TradeDate: tradeDate,
+              Side: row['Side'] || 'N/A',
+              Quantity: qty,
+              Symbol: symbol,
+              Expiration: expiration,
+              Strike: parseFloat(row['Strike']) || 0,
+              Price: parseFloat(row['Price']) || 0,
+              OrderType: row['Order Type'] || 'N/A',
+              PosEffect: posEffect.includes('OPEN') ? 'OPEN' : posEffect.includes('CLOSE') ? 'CLOSE' : 'UNKNOWN',
+              Type: row['Type'] || 'UNKNOWN',
+            };
           });
-
-        const transformedData = tradeDataRaw.map(row => {
-          const posEffect = row['Pos Effect'] || 'UNKNOWN';
-          const symbol = row['Symbol'] || 'UNKNOWN';
-
-          let execTime = row['Exec Time'] || 'N/A';
-          let tradeDate = 'N/A';
-          if (!isNaN(execTime)) {
-            const serialDate = parseFloat(execTime);
-            const date = XLSX.SSF.parse_date_code(serialDate);
-            tradeDate = `${date.m}/${date.d}/${date.y}`;
-            const hours = Math.floor((serialDate % 1) * 24);
-            const minutes = Math.floor(((serialDate % 1) * 24 - hours) * 60);
-            const seconds = Math.floor((((serialDate % 1) * 24 - hours) * 60 - minutes) * 60);
-            execTime = new Date(date.y, date.m - 1, date.d, hours, minutes, seconds).toISOString();
-          } else {
-            const dateTimeParts = execTime.split(' ');
-            const dateParts = dateTimeParts[0].split('/');
-            const timeParts = dateTimeParts[1].split(':');
-            const month = parseInt(dateParts[0], 10) - 1;
-            const day = parseInt(dateParts[1], 10);
-            const year = 2000 + parseInt(dateParts[2], 10);
-            const hours = parseInt(timeParts[0], 10);
-            const minutes = parseInt(timeParts[1], 10);
-            const seconds = parseInt(timeParts[2], 10);
-            execTime = new Date(year, month, day, hours, minutes, seconds).toISOString();
-            tradeDate = `${month + 1}/${day}/${year}`;
-          }
-
-          let expiration = row['Exp'] || 'N/A';
-          if (!isNaN(expiration)) {
-            const date = XLSX.SSF.parse_date_code(parseFloat(expiration));
-            expiration = `${date.d} ${date.m} ${date.y}`;
-          }
-
-          let qty = row['Qty'];
-          if (typeof qty === 'string') {
-            qty = parseInt(qty.replace('+', '')) || 0;
-          } else {
-            qty = parseInt(qty) || 0;
-          }
-
-          return {
-            ExecTime: execTime,
-            TradeDate: tradeDate,
-            Side: row['Side'] || 'N/A',
-            Quantity: qty,
-            Symbol: symbol,
-            Expiration: expiration,
-            Strike: parseFloat(row['Strike']) || 0,
-            Price: parseFloat(row['Price']) || 0,
-            OrderType: row['Order Type'] || 'N/A',
-            PosEffect: posEffect.includes('OPEN') ? 'OPEN' : posEffect.includes('CLOSE') ? 'CLOSE' : 'UNKNOWN',
-            Type: row['Type'] || 'UNKNOWN',
-          };
-        });
+        }
 
         const groupedByTrade = transformedData.reduce((acc, trade, index) => {
           const groupKey = generateGroupKey(trade);
