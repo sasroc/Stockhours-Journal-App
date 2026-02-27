@@ -113,6 +113,19 @@ const getUserByCustomerId = async (customerId) => {
   return snapshot.docs[0];
 };
 
+// ── RevenueCat helpers ────────────────────────────────────────────────────
+
+const getPlanFromEntitlements = (entitlementIds = []) => {
+  if (entitlementIds.includes('pro')) return 'pro';
+  if (entitlementIds.includes('basic')) return 'basic';
+  return 'none';
+};
+
+const getIntervalFromRCProduct = (productId = '') => {
+  if (productId.includes('yearly') || productId.includes('annual')) return 'yearly';
+  return 'monthly';
+};
+
 const verifyFirebaseToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization || '';
@@ -368,6 +381,110 @@ app.post('/api/stripe/webhook', async (req, res) => {
     res.json({ received: true });
   } catch (error) {
     console.error('Webhook handler error:', error);
+    res.status(500).json({ error: 'Webhook handler failed.' });
+  }
+});
+
+// ── RevenueCat Webhook ────────────────────────────────────────────────────
+// Receives subscription lifecycle events from RevenueCat for iOS IAP subscribers.
+// Stripe webhook is kept separately for web subscribers.
+
+app.post('/api/revenuecat/webhook', async (req, res) => {
+  const crypto = require('crypto');
+  const authHeader = req.headers['authorization'];
+  const expectedSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
+
+  if (!expectedSecret) {
+    console.warn('REVENUECAT_WEBHOOK_SECRET is not set');
+    return res.status(500).json({ error: 'Webhook secret not configured.' });
+  }
+
+  // Constant-time comparison to prevent timing attacks
+  const expected = Buffer.from(expectedSecret);
+  const received = Buffer.from(authHeader || '');
+  let isValid = false;
+  if (expected.length === received.length) {
+    isValid = crypto.timingSafeEqual(expected, received);
+  }
+
+  if (!isValid) {
+    console.warn('RevenueCat webhook: invalid authorization header');
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+
+  const event = req.body;
+  const eventType = event?.event?.type;
+  const appUserId = event?.event?.app_user_id; // Firebase UID set via Purchases.logIn()
+  const entitlementIds = event?.event?.entitlement_ids || [];
+  const productId = event?.event?.product_id || '';
+
+  console.log(`RevenueCat webhook: ${eventType} for user ${appUserId}`);
+
+  if (!appUserId && eventType !== 'TRANSFER') {
+    // No UID to act on — acknowledge and skip
+    return res.json({ received: true });
+  }
+
+  try {
+    const userRef = db.collection('users').doc(appUserId);
+
+    switch (eventType) {
+      case 'INITIAL_PURCHASE':
+      case 'RENEWAL':
+      case 'PRODUCT_CHANGE': {
+        const plan = getPlanFromEntitlements(entitlementIds);
+        const isTrialing = event?.event?.period_type === 'TRIAL';
+        await updateUserSubscription(userRef, {
+          status: isTrialing ? 'trialing' : 'active',
+          plan,
+          interval: getIntervalFromRCProduct(productId),
+          stripeCustomerId: null
+        });
+        break;
+      }
+
+      case 'EXPIRATION':
+      case 'BILLING_ISSUE': {
+        await updateUserSubscription(userRef, {
+          status: 'inactive',
+          plan: 'none',
+          interval: null,
+          stripeCustomerId: null
+        });
+        break;
+      }
+
+      case 'CANCELLATION':
+        // User turned off auto-renew but still has access until period end.
+        // EXPIRATION will deactivate them — no Firestore change needed here.
+        console.log(`RevenueCat: cancellation for ${appUserId}, keeping active until expiration`);
+        break;
+
+      case 'TRANSFER': {
+        const from = event?.event?.transferred_from?.[0];
+        const to = event?.event?.transferred_to?.[0];
+        if (from) {
+          await updateUserSubscription(db.collection('users').doc(from), {
+            status: 'inactive', plan: 'none', interval: null, stripeCustomerId: null
+          });
+        }
+        if (to) {
+          const plan = getPlanFromEntitlements(entitlementIds);
+          await updateUserSubscription(db.collection('users').doc(to), {
+            status: 'active', plan, interval: getIntervalFromRCProduct(productId), stripeCustomerId: null
+          });
+        }
+        break;
+      }
+
+      default:
+        console.log(`RevenueCat webhook: unhandled event type ${eventType}`);
+        break;
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('RevenueCat webhook handler error:', error);
     res.status(500).json({ error: 'Webhook handler failed.' });
   }
 });
@@ -1552,7 +1669,9 @@ app.delete('/api/user/account', verifyFirebaseToken, async (req, res) => {
     const userRef = db.collection('users').doc(uid);
     const userSnap = await userRef.get();
 
-    // Cancel any active Stripe subscriptions before deleting
+    // Cancel any active Stripe subscriptions before deleting.
+    // iOS IAP subscribers have no stripeCustomerId — Apple manages their
+    // subscription lifecycle, so we skip Stripe cancellation for them.
     if (userSnap.exists) {
       const { stripeCustomerId } = userSnap.data();
       if (stripeCustomerId) {
