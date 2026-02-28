@@ -17,9 +17,9 @@ const PaywallScreen = () => {
     {
       id: 'basic',
       name: 'Basic',
-      monthlyPrice: 20,
-      yearlyPrice: 204,
-      yearlyMonthly: 17,
+      monthlyPrice: 10,
+      yearlyPrice: 102,
+      yearlyMonthly: 8.5,
       description: 'For trade import + analytics',
       features: [
         'Trade imports',
@@ -33,9 +33,9 @@ const PaywallScreen = () => {
     {
       id: 'pro',
       name: 'Pro',
-      monthlyPrice: 45,
-      yearlyPrice: 456,
-      yearlyMonthly: 38,
+      monthlyPrice: 25,
+      yearlyPrice: 255,
+      yearlyMonthly: 21.25,
       description: 'All Basic features + AI insights',
       features: [
         'Everything in Basic',
@@ -50,7 +50,8 @@ const PaywallScreen = () => {
 
   const getPrice = (plan) => {
     if (billingCycle === 'yearly') {
-      return `$${plan.yearlyMonthly}`;
+      const val = plan.yearlyMonthly % 1 === 0 ? plan.yearlyMonthly : plan.yearlyMonthly.toFixed(2);
+      return `$${val}`;
     }
     return `$${plan.monthlyPrice}`;
   };
