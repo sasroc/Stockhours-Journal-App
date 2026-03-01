@@ -82,7 +82,7 @@ const getTradeKey = (trade) => {
   return `${trade.Symbol}-${trade.Strike}-${trade.Expiration}-${trade.FirstBuyExecTime}`;
 };
 
-const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRatings = {} }) => {
+const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRatings = {}, tradingProfile }) => {
   const { currentUser, isPro } = useAuth();
   const [selectedReport, setSelectedReport] = useState('Overview');
   const [hoveredReport, setHoveredReport] = useState(null);
@@ -1517,7 +1517,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ stats }),
+        body: JSON.stringify({ stats, tradingProfile: tradingProfile || null }),
       });
 
       if (!response.ok) {

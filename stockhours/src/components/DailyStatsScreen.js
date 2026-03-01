@@ -22,7 +22,7 @@ import NoteModal from './NoteModal';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const DailyStatsScreen = ({ tradeData }) => {
+const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
   const [expandedDays, setExpandedDays] = useState({}); // Track which days are expanded
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedDayStats, setSelectedDayStats] = useState(null);
@@ -328,7 +328,7 @@ const DailyStatsScreen = ({ tradeData }) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ trades: tradePayload, stats, dailyNote, recentHistory }),
+        body: JSON.stringify({ trades: tradePayload, stats, dailyNote, recentHistory, tradingProfile: tradingProfile || null }),
       });
 
       if (!response.ok) {

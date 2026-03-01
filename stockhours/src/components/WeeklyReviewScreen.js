@@ -70,7 +70,7 @@ const renderInlineBold = (text) => {
   );
 };
 
-const WeeklyReviewScreen = ({ tradeData }) => {
+const WeeklyReviewScreen = ({ tradeData, tradingProfile }) => {
   const { currentUser, isPro } = useAuth();
   const [weeklyReviews, setWeeklyReviews] = useState({});
   const [loading, setLoading] = useState(false);
@@ -296,7 +296,7 @@ const WeeklyReviewScreen = ({ tradeData }) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, tradingProfile: tradingProfile || null }),
       });
 
       if (!response.ok) {

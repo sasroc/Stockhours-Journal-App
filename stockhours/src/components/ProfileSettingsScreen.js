@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
+import OnboardingModal from './OnboardingModal';
 
 const ProfileSettingsScreen = ({ currentUser, subscription }) => {
   const navigate = useNavigate();
-  const { logout, displayName, updateDisplayName } = useAuth();
+  const { logout, displayName, updateDisplayName, tradingProfile } = useAuth();
   const userEmail = currentUser?.email || 'Unknown';
   const planName = subscription?.plan || 'none';
   const statusName = subscription?.status || 'inactive';
@@ -18,6 +19,7 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
   const [nameInput, setNameInput] = useState('');
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState('');
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   const handleEditName = () => {
     setNameInput(displayName);
@@ -274,6 +276,71 @@ const ProfileSettingsScreen = ({ currentUser, subscription }) => {
           </button>
         </div>
       )}
+
+      {/* Trading Strategy */}
+      <div
+        style={{
+          marginTop: '24px',
+          backgroundColor: '#121F35',
+          borderRadius: '8px',
+          padding: '20px',
+          border: '1px solid #233350',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '16px', color: '#fff' }}>Trading Strategy</h3>
+          <button
+            onClick={() => setShowEditProfile(true)}
+            style={{
+              backgroundColor: 'transparent',
+              color: theme.colors.teal,
+              border: '1px solid ' + theme.colors.teal,
+              borderRadius: '6px',
+              padding: '4px 14px',
+              cursor: 'pointer',
+              fontSize: '13px',
+            }}
+          >
+            Edit
+          </button>
+        </div>
+        <div style={{ fontSize: '13px', color: '#8899AA', marginBottom: '8px' }}>Goals</div>
+        <div
+          style={{
+            fontSize: '14px',
+            color: tradingProfile?.goals ? '#fff' : '#555',
+            marginBottom: '16px',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {tradingProfile?.goals || 'Not set'}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div>
+            <div style={{ fontSize: '13px', color: '#8899AA', marginBottom: '4px' }}>Max loss per trade</div>
+            <div style={{ fontSize: '14px', color: '#fff' }}>
+              {[
+                tradingProfile?.maxLossPercent != null && `${tradingProfile.maxLossPercent}%`,
+                tradingProfile?.maxLossDollars != null && `$${tradingProfile.maxLossDollars}`,
+              ].filter(Boolean).join(' / ') || <span style={{ color: '#555' }}>Not set</span>}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', color: '#8899AA', marginBottom: '4px' }}>Target gain per trade</div>
+            <div style={{ fontSize: '14px', color: '#fff' }}>
+              {[
+                tradingProfile?.targetGainPercent != null && `${tradingProfile.targetGainPercent}%`,
+                tradingProfile?.targetGainDollars != null && `$${tradingProfile.targetGainDollars}`,
+              ].filter(Boolean).join(' / ') || <span style={{ color: '#555' }}>Not set</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <OnboardingModal editMode open={showEditProfile} onClose={() => setShowEditProfile(false)} />
 
       {/* Danger Zone */}
       <div

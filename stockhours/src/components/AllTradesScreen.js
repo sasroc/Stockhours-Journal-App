@@ -21,7 +21,7 @@ const getTradeKey = (trade) => {
 };
 
 // Placeholder for the detailed view
-function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistakesTags, setSetupsTags, setMistakesTags, selectedSetups, selectedMistakes, setSelectedSetups, setSelectedMistakes, setRatings, isPro, currentUser }) {
+function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistakesTags, setSetupsTags, setMistakesTags, selectedSetups, selectedMistakes, setSelectedSetups, setSelectedMistakes, setRatings, isPro, currentUser, tradingProfile }) {
   // Dummy values for fields not in trade object
   const grossPL = trade.netPL;
   const adjustedCost = (trade.entryPrice * trade.open.Quantity * 100).toFixed(2);
@@ -71,6 +71,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
             setups: selectedSetups,
             mistakes: selectedMistakes,
           },
+          tradingProfile: tradingProfile || null,
         }),
       });
       const data = await res.json();
@@ -495,7 +496,7 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
   );
 }
 
-const AllTradesScreen = ({ tradeData }) => {
+const AllTradesScreen = ({ tradeData, tradingProfile }) => {
   const location = useLocation();
   const [selectedTrade, setSelectedTrade] = useState(null);
   
@@ -738,6 +739,7 @@ const AllTradesScreen = ({ tradeData }) => {
         setRatings={setRatings}
         isPro={isPro}
         currentUser={currentUser}
+        tradingProfile={tradingProfile}
       />
     );
   }

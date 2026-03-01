@@ -36,6 +36,7 @@ import WebullCallback from './components/WebullCallback';
 import WeeklyReviewScreen from './components/WeeklyReviewScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import OnboardingModal from './components/OnboardingModal';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -69,7 +70,7 @@ const FullScreenLoader = ({ message = 'Loading...' }) => (
 );
 
 function AppRoutes() {
-  const { currentUser, loading, logout, subscription } = useAuth();
+  const { currentUser, loading, logout, subscription, tradingProfile, profileLoaded } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [tradeData, setTradeData] = useState([]);
@@ -1455,7 +1456,7 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <StatsDashboard tradeData={filteredTradeData} isMobileDevice={isMobileDevice} isHalfScreen={isHalfScreen} />
+              <StatsDashboard tradeData={filteredTradeData} isMobileDevice={isMobileDevice} isHalfScreen={isHalfScreen} tradingProfile={tradingProfile} />
             </div>
           </>
         ) : location.pathname === '/reports' ? (
@@ -1474,11 +1475,12 @@ function AppRoutes() {
                 overflow: 'hidden',
               }}
             >
-              <ReportsScreen 
-                tradeData={filteredTradeData} 
+              <ReportsScreen
+                tradeData={filteredTradeData}
                 setupsTags={setupsTags}
                 mistakesTags={mistakesTags}
                 tradeRatings={ratings}
+                tradingProfile={tradingProfile}
               />
             </div>
           </>
@@ -1513,7 +1515,7 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <DailyStatsScreen tradeData={filteredTradeData} />
+              <DailyStatsScreen tradeData={filteredTradeData} tradingProfile={tradingProfile} />
             </div>
           </>
         ) : location.pathname === '/alltrades' ? (
@@ -1530,10 +1532,11 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <AllTradesScreen 
+              <AllTradesScreen
                 tradeData={filteredTradeData}
                 ratings={ratings}
                 setRatings={setRatings}
+                tradingProfile={tradingProfile}
               />
             </div>
           </>
@@ -1567,7 +1570,7 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <WeeklyReviewScreen tradeData={filteredTradeData} />
+              <WeeklyReviewScreen tradeData={filteredTradeData} tradingProfile={tradingProfile} />
             </div>
           </>
         ) : null}
@@ -1577,7 +1580,14 @@ function AppRoutes() {
 }
 
 function AppRoutesWrapper() {
-  const { currentUser, isSubscribed, subscriptionLoading } = useAuth();
+  const { currentUser, isSubscribed, subscriptionLoading, tradingProfile: wrapperTradingProfile, profileLoaded: wrapperProfileLoaded } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (wrapperProfileLoaded && currentUser && !wrapperTradingProfile?.onboardingCompleted) {
+      setShowOnboarding(true);
+    }
+  }, [wrapperProfileLoaded, currentUser, wrapperTradingProfile]);
 
   const HomeRoute = () => {
     if (!currentUser) {
@@ -1590,8 +1600,10 @@ function AppRoutesWrapper() {
   };
 
   return (
-    <Routes>
-      <Route path="/" element={<HomeRoute />} />
+    <>
+      <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <Routes>
+        <Route path="/" element={<HomeRoute />} />
       <Route path="/home" element={<MarketingLanding />} />
       <Route path="/pricing" element={<PricingScreen />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -1608,7 +1620,8 @@ function AppRoutesWrapper() {
       <Route path="/callback/schwab" element={<ProtectedRoute requireSubscription={false}><SchwabCallback /></ProtectedRoute>} />
       <Route path="/callback/webull" element={<ProtectedRoute requireSubscription={false}><WebullCallback /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 

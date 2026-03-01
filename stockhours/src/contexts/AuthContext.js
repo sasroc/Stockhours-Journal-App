@@ -25,6 +25,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState({ status: 'inactive', plan: 'none' });
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [tradingProfile, setTradingProfile] = useState(undefined);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   const getDefaultSubscription = () => ({
     status: 'inactive',
@@ -68,16 +70,23 @@ export function AuthProvider({ children }) {
             if (!userData.subscription) {
               await updateDoc(userDocRef, { subscription: { ...getDefaultSubscription(), updatedAt: serverTimestamp() } });
             }
+            setTradingProfile(userData.tradingProfile || null);
           } else {
             setDisplayName(user.displayName || '');
             setSubscription(getDefaultSubscription());
+            setTradingProfile(null);
           }
+          setProfileLoaded(true);
         } catch (error) {
           console.error('Error fetching user data:', error);
           setSubscription(getDefaultSubscription());
+          setTradingProfile(null);
+          setProfileLoaded(true);
         }
       } else {
         setSubscription(getDefaultSubscription());
+        setTradingProfile(null);
+        setProfileLoaded(false);
       }
       setCurrentUser(user);
       setLoading(false);
@@ -193,6 +202,20 @@ export function AuthProvider({ children }) {
   const isSubscribed = subscription.status === 'active' || subscription.status === 'trialing';
   const isPro = isSubscribed && subscription.plan === 'pro';
 
+  const refreshTradingProfile = async () => {
+    if (!currentUser) return;
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setTradingProfile(userData.tradingProfile || null);
+      }
+    } catch (error) {
+      console.error('Error refreshing trading profile:', error);
+    }
+  };
+
   const refreshSubscription = async () => {
     if (!currentUser) return;
     setSubscriptionLoading(true);
@@ -229,7 +252,10 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     signUpWithApple,
     logout,
-    resetPassword
+    resetPassword,
+    tradingProfile,
+    profileLoaded,
+    refreshTradingProfile,
   };
 
   return (
