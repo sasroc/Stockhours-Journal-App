@@ -70,7 +70,7 @@ const FullScreenLoader = ({ message = 'Loading...' }) => (
 );
 
 function AppRoutes() {
-  const { currentUser, loading, logout, subscription, tradingProfile, profileLoaded } = useAuth();
+  const { currentUser, loading, logout, subscription, tradingProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [tradeData, setTradeData] = useState([]);
