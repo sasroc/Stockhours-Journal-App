@@ -7,6 +7,7 @@ import reportWebVitals from './reportWebVitals';
 
 Sentry.init({
   dsn: process.env.REACT_APP_SENTRY_DSN,
+  tunnel: 'https://tradebetter-backend-production.up.railway.app/api/sentry-tunnel',
   environment: process.env.NODE_ENV,
   enabled: !!process.env.REACT_APP_SENTRY_DSN,
   tracesSampleRate: 1.0,

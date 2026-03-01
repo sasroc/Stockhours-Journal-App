@@ -146,6 +146,25 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true });
 });
 
+// Sentry tunnel — proxies frontend Sentry events through the backend to bypass ad blockers
+app.post('/api/sentry-tunnel', express.raw({ type: 'text/plain' }), async (req, res) => {
+  try {
+    const envelope = req.body.toString();
+    const header = JSON.parse(envelope.split('\n')[0]);
+    const dsn = new URL(header['dsn']);
+    const projectId = dsn.pathname.replace('/', '');
+    const sentryRes = await fetch(`https://${dsn.host}/api/${projectId}/envelope/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: envelope,
+    });
+    res.status(sentryRes.status).end();
+  } catch (e) {
+    console.error('Sentry tunnel error:', e);
+    res.status(400).end();
+  }
+});
+
 app.post('/api/stripe/checkout', verifyFirebaseToken, async (req, res) => {
   try {
     const { plan, billing = 'monthly' } = req.body;

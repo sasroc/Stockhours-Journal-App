@@ -48,9 +48,7 @@ Both must run simultaneously for full functionality. Frontend requires `HTTPS=tr
 Key frontend libraries: **Chart.js** (`react-chartjs-2`) for all data visualizations, **xlsx** for client-side CSV/Excel parsing, **date-fns** for date math, **react-icons** for icons, **styled-components** + inline styles for UI.
 
 ### Navigation Model
-The app has two layers of routing:
-1. **React Router** (`react-router-dom` v7) — handles public routes (`/`, `/home`, `/login`, `/pricing`, `/privacy`, `/terms`) and broker OAuth callbacks (`/callback/schwab`, `/callback/webull`)
-2. **Sidebar `setCurrentScreen` state in `App.js`** — authenticated app screens (`dashboard`, `reports`, `alltrades`, `dailystats`, `imports`, `settings`, `weekly-reviews`) are rendered via state switching, not URL navigation. The URL does not change when navigating between app screens.
+React Router (`react-router-dom` v7) handles all routing. Authenticated app screens each have their own URL path (`/dashboard`, `/reports`, `/alltrades`, `/dailystats`, `/imports`, `/settings`, `/weekly-reviews`) — all map to the same `<AppRoutes>` component. `AppRoutes` reads `location.pathname` to decide which screen to render. `setCurrentScreen` in `App.js` tracks only the header title string and does not drive rendering.
 
 ### Frontend → Backend Communication
 - API base URL: `process.env.REACT_APP_STRIPE_API_URL` (e.g., `http://localhost:4242`)
@@ -82,8 +80,10 @@ Broker OAuth tokens live in subcollections: `users/{uid}/schwabTokens/primary` a
 ### Key Architectural Notes
 - `FRONTEND_URL` env var is **comma-separated** (for CORS). Use `primaryFrontendUrl` (first entry, split on `,`) for Stripe redirect URLs — never the raw env var.
 - AI endpoints (`/api/ai/*`) are rate-limited to 25 req/hour per user via `express-rate-limit`, and require Pro subscription.
-- Trade data is processed entirely on the frontend from raw CSV/broker data. `App.js` handles all trade grouping, P&L computation, and filtering logic.
+- Trade data is processed entirely on the frontend from raw CSV/broker data. `App.js` handles all trade grouping, P&L computation, and filtering logic via `generateGroupKey` (groups executions into trade round-trips by symbol+expiry+strike+type+date).
+- Supported CSV import formats: **thinkorswim** (auto-detected) and **IBKR Activity Statement** (detected when row[0]==='Trades' && row[1]==='Header').
 - Schwab sync fetches last 60 days and uses `_schwabActivityId` for deduplication when merging with existing trades.
+- RevenueCat webhook (`POST /api/revenuecat/webhook`) writes to the same `subscription` field as Stripe. `REVENUECAT_WEBHOOK_SECRET` must be set in `backend/.env`.
 - Several components are very large (`ReportsScreen.js` ~102KB, `StatsDashboard.js` ~67KB, `App.js` and `server.js` each ~56KB). Read selectively.
 
 ## Theme & Styling
@@ -110,7 +110,8 @@ colors: {
 |---|---|
 | Firebase Auth | Email/password, Google, Apple sign-in |
 | Firestore | All user/trade data storage |
-| Stripe | Subscriptions (Basic $20/mo, Pro $45/mo; yearly discounts) |
+| Stripe | Web subscriptions (Basic $10/mo or $102/yr; Pro $25/mo or $255/yr) |
+| RevenueCat | iOS subscriptions via Apple IAP — same Firestore schema as Stripe (`users/{uid}/subscription`) |
 | OpenAI GPT-4o | AI trade review, daily debrief, pattern detection, weekly review |
 | Schwab API | OAuth broker connection, trade sync |
 | Webull API | OAuth broker connection, trade sync |
