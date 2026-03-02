@@ -29,6 +29,7 @@ Both must run simultaneously for full functionality. Frontend requires `HTTPS=tr
 - Firebase config: `REACT_APP_FIREBASE_API_KEY`, `REACT_APP_FIREBASE_AUTH_DOMAIN`, `REACT_APP_FIREBASE_PROJECT_ID`, `REACT_APP_FIREBASE_STORAGE_BUCKET`, `REACT_APP_FIREBASE_MESSAGING_SENDER_ID`, `REACT_APP_FIREBASE_APP_ID`
 - `REACT_APP_SCHWAB_CLIENT_ID`, `REACT_APP_SCHWAB_REDIRECT_URI`
 - `REACT_APP_WEBULL_CLIENT_ID`, `REACT_APP_WEBULL_REDIRECT_URI`
+- `REACT_APP_SENTRY_DSN` — optional; enables Sentry error tracking (tunneled through production backend to bypass ad blockers)
 
 **`backend/.env`**:
 - `PORT=4242`
@@ -38,6 +39,8 @@ Both must run simultaneously for full functionality. Frontend requires `HTTPS=tr
 - `SCHWAB_CLIENT_ID`, `SCHWAB_CLIENT_SECRET`, `SCHWAB_REDIRECT_URI`
 - `WEBULL_CLIENT_ID`, `WEBULL_CLIENT_SECRET`, `WEBULL_REDIRECT_URI`
 - `OPENAI_API_KEY`
+- `SENTRY_DSN` — optional; enables Sentry on the backend
+- `REVENUECAT_WEBHOOK_SECRET` — required for iOS subscription webhooks
 
 ## Architecture
 
@@ -45,7 +48,7 @@ Both must run simultaneously for full functionality. Frontend requires `HTTPS=tr
 - `stockhours/` — React 19 frontend (Create React App)
 - `backend/` — Express.js API server (`server.js` is the single file containing all endpoints)
 
-Key frontend libraries: **Chart.js** (`react-chartjs-2`) for all data visualizations, **xlsx** for client-side CSV/Excel parsing, **date-fns** for date math, **react-icons** for icons, **styled-components** + inline styles for UI.
+Key frontend libraries: **Chart.js** (`react-chartjs-2`) for all data visualizations, **xlsx** for client-side CSV/Excel parsing, **date-fns** for date math, **react-icons** for icons, **react-quill** for rich-text notes editing, **styled-components** + inline styles for UI.
 
 ### Navigation Model
 React Router (`react-router-dom` v7) handles all routing. Authenticated app screens each have their own URL path (`/dashboard`, `/reports`, `/alltrades`, `/dailystats`, `/imports`, `/settings`, `/weekly-reviews`) — all map to the same `<AppRoutes>` component. `AppRoutes` reads `location.pathname` to decide which screen to render. `setCurrentScreen` in `App.js` tracks only the header title string and does not drive rendering.
@@ -57,7 +60,7 @@ React Router (`react-router-dom` v7) handles all routing. Authenticated app scre
 
 ### State Management
 No Redux. State lives in:
-1. `AuthContext` (`src/contexts/AuthContext.js`) — auth user, subscription status/plan
+1. `AuthContext` (`src/contexts/AuthContext.js`) — auth user, subscription status/plan, trading profile. Exposes `isPro`, `isSubscribed`, `subscriptionPlan`, `tradingProfile`, `profileLoaded`, `refreshTradingProfile`.
 2. `App.js` — global trade data, date range filter, tags, ratings (passed as props to all screens)
 
 ### Data Storage — Firestore
@@ -68,6 +71,7 @@ All user data in a single `users/{uid}` document:
 - `notes` — `{ [dateString]: noteText }`
 - `patternInsights` — persisted AI pattern detection results
 - `setupsTags`, `mistakesTags` — user-defined tag arrays
+- `tradingProfile` — `{ goals: string[], maxLossPercent, targetGainPercent, onboardingCompleted }` — set during onboarding, injected into all AI prompts
 
 Broker OAuth tokens live in subcollections: `users/{uid}/schwabTokens/primary` and `users/{uid}/webullTokens/primary`.
 
@@ -116,6 +120,7 @@ colors: {
 | Schwab API | OAuth broker connection, trade sync |
 | Webull API | OAuth broker connection, trade sync |
 | TradingView | Embedded chart widget in trade detail view |
+| Sentry | Error monitoring — frontend (`@sentry/react`) tunnels events through `POST /api/sentry-tunnel` on the backend to bypass ad blockers |
 
 ## AI Features (all Pro-only, GPT-4o)
 1. **Trade Review** — `POST /api/ai/trade-review` — per-trade coaching
