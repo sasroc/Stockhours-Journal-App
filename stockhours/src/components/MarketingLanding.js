@@ -81,11 +81,65 @@ const processItems = [
   },
 ];
 
+const faqItems = [
+  {
+    q: 'What brokers can I connect to TradeBetter?',
+    a: 'TradeBetter currently supports direct OAuth connections with Charles Schwab and Webull, which automatically sync your recent trades. You can also manually import CSV exports from thinkorswim (TD Ameritrade) and Interactive Brokers (IBKR Activity Statements). Additional broker support is on our roadmap.',
+  },
+  {
+    q: 'What file formats are supported for importing trades?',
+    a: 'We support CSV exports from thinkorswim and IBKR Activity Statements out of the box — just drop the file in and TradeBetter auto-detects the format. For brokers with OAuth support (Schwab, Webull), you can skip the file entirely and sync directly from your account.',
+  },
+  {
+    q: 'Can I cancel my subscription at any time?',
+    a: 'Yes — no contracts, no cancellation fees. For web subscriptions, cancel from Settings → Subscription and your access continues through the end of the current billing period. For iOS subscriptions, manage billing through your Apple ID in the App Store. Your data stays intact either way.',
+  },
+  {
+    q: "What's the difference between Basic and Pro?",
+    a: 'Basic gives you full access to trade imports, the dashboard, daily stats, all-trades view, and reports — everything you need to analyze your trading history. Pro adds all four AI features (Trade Review, Daily Debrief, Pattern Detection, and Weekly Review), unlimited broker connections, and priority support.',
+  },
+  {
+    q: 'How does the AI work and what can it actually tell me?',
+    a: 'TradeBetter uses GPT-4o to analyze your actual trade data — not generic advice. The AI Trade Review coaches you on individual trades, Daily Debrief summarizes your session against your stated goals, Pattern Detection surfaces behavioral trends across your full history, and Weekly Review turns your numbers into a focused plan for the week ahead. All AI features are Pro-only.',
+  },
+  {
+    q: 'Is my trading data private and secure?',
+    a: 'Yes. Your trade data is stored in your own private Firestore document and is never shared with other users or sold to third parties. Broker OAuth tokens are encrypted at rest. TradeBetter never has direct access to execute trades — connections are read-only for transaction history.',
+  },
+  {
+    q: 'Can I use TradeBetter on my iPhone or iPad?',
+    a: 'Yes — TradeBetter is available as a native iOS app on the App Store, built for iPhone and iPad. The iOS app is in sync with the web app and uses the same account, so your journal is available across all your devices.',
+  },
+  {
+    q: 'Does TradeBetter support stocks and futures, or just options?',
+    a: 'TradeBetter is purpose-built for options traders. The trade grouping, P&L computation, and analytics are all designed around options round-trips (entry to exit by symbol, strike, expiry, and type). Stock and futures imports may parse but the analysis is optimized for options.',
+  },
+  {
+    q: 'Can I export my journal data?',
+    a: 'Your trade data can be exported directly from the Imports screen. We provide CSV export so you always have a portable copy of your journal — no lock-in.',
+  },
+  {
+    q: 'How often should I sync my broker account?',
+    a: "Schwab and Webull syncs pull the last 60 days of transactions each time, so syncing after each trading session or once a day keeps your journal current. The sync uses a unique activity ID to deduplicate, so running it multiple times won't create duplicate trades.",
+  },
+  {
+    q: 'What happens to my data if I cancel my subscription?',
+    a: 'Your account and all trade data remain intact. You lose access to Pro features (AI and multiple broker connections), but everything you imported stays in your journal. You can resubscribe at any time and pick up right where you left off.',
+  },
+  {
+    q: 'How do I cancel my subscription?',
+    a: 'Go to Settings → Subscription and click "Manage Subscription." For web (Stripe) billing, cancellation takes effect at the end of your current billing period. For iOS subscribers, manage billing directly through your Apple ID in the App Store settings.',
+  },
+];
+
 const MarketingLanding = () => {
   const navigate = useNavigate();
   const { currentUser, displayName, logout } = useAuth();
   const [activeShotIndex, setActiveShotIndex] = useState(0);
   const activeShot = screenshotItems[activeShotIndex];
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
+
+  const visibleFaqs = faqItems.slice(0, 6);
 
   return (
     <div className="ml-root">
@@ -581,6 +635,155 @@ const MarketingLanding = () => {
           }
 
 
+          .ml-faq-section {
+            margin-top: 80px;
+            margin-bottom: 76px;
+          }
+
+          .ml-faq-header {
+            text-align: center;
+            margin-bottom: 40px;
+          }
+
+          .ml-faq-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            letter-spacing: 0.4px;
+            font-weight: 600;
+            color: #2DD4BF;
+            background: rgba(45, 212, 191, 0.08);
+            border: 1px solid rgba(45, 212, 191, 0.22);
+            margin-bottom: 18px;
+          }
+
+          .ml-faq-list {
+            max-width: 780px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+
+          .ml-faq-item {
+            border-radius: 14px;
+            border: 1px solid rgba(118, 140, 168, 0.22);
+            background: linear-gradient(180deg, rgba(13, 19, 33, 0.88) 0%, rgba(9, 13, 23, 0.92) 100%);
+            overflow: hidden;
+            transition: border-color 0.25s ease;
+          }
+
+          .ml-faq-item.open {
+            border-color: rgba(45, 212, 191, 0.35);
+            background: linear-gradient(180deg, rgba(45, 212, 191, 0.05) 0%, rgba(9, 13, 23, 0.92) 100%);
+          }
+
+          .ml-faq-trigger {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 20px 22px;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            font-family: inherit;
+          }
+
+          .ml-faq-trigger:hover .ml-faq-q {
+            color: #e8f1fb;
+          }
+
+          .ml-faq-q {
+            font-size: 15.5px;
+            font-weight: 600;
+            color: #ccdaea;
+            line-height: 1.4;
+            letter-spacing: -0.1px;
+            transition: color 0.2s;
+          }
+
+          .ml-faq-icon {
+            flex-shrink: 0;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            border: 1px solid rgba(100, 140, 185, 0.3);
+            background: rgba(20, 30, 50, 0.7);
+            display: grid;
+            place-items: center;
+            transition: all 0.25s ease;
+          }
+
+          .ml-faq-item.open .ml-faq-icon {
+            background: rgba(45, 212, 191, 0.14);
+            border-color: rgba(45, 212, 191, 0.4);
+          }
+
+          .ml-faq-icon svg {
+            transition: transform 0.3s ease;
+          }
+
+          .ml-faq-item.open .ml-faq-icon svg {
+            transform: rotate(45deg);
+          }
+
+          .ml-faq-body {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.35s ease, opacity 0.25s ease;
+            opacity: 0;
+          }
+
+          .ml-faq-item.open .ml-faq-body {
+            max-height: 300px;
+            opacity: 1;
+          }
+
+          .ml-faq-answer {
+            padding: 0 22px 20px;
+            color: #8ba4be;
+            font-size: 14.5px;
+            line-height: 1.72;
+            border-top: 1px solid rgba(100, 130, 165, 0.14);
+            padding-top: 16px;
+          }
+
+          .ml-faq-view-all {
+            margin-top: 28px;
+            display: flex;
+            justify-content: center;
+          }
+
+          .ml-faq-view-all-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 28px;
+            border-radius: 12px;
+            font-size: 14.5px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.22s ease;
+            border: 1px solid rgba(130, 160, 195, 0.35);
+            background: rgba(10, 16, 28, 0.7);
+            color: #c8d8ec;
+            letter-spacing: 0.1px;
+          }
+
+          .ml-faq-view-all-btn:hover {
+            border-color: rgba(45, 212, 191, 0.5);
+            background: rgba(45, 212, 191, 0.07);
+            color: #e5f2fb;
+            transform: translateY(-1px);
+          }
+
           @media (max-width: 1080px) {
             .ml-hero {
               grid-template-columns: 1fr;
@@ -701,6 +904,19 @@ const MarketingLanding = () => {
             }}
           >
             Pricing
+          </button>
+          <button
+            onClick={() => navigate('/faq')}
+            style={{
+              background: 'none',
+              border: '1px solid #333',
+              color: theme.colors.white,
+              padding: '8px 16px',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            FAQ
           </button>
           {currentUser ? (
             <>
@@ -962,6 +1178,59 @@ const MarketingLanding = () => {
           </div>
         </section>
 
+        {/* ── FAQ ── */}
+        <section className="ml-faq-section">
+          <div className="ml-faq-header">
+            <div className="ml-faq-eyebrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              FAQ
+            </div>
+            <h2 className="ml-h2">Questions we hear most</h2>
+            <p className="ml-p" style={{ maxWidth: '520px', margin: '0 auto' }}>
+              Everything you need to know before getting started — from imports and brokers to billing and data security.
+            </p>
+          </div>
+
+          <div className="ml-faq-list">
+            {visibleFaqs.map((item, index) => {
+              const isOpen = openFaqIndex === index;
+              return (
+                <div key={index} className={`ml-faq-item${isOpen ? ' open' : ''}`}>
+                  <button
+                    className="ml-faq-trigger"
+                    onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                    aria-expanded={isOpen}
+                  >
+                    <span className="ml-faq-q">{item.q}</span>
+                    <span className="ml-faq-icon">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isOpen ? '#2DD4BF' : '#7a98b8'} strokeWidth="2.5" strokeLinecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                      </svg>
+                    </span>
+                  </button>
+                  <div className="ml-faq-body" aria-hidden={!isOpen}>
+                    <p className="ml-faq-answer">{item.a}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="ml-faq-view-all">
+            <button
+              className="ml-faq-view-all-btn"
+              onClick={() => navigate('/faq')}
+            >
+              View all FAQs
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+        </section>
+
       </main>
 
       {/* ── Footer ── */}
@@ -1028,6 +1297,7 @@ const MarketingLanding = () => {
               {[
                 { label: 'Features', action: () => {} },
                 { label: 'Pricing', action: () => navigate('/pricing') },
+                { label: 'FAQ', action: () => navigate('/faq') },
                 { label: 'Sign in', action: () => navigate('/login') },
                 { label: 'Get started', action: () => navigate(currentUser ? '/paywall' : '/login') },
               ].map(({ label, action }) => (

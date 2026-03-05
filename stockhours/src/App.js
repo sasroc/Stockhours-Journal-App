@@ -36,6 +36,7 @@ import WebullCallback from './components/WebullCallback';
 import WeeklyReviewScreen from './components/WeeklyReviewScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import FAQScreen from './components/FAQScreen';
 import OnboardingModal from './components/OnboardingModal';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -1608,6 +1609,7 @@ function AppRoutesWrapper() {
       <Route path="/pricing" element={<PricingScreen />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/faq" element={<FAQScreen />} />
       <Route path="/login" element={<Login />} />
       <Route path="/paywall" element={<ProtectedRoute requireSubscription={false}><PaywallScreen /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
