@@ -45,13 +45,32 @@ Both must run simultaneously for full functionality. Frontend requires `HTTPS=tr
 ## Architecture
 
 **Monorepo** with two independently-runnable apps:
-- `stockhours/` — React 19 frontend (Create React App)
+- `stockhours/` — React 19 frontend (Create React App), deployed to Netlify (`public/_redirects` rewrites all paths to `index.html` for SPA routing)
 - `backend/` — Express.js API server (`server.js` is the single file containing all endpoints)
+
+Frontend source layout: `src/App.js` (entry, trade data/state), `src/components/` (all screens and UI components), `src/contexts/AuthContext.js`, `src/firebase.js` (Firebase client init), `src/theme.js`.
 
 Key frontend libraries: **Chart.js** (`react-chartjs-2`) for all data visualizations, **xlsx** for client-side CSV/Excel parsing, **date-fns** for date math, **react-icons** for icons, **react-quill** for rich-text notes editing, **styled-components** + inline styles for UI.
 
 ### Navigation Model
-React Router (`react-router-dom` v7) handles all routing. Authenticated app screens each have their own URL path (`/dashboard`, `/reports`, `/alltrades`, `/dailystats`, `/imports`, `/settings`, `/weekly-reviews`) — all map to the same `<AppRoutes>` component. `AppRoutes` reads `location.pathname` to decide which screen to render. `setCurrentScreen` in `App.js` tracks only the header title string and does not drive rendering.
+React Router (`react-router-dom` v7) handles all routing. `setCurrentScreen` in `App.js` tracks only the header title string and does not drive rendering.
+
+**Public routes** (no auth required):
+- `/` or `/home` → `MarketingLanding`
+- `/pricing` → `PricingScreen`
+- `/faq` → `FAQScreen`
+- `/privacy`, `/terms` → legal pages
+- `/login` → login screen
+
+**Protected authenticated routes** (wrapped in `<ProtectedRoute>`, all render via `<AppRoutes>`):
+- `/dashboard`, `/reports`, `/alltrades`, `/dailystats`, `/imports`, `/settings`, `/weekly-reviews`
+- `AppRoutes` reads `location.pathname` to decide which screen component to render
+
+**Other protected routes**:
+- `/paywall` → `PaywallScreen` (auth required but no subscription check)
+- `/callback/schwab`, `/callback/webull` → OAuth callback handlers (auth required, no subscription check)
+
+Unmatched paths redirect to `/`.
 
 ### Frontend → Backend Communication
 - API base URL: `process.env.REACT_APP_STRIPE_API_URL` (e.g., `http://localhost:4242`)

@@ -109,7 +109,7 @@ const ImportsScreen = ({ uploadedFiles, onDeleteFile, currentUser, onSchwabSync,
   }, [currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleConnect = () => {
-    const authUrl = `https://api.schwabapi.com/v1/oauth/authorize?client_id=${encodeURIComponent(schwabClientId)}&redirect_uri=${encodeURIComponent(schwabRedirectUri)}`;
+    const authUrl = `https://api.schwabapi.com/v1/oauth/authorize?client_id=${encodeURIComponent(schwabClientId)}&redirect_uri=${encodeURIComponent(schwabRedirectUri)}&response_type=code`;
     window.location.assign(authUrl);
   };
 
