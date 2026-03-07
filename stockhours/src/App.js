@@ -1571,7 +1571,7 @@ function AppRoutes() {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
               }}
             >
-              <WeeklyReviewScreen tradeData={filteredTradeData} tradingProfile={tradingProfile} />
+              <WeeklyReviewScreen tradeData={filteredTradeData} tradingProfile={tradingProfile} tradeRatings={ratings} />
             </div>
           </>
         ) : null}

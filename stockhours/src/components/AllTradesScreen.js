@@ -467,24 +467,38 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
                 return <div key={i} style={{ marginBottom: 4 }}>{parts.map((p, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#e2eaf4', fontWeight: 600 }}>{p}</strong> : <span key={j}>{p}</span>)}</div>;
               })}
             </div>
+            {selectedSetups.length === 0 && selectedMistakes.length === 0 && (
+              <div style={{ padding: '10px 22px 12px', borderTop: '1px solid rgba(45,212,191,0.08)', background: 'rgba(45,212,191,0.03)', display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12 }}>
+                <span>💡</span>
+                <span style={{ color: '#6b8fa8' }}>Tag this trade's setups & mistakes above — your next review will be more specific.</span>
+              </div>
+            )}
           </div>
         ) : isPro ? (
-          <button
-            onClick={handleAIReview}
-            style={{
-              background: 'linear-gradient(135deg, #2DD4BF 0%, #6366f1 100%)',
-              color: '#fff', border: 'none', borderRadius: 12, padding: '13px 26px',
-              fontWeight: 700, fontSize: 14, cursor: 'pointer',
-              display: 'inline-flex', alignItems: 'center', gap: 9,
-              boxShadow: '0 4px 20px rgba(45,212,191,0.22), 0 2px 8px rgba(99,102,241,0.18)',
-              transition: 'all 0.22s ease', letterSpacing: 0.2,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 7px 28px rgba(45,212,191,0.32), 0 4px 14px rgba(99,102,241,0.26)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(45,212,191,0.22), 0 2px 8px rgba(99,102,241,0.18)'; }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            AI Trade Review
-          </button>
+          <>
+            {selectedSetups.length === 0 && selectedMistakes.length === 0 && (
+              <div style={{ marginBottom: 10, padding: '8px 12px', background: 'rgba(45,212,191,0.06)', border: '1px solid rgba(45,212,191,0.18)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: '#8ab4c8' }}>
+                <span>⚡</span>
+                <span>Add setup and mistake tags above for more targeted AI coaching.</span>
+              </div>
+            )}
+            <button
+              onClick={handleAIReview}
+              style={{
+                background: 'linear-gradient(135deg, #2DD4BF 0%, #6366f1 100%)',
+                color: '#fff', border: 'none', borderRadius: 12, padding: '13px 26px',
+                fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 9,
+                boxShadow: '0 4px 20px rgba(45,212,191,0.22), 0 2px 8px rgba(99,102,241,0.18)',
+                transition: 'all 0.22s ease', letterSpacing: 0.2,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 7px 28px rgba(45,212,191,0.32), 0 4px 14px rgba(99,102,241,0.26)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(45,212,191,0.22), 0 2px 8px rgba(99,102,241,0.18)'; }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              AI Trade Review
+            </button>
+          </>
         ) : (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '12px 18px', color: '#4a5e72', fontSize: 13.5 }}>
             <span style={{ fontSize: 14 }}>🔒</span>

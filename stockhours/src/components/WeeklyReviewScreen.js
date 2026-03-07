@@ -70,7 +70,10 @@ const renderInlineBold = (text) => {
   );
 };
 
-const WeeklyReviewScreen = ({ tradeData, tradingProfile }) => {
+const getTradeKey = (trade) =>
+  `${trade.Symbol}-${trade.Strike}-${trade.Expiration}-${trade.FirstBuyExecTime}`;
+
+const WeeklyReviewScreen = ({ tradeData, tradingProfile, tradeRatings = {} }) => {
   const { currentUser, isPro } = useAuth();
   const [weeklyReviews, setWeeklyReviews] = useState({});
   const [loading, setLoading] = useState(false);
@@ -385,13 +388,27 @@ const WeeklyReviewScreen = ({ tradeData, tradingProfile }) => {
     );
   }
 
+  const totalTrades = trades.length;
+  const untaggedTotal = trades.filter(t => {
+    const r = tradeRatings[getTradeKey(t)] || {};
+    return !r.setups?.length && !r.mistakes?.length;
+  }).length;
+
   return (
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
       <style>{`@keyframes aiSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
 
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
-        <span style={{ fontSize: '24px', marginRight: '10px' }}>&#10024;</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '24px' }}>&#10024;</span>
         <h2 style={{ color: '#fff', margin: 0, fontSize: '22px', fontWeight: '600' }}>Weekly Reviews</h2>
+        {isPro && totalTrades > 0 && untaggedTotal > 0 && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(45,212,191,0.06)', border: '1px solid rgba(45,212,191,0.18)', borderRadius: '20px', padding: '3px 10px', fontSize: '12px', color: '#8ab4c8' }}>
+            <span>⚡</span>
+            {untaggedTotal === totalTrades
+              ? 'Tag setups & mistakes on your trades for a richer AI review'
+              : `${untaggedTotal} of ${totalTrades} trades untagged — tag setups & mistakes for richer AI reviews`}
+          </span>
+        )}
       </div>
 
       {error && (

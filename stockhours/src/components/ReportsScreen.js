@@ -2254,6 +2254,10 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       }
 
       // Insights loaded
+      const taggedForPatternLoaded = tagProcessedTrades.filter(t => t.setupTags.length > 0 || t.mistakeTags.length > 0).length;
+      const totalForPatternLoaded = tagProcessedTrades.length;
+      const coveragePctLoaded = totalForPatternLoaded > 0 ? Math.round((taggedForPatternLoaded / totalForPatternLoaded) * 100) : 0;
+
       if (patternInsights) {
         return (
           <div style={{ marginTop: '20px' }}>
@@ -2299,12 +2303,24 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
                   return <div key={i} style={{ marginBottom: '4px' }}>{line}</div>;
                 })}
               </div>
+              {totalForPatternLoaded > 0 && coveragePctLoaded < 60 && (
+                <div style={{ padding: '10px 22px 12px', borderTop: '1px solid rgba(45,212,191,0.08)', background: 'rgba(45,212,191,0.03)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                  <span>💡</span>
+                  <span style={{ color: '#6b8fa8' }}>
+                    Only <strong style={{ color: '#8ab4c8' }}>{coveragePctLoaded}%</strong> of your trades have setup or mistake tags ({taggedForPatternLoaded}/{totalForPatternLoaded}). Tag more trades to unlock deeper pattern analysis.
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         );
       }
 
       // No insights yet — show generate button
+      const taggedForPattern = tagProcessedTrades.filter(t => t.setupTags.length > 0 || t.mistakeTags.length > 0).length;
+      const totalForPattern = tagProcessedTrades.length;
+      const coveragePct = totalForPattern > 0 ? Math.round((taggedForPattern / totalForPattern) * 100) : 0;
+
       return (
         <div style={{ marginTop: '20px' }}>
           <div style={{ background: 'linear-gradient(160deg, rgba(10,20,42,0.96) 0%, rgba(12,18,38,0.96) 100%)', borderRadius: '16px', padding: '44px 30px', border: '1px solid rgba(45,212,191,0.12)', textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
@@ -2318,6 +2334,17 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
             <div style={{ color: '#6b7f96', fontSize: '13.5px', marginBottom: '28px', maxWidth: '380px', margin: '0 auto 28px', lineHeight: 1.65 }}>
               AI analyzes your full trade history to surface behavioral insights, timing edges, and strategy effectiveness.
             </div>
+            {totalForPattern > 0 && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: coveragePct < 50 ? 'rgba(45,212,191,0.05)' : 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.18)', borderRadius: '10px', padding: '9px 16px', marginBottom: '22px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: '#8ab4c8' }}>Tag coverage:</span>
+                  <span style={{ color: coveragePct >= 50 ? '#2DD4BF' : '#8ab4c8', fontWeight: 700 }}>{taggedForPattern}/{totalForPattern} trades ({coveragePct}%)</span>
+                </div>
+                {coveragePct < 50 && (
+                  <span style={{ color: '#6b7f96', fontSize: '12px' }}>— tag more setups & mistakes for richer patterns</span>
+                )}
+              </div>
+            )}
             <button
               onClick={handlePatternDetection}
               disabled={processedTrades.length === 0}

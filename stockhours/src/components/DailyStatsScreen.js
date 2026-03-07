@@ -445,9 +445,26 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
   };
 
   // Calculate metrics and render each day's box
+  const allDayTrades = Object.values(dailyTrades).flat();
+  const totalAllTrades = allDayTrades.length;
+  const untaggedAllTrades = allDayTrades.filter(t => {
+    const r = ratings[getTradeKey(t)] || {};
+    return !r.setups?.length && !r.mistakes?.length;
+  }).length;
+
   return (
     <div style={{ padding: '20px', backgroundColor: theme.colors.black }}>
       <style>{`@keyframes aiSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      {isPro && totalAllTrades > 0 && untaggedAllTrades > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 14px', marginBottom: '16px', background: 'rgba(45,212,191,0.05)', border: '1px solid rgba(45,212,191,0.15)', borderRadius: '10px', fontSize: '12.5px', color: '#8ab4c8' }}>
+          <span>⚡</span>
+          <span>
+            {untaggedAllTrades === totalAllTrades
+              ? 'Tag your trades with setups & mistakes to get richer AI debriefs.'
+              : `${untaggedAllTrades} of ${totalAllTrades} trades have no tags — add setups & mistakes for richer AI debriefs.`}
+          </span>
+        </div>
+      )}
       {Object.keys(dailyTrades)
         .sort((a, b) => new Date(b) - new Date(a)) // Sort by date descending
         .map(date => {
@@ -852,6 +869,20 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
                       return <div key={i} style={{ marginBottom: '4px' }}>{parts.map((part, j) => j % 2 === 1 ? <strong key={j} style={{ color: '#e2eaf4', fontWeight: 600 }}>{part}</strong> : <span key={j}>{part}</span>)}</div>;
                     })}
                   </div>
+                  {(() => {
+                    const dayUntagged = trades.filter(t => {
+                      const r = ratings[getTradeKey(t)] || {};
+                      return !r.setups?.length && !r.mistakes?.length;
+                    }).length;
+                    return dayUntagged > 0 ? (
+                      <div style={{ padding: '9px 18px 11px', borderTop: '1px solid rgba(45,212,191,0.08)', background: 'rgba(45,212,191,0.03)', display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px' }}>
+                        <span>💡</span>
+                        <span style={{ color: '#6b8fa8' }}>
+                          {dayUntagged === 1 ? '1 trade has' : `${dayUntagged} trades have`} no tags — add setups & mistakes for a richer debrief next time.
+                        </span>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               )}
 
