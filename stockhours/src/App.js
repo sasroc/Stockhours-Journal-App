@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './components/auth/Login';
@@ -71,11 +71,39 @@ const FullScreenLoader = ({ message = 'Loading...' }) => (
   </div>
 );
 
+// Merges CSV-sourced trade groups with Schwab-sourced trade groups.
+// Schwab transactions are identified by _schwabActivityId and deduplicated.
+const mergeWithSchwabData = (csvGroups, schwabGroups) => {
+  if (!schwabGroups || schwabGroups.length === 0) return csvGroups || [];
+  const groupMap = new Map();
+  (csvGroups || []).forEach(group => {
+    const key = `${group.Symbol}-${group.Strike}-${group.Expiration}`;
+    groupMap.set(key, { ...group, Transactions: [...(group.Transactions || [])] });
+  });
+  (schwabGroups || []).forEach(sg => {
+    const key = `${sg.Symbol}-${sg.Strike}-${sg.Expiration}`;
+    if (!groupMap.has(key)) {
+      groupMap.set(key, { ...sg, Transactions: [...(sg.Transactions || [])] });
+    } else {
+      const existing = groupMap.get(key);
+      const existingIds = new Set(existing.Transactions.map(tx => tx._schwabActivityId).filter(Boolean));
+      (sg.Transactions || []).forEach(tx => {
+        if (!tx._schwabActivityId || !existingIds.has(tx._schwabActivityId)) {
+          existing.Transactions.push(tx);
+          if (tx._schwabActivityId) existingIds.add(tx._schwabActivityId);
+        }
+      });
+    }
+  });
+  return Array.from(groupMap.values());
+};
+
 function AppRoutes() {
   const { currentUser, loading, logout, subscription, tradingProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [tradeData, setTradeData] = useState([]);
+  const [schwabTradeData, setSchwabTradeData] = useState([]);
   const [filteredTradeData, setFilteredTradeData] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -138,14 +166,20 @@ function AppRoutes() {
     checkMobileDevice();
   }, []);
 
+  // Merge CSV data and Schwab data into one unified dataset for display
+  const effectiveTradeData = useMemo(
+    () => mergeWithSchwabData(tradeData, schwabTradeData),
+    [tradeData, schwabTradeData]
+  );
+
   useEffect(() => {
-    if (!tradeData.length) {
+    if (!effectiveTradeData.length) {
       setFilteredTradeData([]);
       return;
     }
 
     if (!dateRange.startDate || !dateRange.endDate) {
-      setFilteredTradeData(tradeData);
+      setFilteredTradeData(effectiveTradeData);
       return;
     }
 
@@ -153,7 +187,7 @@ function AppRoutes() {
     const endDate = new Date(dateRange.endDate);
     endDate.setHours(23, 59, 59, 999);
 
-    const filtered = tradeData
+    const filtered = effectiveTradeData
       .map((trade) => {
         const filteredTransactions = trade.Transactions.filter((transaction) => {
           const execTime = new Date(transaction.ExecTime);
@@ -164,7 +198,7 @@ function AppRoutes() {
       .filter((trade) => trade.Transactions.length > 0);
 
     setFilteredTradeData(filtered);
-  }, [tradeData, dateRange]);
+  }, [effectiveTradeData, dateRange]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -217,6 +251,20 @@ function AppRoutes() {
             }
             if (userData.uploadedFiles) {
               setUploadedFiles(userData.uploadedFiles);
+            }
+            if (userData.schwabTradeData) {
+              setSchwabTradeData(userData.schwabTradeData);
+            } else if (userData.tradeData) {
+              // One-time migration: extract Schwab transactions from the legacy mixed tradeData
+              // and save them to the dedicated schwabTradeData field so future CSV uploads
+              // cannot overwrite them.
+              const schwabGroups = userData.tradeData.filter(g =>
+                Array.isArray(g.Transactions) && g.Transactions.some(tx => tx._schwabActivityId)
+              );
+              if (schwabGroups.length > 0) {
+                setSchwabTradeData(schwabGroups);
+                updateDoc(userDocRef, { schwabTradeData: schwabGroups }).catch(() => {});
+              }
             }
           }
         } catch (error) {
@@ -720,8 +768,8 @@ function AppRoutes() {
       if (data.reconnectRequired) {
         return { reconnectRequired: true, error: data.error };
       }
-      if (data.tradeData) {
-        setTradeData(data.tradeData);
+      if (data.schwabTradeData) {
+        setSchwabTradeData(data.schwabTradeData);
       }
       return { success: true, transactionsImported: data.transactionsImported };
     } catch (err) {

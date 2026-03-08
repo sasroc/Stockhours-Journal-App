@@ -875,20 +875,20 @@ app.post('/api/schwab/sync', verifyFirebaseToken, async (req, res) => {
     const schwabGroups = transformSchwabTransactions(allTransactions);
     console.log(`Transform result: ${schwabGroups.length} groups, total transactions: ${schwabGroups.reduce((sum, g) => sum + g.Transactions.length, 0)}`);
 
-    // Get existing trade data
+    // Get existing Schwab-only trade data (separate from CSV tradeData)
     const userSnap = await userRef.get();
-    const existing = userSnap.exists ? (userSnap.data().tradeData || []) : [];
+    const existing = userSnap.exists ? (userSnap.data().schwabTradeData || []) : [];
 
     const merged = mergeSchwabWithExisting(existing, schwabGroups);
-    console.log(`Merge result: ${merged.length} groups (was ${existing.length} existing + ${schwabGroups.length} schwab)`);
+    console.log(`Merge result: ${merged.length} groups (was ${existing.length} existing schwab + ${schwabGroups.length} new schwab)`);
 
     await userRef.set({
-      tradeData: merged,
+      schwabTradeData: merged,
       schwabLastSync: admin.firestore.FieldValue.serverTimestamp(),
       lastUpdated: new Date(),
     }, { merge: true });
 
-    res.json({ success: true, tradeData: merged, transactionsImported: allTransactions.length });
+    res.json({ success: true, schwabTradeData: merged, transactionsImported: allTransactions.length });
   } catch (error) {
     console.error('Schwab sync error:', error);
     res.status(500).json({ error: 'Failed to sync trades from Schwab.' });
