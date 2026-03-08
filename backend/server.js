@@ -821,33 +821,54 @@ app.post('/api/schwab/sync', verifyFirebaseToken, async (req, res) => {
 
     const accountNumbers = await accountNumsResp.json();
     const allTransactions = [];
+    const seenActivityIds = new Set();
 
-    // Build date range (last 60 days, the Schwab API maximum)
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 60);
-    const startDateStr = startDate.toISOString();
-    const endDateStr = endDate.toISOString();
+    // Schwab API allows a max of 60 days per request.
+    // Fetch 6 consecutive 60-day windows to cover ~1 year of history.
+    const WINDOWS = 6;
+    const DAYS_PER_WINDOW = 60;
+    const now = new Date();
+    const dateWindows = [];
+    for (let i = 0; i < WINDOWS; i++) {
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() - i * DAYS_PER_WINDOW);
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - DAYS_PER_WINDOW);
+      dateWindows.push({ startDate, endDate });
+    }
 
-    // Fetch transactions for each account using hashValue
+    // Fetch transactions for each account across all date windows
     for (const acct of accountNumbers) {
       const hashValue = acct.hashValue;
       if (!hashValue) continue;
 
-      const txnUrl = `${SCHWAB_TRADER_BASE}/accounts/${hashValue}/transactions?types=TRADE&startDate=${encodeURIComponent(startDateStr)}&endDate=${encodeURIComponent(endDateStr)}`;
-      const txnResp = await fetch(txnUrl, {
-        headers: { Authorization: `Bearer ${tokenData.accessToken}` },
-      });
+      for (let w = 0; w < dateWindows.length; w++) {
+        const { startDate, endDate } = dateWindows[w];
+        const startDateStr = startDate.toISOString();
+        const endDateStr = endDate.toISOString();
+        const txnUrl = `${SCHWAB_TRADER_BASE}/accounts/${hashValue}/transactions?types=TRADE&startDate=${encodeURIComponent(startDateStr)}&endDate=${encodeURIComponent(endDateStr)}`;
+        const txnResp = await fetch(txnUrl, {
+          headers: { Authorization: `Bearer ${tokenData.accessToken}` },
+        });
 
-      if (txnResp.ok) {
-        const txns = await txnResp.json();
-        console.log(`Schwab transactions fetched: ${Array.isArray(txns) ? txns.length : 'not an array'}`);
-        if (Array.isArray(txns)) {
-          allTransactions.push(...txns);
+        if (txnResp.ok) {
+          const txns = await txnResp.json();
+          if (Array.isArray(txns)) {
+            let added = 0;
+            for (const txn of txns) {
+              const id = String(txn.activityId || txn.transactionId || '');
+              if (id && seenActivityIds.has(id)) continue;
+              if (id) seenActivityIds.add(id);
+              allTransactions.push(txn);
+              added++;
+            }
+            console.log(`Schwab window ${w + 1} (${startDateStr.slice(0, 10)} → ${endDateStr.slice(0, 10)}): ${added} new transactions`);
+          }
+        } else {
+          const errText = await txnResp.text();
+          console.error(`Schwab transactions fetch failed (${txnResp.status}) for window ${w + 1}:`, errText);
+          // Continue to next window — don't abort the whole sync on a single window failure
         }
-      } else {
-        const errText = await txnResp.text();
-        console.error(`Schwab transactions fetch failed (${txnResp.status}):`, errText);
       }
     }
 
