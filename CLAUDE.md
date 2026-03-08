@@ -21,6 +21,8 @@ npm start        # Production server
 
 Both must run simultaneously for full functionality. Frontend requires `HTTPS=true` (set in `stockhours/.env`) because Schwab OAuth requires HTTPS redirect URIs.
 
+> **Note:** The root-level `package.json` is a stub with only 2 transient deps — do not `npm install` from the project root. Install dependencies inside `stockhours/` or `backend/`.
+
 ### Required Environment Variables
 
 **`stockhours/.env`** (frontend, all `REACT_APP_` prefixed):
@@ -106,7 +108,7 @@ Broker OAuth tokens live in subcollections: `users/{uid}/schwabTokens/primary` a
 - Trade data is processed entirely on the frontend from raw CSV/broker data. `App.js` handles all trade grouping, P&L computation, and filtering logic via `generateGroupKey` (groups executions into trade round-trips by symbol+expiry+strike+type+date).
 - Supported CSV import formats: **thinkorswim** (auto-detected) and **IBKR Activity Statement** (detected when row[0]==='Trades' && row[1]==='Header').
 - Schwab sync fetches last 60 days and uses `_schwabActivityId` for deduplication when merging with existing trades.
-- RevenueCat webhook (`POST /api/revenuecat/webhook`) writes to the same `subscription` field as Stripe. `REVENUECAT_WEBHOOK_SECRET` must be set in `backend/.env`.
+- RevenueCat webhook (`POST /api/revenuecat/webhook`) writes to the same `subscription` field as Stripe. `REVENUECAT_WEBHOOK_SECRET` must be set in `backend/.env`. Full implementation guide: `backend/REVENUECAT_MIGRATION_PLAN.md`.
 - Several components are very large (`ReportsScreen.js` ~102KB, `StatsDashboard.js` ~67KB, `App.js` and `server.js` each ~56KB). Read selectively.
 
 ## Theme & Styling
@@ -140,6 +142,10 @@ colors: {
 | Webull API | OAuth broker connection, trade sync |
 | TradingView | Embedded chart widget in trade detail view |
 | Sentry | Error monitoring — frontend (`@sentry/react`) tunnels events through `POST /api/sentry-tunnel` on the backend to bypass ad blockers |
+
+## Reference Documents
+- `IOS_APP_SPEC.md` — full feature parity spec for the iOS app (separate repo: `TradeLensiOS/`); defines required screens, Firestore schema alignment, and subscription gating behavior
+- `backend/REVENUECAT_MIGRATION_PLAN.md` — step-by-step guide to adding the RevenueCat webhook (iOS IAP) alongside the existing Stripe integration
 
 ## AI Features (all Pro-only, GPT-4o)
 1. **Trade Review** — `POST /api/ai/trade-review` — per-trade coaching

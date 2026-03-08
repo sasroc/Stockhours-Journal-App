@@ -918,6 +918,19 @@ const MarketingLanding = () => {
           >
             FAQ
           </button>
+          <button
+            onClick={() => navigate('/brokers')}
+            style={{
+              background: 'none',
+              border: '1px solid #333',
+              color: theme.colors.white,
+              padding: '8px 16px',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            Brokers
+          </button>
           {currentUser ? (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

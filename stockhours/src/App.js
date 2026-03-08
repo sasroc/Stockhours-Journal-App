@@ -37,6 +37,7 @@ import WeeklyReviewScreen from './components/WeeklyReviewScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import FAQScreen from './components/FAQScreen';
+import BrokersScreen from './components/BrokersScreen';
 import OnboardingModal from './components/OnboardingModal';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -1610,6 +1611,7 @@ function AppRoutesWrapper() {
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/faq" element={<FAQScreen />} />
+      <Route path="/brokers" element={<BrokersScreen />} />
       <Route path="/login" element={<Login />} />
       <Route path="/paywall" element={<ProtectedRoute requireSubscription={false}><PaywallScreen /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><AppRoutes /></ProtectedRoute>} />
