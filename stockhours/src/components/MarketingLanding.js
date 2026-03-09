@@ -44,42 +44,6 @@ const screenshotItems = [
   },
 ];
 
-const featureItems = [
-  {
-    title: 'Import in minutes',
-    detail: 'Upload broker exports or sync supported brokers and start analyzing fast.',
-  },
-  {
-    title: 'See your real edge',
-    detail: 'Spot where your win rate and profitability are strongest by time, setup, and ticker.',
-  },
-  {
-    title: 'Fix recurring mistakes',
-    detail: 'Tag mistakes, review losing trades, and build a tighter process each week.',
-  },
-  {
-    title: 'Trade with structure',
-    detail: 'Run every session with data-backed feedback instead of emotion-driven guesses.',
-  },
-];
-
-const processItems = [
-  {
-    step: '1',
-    title: 'Import your history',
-    body: 'Bring in your trades from broker files or account sync.',
-  },
-  {
-    step: '2',
-    title: 'Review what matters',
-    body: 'See daily and trade-level performance with clear context.',
-  },
-  {
-    step: '3',
-    title: 'Improve weekly',
-    body: 'Use reports and reviews to sharpen decisions going forward.',
-  },
-];
 
 const faqItems = [
   {
