@@ -1349,7 +1349,7 @@ const MarketingLanding = () => {
 
             <div className="ml-cta-row">
               <button className="ml-btn ml-btn-primary" onClick={() => navigate(currentUser ? '/paywall' : '/login')}>
-                Start for free
+                Get started
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '2px' }}>
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
@@ -1362,7 +1362,7 @@ const MarketingLanding = () => {
                 <div className="ml-trust-check">
                   <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                No credit card required
+                Plans from $10 / month
               </div>
               <div className="ml-trust-item">
                 <div className="ml-trust-check">
