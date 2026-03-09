@@ -1696,21 +1696,17 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           </button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px', width: '100%' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            color: theme.colors.white, 
-            marginBottom: '10px', 
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            color: theme.colors.white,
+            marginBottom: '10px',
             fontSize: isMobileDevice ? '14px' : (isHalfScreen ? '14px' : '12px'),
-            gap: isMobileDevice ? '0' : (isHalfScreen ? '0' : '8px')
           }}>
-            <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Sun</span>
-            <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Mon</span>
-            <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Tue</span>
-            <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Wed</span>
-            <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Thu</span>
-            <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Fri</span>
-            <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center' }}>Sat</span>
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <span key={day} style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), textAlign: 'center', margin: '4px', display: 'inline-block' }}>{day}</span>
+            ))}
+            <span style={{ width: isMobileDevice ? '10vw' : (isHalfScreen ? '10vw' : '6vw'), margin: '4px', display: 'inline-block' }} />
           </div>
           {renderCalendar(isMobileDevice || isHalfScreen)}
         </div>
@@ -1823,21 +1819,16 @@ const Calendar = ({ defaultView, isHalfScreen }) => {
         </button>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px', width: '100%' }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          color: theme.colors.white, 
-          marginBottom: '10px', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          color: theme.colors.white,
+          marginBottom: '10px',
           fontSize: isHalfScreen ? '14px' : '12px',
-          gap: isHalfScreen ? '0' : '8px'
         }}>
-          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Sun</span>
-          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Mon</span>
-          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Tue</span>
-          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Wed</span>
-          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Thu</span>
-          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Fri</span>
-          <span style={{ width: isHalfScreen ? '10vw' : '6vw', textAlign: 'center' }}>Sat</span>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <span key={day} style={{ width: isHalfScreen ? '10vw' : '12vw', textAlign: 'center', margin: '4px', display: 'inline-block' }}>{day}</span>
+          ))}
         </div>
         {renderCalendar()}
       </div>

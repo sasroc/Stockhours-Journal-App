@@ -47,8 +47,8 @@ Both must run simultaneously for full functionality. Frontend requires `HTTPS=tr
 ## Architecture
 
 **Monorepo** with two independently-runnable apps:
-- `stockhours/` — React 19 frontend (Create React App), deployed to Netlify (`public/_redirects` rewrites all paths to `index.html` for SPA routing)
-- `backend/` — Express.js API server (`server.js` is the single file containing all endpoints)
+- `stockhours/` — React 19 frontend (Create React App), deployed to **Netlify** (`public/_redirects` rewrites all paths to `index.html` for SPA routing)
+- `backend/` — Express.js API server (`server.js` is the single file containing all endpoints), deployed to **Railway** (`backend/railway.json` configures `node server.js` as the start command)
 
 Frontend source layout: `src/App.js` (entry, trade data/state), `src/components/` (all screens and UI components), `src/contexts/AuthContext.js`, `src/firebase.js` (Firebase client init), `src/theme.js`.
 
@@ -65,7 +65,7 @@ React Router (`react-router-dom` v7) handles all routing. `setCurrentScreen` in 
 - `/login` → login screen
 
 **Protected authenticated routes** (wrapped in `<ProtectedRoute>`, all render via `<AppRoutes>`):
-- `/dashboard`, `/reports`, `/alltrades`, `/dailystats`, `/imports`, `/settings`, `/weekly-reviews`
+- `/dashboard`, `/reports`, `/alltrades`, `/dailystats`, `/imports`, `/settings`, `/weekly-reviews`, `/brokers`
 - `AppRoutes` reads `location.pathname` to decide which screen component to render
 
 **Other protected routes**:
@@ -86,7 +86,8 @@ No Redux. State lives in:
 
 ### Data Storage — Firestore
 All user data in a single `users/{uid}` document:
-- `tradeData` — array of trade groups (the primary trade storage)
+- `tradeData` — array of trade groups from CSV imports
+- `schwabTradeData` — array of trade groups synced from Schwab (stored separately since commit `678dbef` to prevent CSV data loss on re-sync)
 - `subscription` — `{ status, plan, interval, updatedAt }` where `status` ∈ `active|trialing|inactive|canceled` and `plan` ∈ `none|basic|pro`
 - `tradeRatings` — `{ [tradeId]: { rating, setups, mistakes } }`
 - `notes` — `{ [dateString]: noteText }`
@@ -107,7 +108,7 @@ Broker OAuth tokens live in subcollections: `users/{uid}/schwabTokens/primary` a
 - AI endpoints (`/api/ai/*`) are rate-limited to 25 req/hour per user via `express-rate-limit`, and require Pro subscription.
 - Trade data is processed entirely on the frontend from raw CSV/broker data. `App.js` handles all trade grouping, P&L computation, and filtering logic via `generateGroupKey` (groups executions into trade round-trips by symbol+expiry+strike+type+date).
 - Supported CSV import formats: **thinkorswim** (auto-detected) and **IBKR Activity Statement** (detected when row[0]==='Trades' && row[1]==='Header').
-- Schwab sync fetches last 60 days and uses `_schwabActivityId` for deduplication when merging with existing trades.
+- Schwab sync fetches ~1 year of history via sequential 60-day windows and uses `_schwabActivityId` for deduplication. CSV trades (`tradeData`) and Schwab trades (`schwabTradeData`) are stored in separate Firestore fields; `mergeWithSchwabData()` in `App.js` combines them into `filteredTradeData` for display. A one-time migration path in `App.js` handles legacy documents that mixed both in `tradeData`.
 - RevenueCat webhook (`POST /api/revenuecat/webhook`) writes to the same `subscription` field as Stripe. `REVENUECAT_WEBHOOK_SECRET` must be set in `backend/.env`. Full implementation guide: `backend/REVENUECAT_MIGRATION_PLAN.md`.
 - Several components are very large (`ReportsScreen.js` ~102KB, `StatsDashboard.js` ~67KB, `App.js` and `server.js` each ~56KB). Read selectively.
 
