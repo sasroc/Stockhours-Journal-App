@@ -160,6 +160,16 @@ const MarketingLanding = () => {
             }
           }
 
+          @keyframes pulseGlow {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6); }
+            50% { opacity: 0.85; box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); }
+          }
+
+          @keyframes heroGlow {
+            0%, 100% { opacity: 0.55; }
+            50% { opacity: 0.8; }
+          }
+
           .brandText {
             animation: brandShift 4.5s ease-in-out infinite;
           }
@@ -220,72 +230,224 @@ const MarketingLanding = () => {
             color: #f2f7ff;
           }
 
+          /* ── Hero CTA buttons ── */
           .ml-btn {
-            border: 1px solid rgba(143, 165, 190, 0.33);
-            background: rgba(7, 11, 18, 0.55);
-            color: #e7eef8;
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(143, 165, 190, 0.28);
+            background: rgba(255,255,255,0.04);
+            color: #c8d8ec;
+            padding: 13px 22px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.22s ease;
+            font-family: inherit;
+            letter-spacing: 0.1px;
           }
 
           .ml-btn:hover {
-            border-color: rgba(143, 165, 190, 0.65);
+            border-color: rgba(143, 165, 190, 0.52);
+            background: rgba(255,255,255,0.07);
+            color: #e8f0fb;
             transform: translateY(-1px);
           }
 
           .ml-btn-primary {
             border: none;
             background: linear-gradient(135deg, #1ecf97 0%, #2db9ff 100%);
-            color: #03131a;
+            color: #021a12;
             font-weight: 700;
-            box-shadow: 0 12px 26px rgba(46, 204, 113, 0.18), 0 10px 22px rgba(45, 185, 255, 0.24);
+            font-size: 15px;
+            padding: 13px 26px;
+            letter-spacing: 0.2px;
+            box-shadow:
+              0 0 0 1px rgba(30, 207, 151, 0.35),
+              0 8px 24px rgba(30, 207, 151, 0.28),
+              0 16px 40px rgba(45, 185, 255, 0.2);
+          }
+
+          .ml-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow:
+              0 0 0 1px rgba(30, 207, 151, 0.45),
+              0 12px 32px rgba(30, 207, 151, 0.36),
+              0 20px 52px rgba(45, 185, 255, 0.28);
+            filter: brightness(1.06);
+          }
+
+          /* ── Navbar buttons ── */
+          .ml-nav-link {
+            background: none;
+            border: none;
+            color: #8899aa;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.18s ease, background 0.18s ease;
+            font-family: inherit;
+            letter-spacing: 0.1px;
+          }
+
+          .ml-nav-link:hover {
+            color: #dde8f5;
+            background: rgba(255,255,255,0.05);
+          }
+
+          .ml-nav-login {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(130, 155, 185, 0.25);
+            color: #c4d4e8;
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+          }
+
+          .ml-nav-login:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(130, 155, 185, 0.45);
+            color: #e8f0fb;
+            transform: translateY(-1px);
+          }
+
+          .ml-nav-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+            background: linear-gradient(135deg, #1ecf97 0%, #2db9ff 100%);
+            color: #021a12;
+            padding: 9px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.22s ease;
+            font-family: inherit;
+            letter-spacing: 0.15px;
+            box-shadow: 0 4px 14px rgba(30,207,151,0.28), 0 8px 24px rgba(45,185,255,0.18);
+          }
+
+          .ml-nav-cta:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.07);
+            box-shadow: 0 6px 20px rgba(30,207,151,0.36), 0 12px 32px rgba(45,185,255,0.24);
+          }
+
+          .ml-nav-signout {
+            background: none;
+            border: none;
+            color: #6b7f96;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: color 0.18s ease;
+            font-family: inherit;
+          }
+
+          .ml-nav-signout:hover {
+            color: #a0b3c8;
           }
 
           .ml-hero {
-            padding: 52px 0 16px;
+            padding: 72px 0 24px;
             display: grid;
-            grid-template-columns: 1.15fr 1fr;
-            gap: 34px;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 56px;
             align-items: center;
           }
 
           .ml-eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 7px 13px;
+            gap: 9px;
+            padding: 7px 14px 7px 10px;
             border-radius: 999px;
-            font-size: 12px;
-            letter-spacing: 0.35px;
-            color: #b8d6ff;
-            background: rgba(15, 90, 179, 0.22);
-            border: 1px solid rgba(91, 154, 226, 0.4);
+            font-size: 12.5px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            color: #34d399;
+            background: rgba(52, 211, 153, 0.08);
+            border: 1px solid rgba(52, 211, 153, 0.28);
+          }
+
+          .ml-eyebrow-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #34d399;
+            animation: pulseGlow 2.4s ease-in-out infinite;
+            flex-shrink: 0;
           }
 
           .ml-title {
-            margin: 16px 0 14px;
-            font-size: clamp(32px, 5.2vw, 50px);
-            line-height: 1.08;
-            letter-spacing: -0.7px;
-            max-width: 16ch;
+            margin: 20px 0 18px;
+            font-size: clamp(34px, 5.4vw, 54px);
+            line-height: 1.06;
+            letter-spacing: -1px;
+            max-width: 18ch;
+          }
+
+          .ml-title-accent {
+            background: linear-gradient(135deg, #34d399 0%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
           }
 
           .ml-sub {
-            color: #a7b9d0;
+            color: #8fa8c4;
             font-size: 17px;
-            line-height: 1.7;
-            max-width: 52ch;
+            line-height: 1.75;
+            max-width: 48ch;
           }
 
           .ml-cta-row {
-            margin-top: 28px;
+            margin-top: 32px;
             display: flex;
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
+          }
+
+          .ml-trust-row {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+          }
+
+          .ml-trust-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12.5px;
+            color: #627b96;
+            font-weight: 500;
+          }
+
+          .ml-trust-check {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(52, 211, 153, 0.12);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
           }
 
           .ml-note {
@@ -310,44 +472,99 @@ const MarketingLanding = () => {
             padding: 6px 11px;
           }
 
+          .ml-hero-visual-wrap {
+            position: relative;
+          }
+
+          .ml-hero-glow {
+            position: absolute;
+            inset: -30px;
+            border-radius: 40px;
+            background: radial-gradient(60% 60% at 50% 50%, rgba(30, 207, 151, 0.14) 0%, rgba(45, 185, 255, 0.1) 50%, transparent 100%);
+            animation: heroGlow 4s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+          }
+
           .ml-hero-visual {
-            border-radius: 20px;
-            border: 1px solid rgba(102, 124, 153, 0.33);
-            background: linear-gradient(170deg, rgba(17, 24, 39, 0.9) 0%, rgba(8, 13, 24, 0.92) 100%);
-            padding: 20px;
-            box-shadow: 0 28px 60px rgba(0, 0, 0, 0.48), 0 0 40px rgba(0, 123, 255, 0.15);
+            position: relative;
+            z-index: 1;
+            border-radius: 22px;
+            border: 1px solid rgba(52, 211, 153, 0.18);
+            background: linear-gradient(160deg, rgba(14, 22, 38, 0.92) 0%, rgba(7, 11, 21, 0.96) 100%);
+            padding: 22px;
+            box-shadow:
+              0 0 0 1px rgba(255,255,255,0.04) inset,
+              0 32px 64px rgba(0, 0, 0, 0.55),
+              0 0 48px rgba(30, 207, 151, 0.08);
+          }
+
+          .ml-visual-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+          }
+
+          .ml-visual-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: #34d399;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+          }
+
+          .ml-visual-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #34d399;
+            animation: pulseGlow 2s ease-in-out infinite;
           }
 
           .ml-visual-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
+            gap: 10px;
           }
 
           .ml-kpi {
-            border-radius: 12px;
-            background: rgba(11, 17, 30, 0.88);
-            border: 1px solid rgba(106, 128, 157, 0.28);
-            padding: 12px;
+            border-radius: 14px;
+            background: rgba(8, 13, 24, 0.72);
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 14px 16px;
+            transition: border-color 0.2s ease;
+          }
+
+          .ml-kpi:hover {
+            border-color: rgba(255,255,255,0.1);
           }
 
           .ml-kpi-label {
-            font-size: 11px;
-            letter-spacing: 0.3px;
-            color: #8ea2bd;
+            font-size: 10.5px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #5a7290;
+            font-weight: 600;
           }
 
           .ml-kpi-value {
-            margin-top: 6px;
-            font-size: 22px;
+            margin-top: 8px;
+            font-size: 24px;
             font-weight: 700;
-            letter-spacing: -0.4px;
+            letter-spacing: -0.5px;
+            line-height: 1;
           }
 
           .ml-kpi-sub {
-            margin-top: 3px;
-            font-size: 12px;
-            color: #92a7c1;
+            margin-top: 5px;
+            font-size: 11.5px;
+            color: #4e6880;
           }
 
           .ml-stat-band {
@@ -787,7 +1004,7 @@ const MarketingLanding = () => {
           @media (max-width: 1080px) {
             .ml-hero {
               grid-template-columns: 1fr;
-              gap: 22px;
+              gap: 40px;
             }
 
             .ml-stat-band {
@@ -830,7 +1047,15 @@ const MarketingLanding = () => {
             }
 
             .ml-title {
-              letter-spacing: -0.6px;
+              letter-spacing: -0.7px;
+            }
+
+            .ml-hero {
+              padding: 48px 0 16px;
+            }
+
+            .ml-trust-row {
+              gap: 12px;
             }
           }
         `}
@@ -891,125 +1116,46 @@ const MarketingLanding = () => {
             TradeBetter
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={() => navigate('/pricing')}
-            style={{
-              background: 'none',
-              border: '1px solid #333',
-              color: theme.colors.white,
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            Pricing
-          </button>
-          <button
-            onClick={() => navigate('/faq')}
-            style={{
-              background: 'none',
-              border: '1px solid #333',
-              color: theme.colors.white,
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            FAQ
-          </button>
-          <button
-            onClick={() => navigate('/brokers')}
-            style={{
-              background: 'none',
-              border: '1px solid #333',
-              color: theme.colors.white,
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            Brokers
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <button className="ml-nav-link" onClick={() => navigate('/pricing')}>Pricing</button>
+          <button className="ml-nav-link" onClick={() => navigate('/faq')}>FAQ</button>
+          <button className="ml-nav-link" onClick={() => navigate('/brokers')}>Brokers</button>
+
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
+
           {currentUser ? (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '4px' }}>
                 <div style={{
-                  width: '30px',
-                  height: '30px',
+                  width: '28px',
+                  height: '28px',
                   borderRadius: '50%',
-                  backgroundColor: theme.colors.teal,
-                  color: '#000',
+                  background: 'linear-gradient(135deg, #1ecf97 0%, #2db9ff 100%)',
+                  color: '#021a12',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   flexShrink: 0
                 }}>
                   {(displayName || currentUser.email || '').charAt(0).toUpperCase()}
                 </div>
-                <span style={{ fontSize: '13px', color: '#aaa', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '13px', color: '#5a7290', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {currentUser.email}
                 </span>
               </div>
-              <button
-                onClick={() => navigate('/paywall')}
-                style={{
-                  backgroundColor: theme.colors.teal,
-                  border: 'none',
-                  color: '#000',
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '13px'
-                }}
-              >
-                Subscribe
-              </button>
-              <button
-                onClick={async () => { await logout(); navigate('/login'); }}
-                style={{
-                  background: 'none',
-                  border: '1px solid #333',
-                  color: '#888',
-                  padding: '8px 14px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '13px'
-                }}
-              >
-                Sign out
-              </button>
+              <button className="ml-nav-cta" onClick={() => navigate('/paywall')}>Subscribe</button>
+              <button className="ml-nav-signout" onClick={async () => { await logout(); navigate('/login'); }}>Sign out</button>
             </>
           ) : (
             <>
-              <button
-                onClick={() => navigate('/login')}
-                style={{
-                  background: 'none',
-                  border: '1px solid #333',
-                  color: theme.colors.white,
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-              >
-                Log in
-              </button>
-              <button
-                onClick={() => navigate('/login')}
-                style={{
-                  backgroundColor: theme.colors.teal,
-                  border: 'none',
-                  color: theme.colors.white,
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-              >
+              <button className="ml-nav-login" onClick={() => navigate('/login')}>Log in</button>
+              <button className="ml-nav-cta" onClick={() => navigate('/login')}>
                 Get started
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
               </button>
             </>
           )}
@@ -1019,53 +1165,91 @@ const MarketingLanding = () => {
       <main className="ml-shell">
         <section className="ml-hero">
           <div>
-            <div className="ml-eyebrow">Built for serious options traders</div>
-            <h1 className="ml-title">Your trades already have patterns. TradeBetter helps you see them.</h1>
+            <div className="ml-eyebrow">
+              <span className="ml-eyebrow-dot" />
+              Built for serious options traders
+            </div>
+            <h1 className="ml-title">
+              Your trades already tell a story.{' '}
+              <span className="ml-title-accent">Are you reading it?</span>
+            </h1>
             <p className="ml-sub">
-              Stop journaling in scattered spreadsheets. Import your history, break down your edge,
-              and get clear feedback on what to keep doing and what to stop.
+              Stop guessing what works. Import your history, uncover your real edge by setup and symbol,
+              and get clear AI feedback on what to keep doing and what to cut.
             </p>
 
             <div className="ml-cta-row">
-              <button className="ml-btn ml-btn-primary" onClick={() => navigate(currentUser ? '/paywall' : '/login')}>Try TradeBetter</button>
+              <button className="ml-btn ml-btn-primary" onClick={() => navigate(currentUser ? '/paywall' : '/login')}>
+                Start for free
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '2px' }}>
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
               <button className="ml-btn" onClick={() => navigate('/pricing')}>View plans</button>
             </div>
-            <div className="ml-note">Cancel anytime. Keep your data. No bloated setup process.</div>
 
-            <div className="ml-proof-row">
-              <div className="ml-chip">Trade imports</div>
-              <div className="ml-chip">Daily and weekly reviews</div>
-              <div className="ml-chip">Tagging and notes</div>
-              <div className="ml-chip">AI insights on Pro</div>
+            <div className="ml-trust-row">
+              <div className="ml-trust-item">
+                <div className="ml-trust-check">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                No credit card required
+              </div>
+              <div className="ml-trust-item">
+                <div className="ml-trust-check">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Cancel anytime
+              </div>
+              <div className="ml-trust-item">
+                <div className="ml-trust-check">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Your data stays yours
+              </div>
             </div>
           </div>
 
-          <div className="ml-hero-visual">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <img src={primaryLogo} alt="TradeBetter" style={{ width: '34px', height: '34px', objectFit: 'contain' }} />
-              <div style={{ fontSize: '13px', color: '#96aeca' }}>Live Journal Snapshot</div>
-            </div>
+          <div className="ml-hero-visual-wrap">
+            <div className="ml-hero-glow" />
+            <div className="ml-hero-visual">
+              <div className="ml-visual-header">
+                <img src={primaryLogo} alt="TradeBetter" style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '7px' }} />
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#7a96b4', letterSpacing: '0.1px' }}>Journal Snapshot</div>
+                <div className="ml-visual-status">
+                  <span className="ml-visual-status-dot" />
+                  Live
+                </div>
+              </div>
 
-            <div className="ml-visual-grid">
-              <div className="ml-kpi">
-                <div className="ml-kpi-label">Net P&L</div>
-                <div className="ml-kpi-value" style={{ color: '#39d98a' }}>+$2,845</div>
-                <div className="ml-kpi-sub">Last 30 days</div>
+              <div className="ml-visual-grid">
+                <div className="ml-kpi">
+                  <div className="ml-kpi-label">Net P&L</div>
+                  <div className="ml-kpi-value" style={{ color: '#34d399' }}>+$2,845</div>
+                  <div className="ml-kpi-sub">↑ 18% vs last month</div>
+                </div>
+                <div className="ml-kpi">
+                  <div className="ml-kpi-label">Win Rate</div>
+                  <div className="ml-kpi-value" style={{ color: '#60a5fa' }}>64%</div>
+                  <div className="ml-kpi-sub">132 closed trades</div>
+                </div>
+                <div className="ml-kpi">
+                  <div className="ml-kpi-label">Best Setup</div>
+                  <div className="ml-kpi-value" style={{ fontSize: '17px', color: '#e2ecfa' }}>Opening Range</div>
+                  <div className="ml-kpi-sub">71% win rate · +$1,620</div>
+                </div>
+                <div className="ml-kpi">
+                  <div className="ml-kpi-label">Top Mistake</div>
+                  <div className="ml-kpi-value" style={{ color: '#f87171', fontSize: '17px' }}>Late Entries</div>
+                  <div className="ml-kpi-sub">−$940 total impact</div>
+                </div>
               </div>
-              <div className="ml-kpi">
-                <div className="ml-kpi-label">Win Rate</div>
-                <div className="ml-kpi-value">64%</div>
-                <div className="ml-kpi-sub">132 closed trades</div>
-              </div>
-              <div className="ml-kpi">
-                <div className="ml-kpi-label">Best Setup</div>
-                <div className="ml-kpi-value" style={{ fontSize: '18px' }}>Opening Range</div>
-                <div className="ml-kpi-sub">+71% win rate</div>
-              </div>
-              <div className="ml-kpi">
-                <div className="ml-kpi-label">Most Costly Mistake</div>
-                <div className="ml-kpi-value" style={{ color: '#ff7b89', fontSize: '18px' }}>Late Entries</div>
-                <div className="ml-kpi-sub">- $940 impact</div>
+
+              <div style={{ marginTop: '14px', padding: '12px 14px', borderRadius: '12px', background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.14)' }}>
+                <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#2f6b52', fontWeight: 600, marginBottom: '6px' }}>AI Insight · Pro</div>
+                <div style={{ fontSize: '13px', color: '#6fa898', lineHeight: 1.55 }}>
+                  Your <span style={{ color: '#34d399', fontWeight: 600 }}>Opening Range</span> setups are outperforming your average by 2.3×. Consider sizing up on high-conviction entries.
+                </div>
               </div>
             </div>
           </div>
