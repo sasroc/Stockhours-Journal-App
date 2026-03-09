@@ -567,101 +567,253 @@ const MarketingLanding = () => {
             color: #4e6880;
           }
 
+          /* ── Stat band ── */
           .ml-stat-band {
-            margin-top: 28px;
+            margin-top: 36px;
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 12px;
           }
 
           .ml-stat {
-            border-radius: 12px;
-            background: rgba(9, 14, 25, 0.78);
-            border: 1px solid rgba(109, 129, 156, 0.28);
-            padding: 14px;
+            border-radius: 14px;
+            background: rgba(9, 14, 25, 0.72);
+            border: 1px solid rgba(109, 129, 156, 0.2);
+            padding: 18px 20px;
+            border-left: 2px solid rgba(45, 212, 191, 0.35);
+            transition: border-color 0.2s ease, background 0.2s ease;
+          }
+
+          .ml-stat:hover {
+            background: rgba(9, 14, 25, 0.9);
+            border-left-color: rgba(45, 212, 191, 0.65);
           }
 
           .ml-stat strong {
             display: block;
-            font-size: 20px;
-            margin-bottom: 4px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #ddeaf8;
+            letter-spacing: -0.2px;
           }
 
           .ml-stat span {
-            color: #91a5be;
+            color: #5a7290;
             font-size: 13px;
+            line-height: 1.55;
           }
 
+          /* ── Section layout ── */
           .ml-section {
-            margin-top: 76px;
+            margin-top: 96px;
+          }
+
+          .ml-section-header {
+            text-align: center;
+            max-width: 640px;
+            margin: 0 auto 48px;
+          }
+
+          .ml-section-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            color: #2DD4BF;
+            background: rgba(45, 212, 191, 0.08);
+            border: 1px solid rgba(45, 212, 191, 0.22);
+            margin-bottom: 16px;
           }
 
           .ml-h2 {
-            font-size: clamp(26px, 4.1vw, 39px);
-            line-height: 1.1;
-            margin: 0 0 12px;
-            letter-spacing: -0.6px;
+            font-size: clamp(26px, 4.1vw, 40px);
+            line-height: 1.08;
+            margin: 0 0 14px;
+            letter-spacing: -0.7px;
+            color: #eaf2ff;
           }
 
           .ml-p {
-            color: #9eb1ca;
+            color: #6b87a4;
             font-size: 17px;
-            line-height: 1.7;
+            line-height: 1.72;
             margin: 0;
           }
 
+          /* ── Feature cards ── */
           .ml-feature-grid {
-            margin-top: 28px;
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
+            gap: 16px;
           }
 
           .ml-feature-card {
-            border-radius: 14px;
-            padding: 18px;
-            border: 1px solid rgba(117, 137, 164, 0.3);
-            background: linear-gradient(180deg, rgba(14, 20, 34, 0.82) 0%, rgba(8, 12, 22, 0.9) 100%);
-            box-shadow: 0 18px 34px rgba(0, 0, 0, 0.26);
+            position: relative;
+            border-radius: 18px;
+            padding: 28px 26px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: linear-gradient(160deg, rgba(13, 19, 34, 0.88) 0%, rgba(8, 12, 22, 0.94) 100%);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.28);
+            overflow: hidden;
+            transition: border-color 0.25s ease, transform 0.2s ease;
+          }
+
+          .ml-feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            border-radius: 18px 18px 0 0;
+            background: var(--card-accent, linear-gradient(90deg, #2dd4bf, #60a5fa));
+            opacity: 0.7;
+          }
+
+          .ml-feature-card:hover {
+            border-color: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+          }
+
+          .ml-feature-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            flex-shrink: 0;
           }
 
           .ml-feature-card h3 {
-            margin: 0 0 8px;
+            margin: 0 0 10px;
             font-size: 19px;
-            letter-spacing: -0.2px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: #e2eefb;
           }
 
           .ml-feature-card p {
             margin: 0;
-            color: #95aac4;
-            line-height: 1.6;
-            font-size: 14px;
+            color: #5a7a98;
+            line-height: 1.68;
+            font-size: 14.5px;
+          }
+
+          /* ── Process section ── */
+          .ml-process-outer {
+            position: relative;
           }
 
           .ml-process-grid {
-            margin-top: 22px;
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 14px;
+            gap: 0;
+            position: relative;
           }
 
           .ml-process-card {
-            border-radius: 14px;
-            border: 1px solid rgba(118, 137, 161, 0.28);
-            padding: 18px;
-            background: rgba(9, 14, 25, 0.8);
+            position: relative;
+            border-radius: 0;
+            padding: 32px 28px;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
           }
 
-          .ml-process-step {
-            width: 30px;
-            height: 30px;
-            border-radius: 9px;
-            display: grid;
-            place-items: center;
-            color: #062233;
-            background: linear-gradient(145deg, #1cd59c 0%, #2da8ff 100%);
+          .ml-process-card:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 48px;
+            right: -1px;
+            width: 2px;
+            height: 32px;
+            background: linear-gradient(180deg, rgba(45,212,191,0.4), transparent);
+          }
+
+          .ml-process-card-inner {
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: linear-gradient(160deg, rgba(11,17,31,0.9), rgba(7,11,21,0.95));
+            padding: 28px 24px;
+            height: 100%;
+            transition: border-color 0.25s ease, transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .ml-process-card-inner:hover {
+            border-color: rgba(45,212,191,0.22);
+            transform: translateY(-2px);
+          }
+
+          .ml-process-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+            margin-top: -16px;
+          }
+
+          .ml-process-step-num {
+            font-size: 52px;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -3px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, rgba(45,212,191,0.22) 0%, rgba(96,165,250,0.14) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+          }
+
+          .ml-process-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(45, 212, 191, 0.1);
+            border: 1px solid rgba(45, 212, 191, 0.2);
+            margin-bottom: 16px;
+          }
+
+          .ml-process-card-inner h3 {
+            margin: 0 0 10px;
+            font-size: 19px;
             font-weight: 700;
-            margin-bottom: 12px;
+            letter-spacing: -0.3px;
+            color: #ddeaf8;
+          }
+
+          .ml-process-card-inner p {
+            margin: 0;
+            color: #4e6880;
+            line-height: 1.65;
+            font-size: 14.5px;
+          }
+
+          .ml-process-grid-wrap {
+            display: grid;
+            grid-template-columns: 1fr 40px 1fr 40px 1fr;
+            align-items: stretch;
+            gap: 0;
+          }
+
+          .ml-process-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 52px;
+            color: rgba(45, 212, 191, 0.3);
           }
 
           .ml-showcase-wrap {
@@ -1018,6 +1170,15 @@ const MarketingLanding = () => {
             .ml-screen-image-wrap {
               padding: 8px;
             }
+
+            .ml-process-grid-wrap {
+              grid-template-columns: 1fr;
+              gap: 12px;
+            }
+
+            .ml-process-arrow {
+              display: none;
+            }
           }
 
           @media (max-width: 760px) {
@@ -1037,9 +1198,17 @@ const MarketingLanding = () => {
             }
 
             .ml-feature-grid,
-            .ml-process-grid,
             .ml-stat-band {
               grid-template-columns: 1fr;
+            }
+
+            .ml-process-grid-wrap {
+              grid-template-columns: 1fr;
+              gap: 12px;
+            }
+
+            .ml-process-arrow {
+              display: none;
             }
 
             .ml-thumbs {
@@ -1275,32 +1444,138 @@ const MarketingLanding = () => {
         </section>
 
         <section className="ml-section">
-          <h2 className="ml-h2">Built for conversion from data to better execution</h2>
-          <p className="ml-p">
-            Every part of TradeBetter is designed to answer one question quickly: what should you do more of,
-            and what should you cut out immediately?
-          </p>
+          <div className="ml-section-header">
+            <div className="ml-section-eyebrow">Why it works</div>
+            <h2 className="ml-h2">One question answered four ways</h2>
+            <p className="ml-p">
+              Every part of TradeBetter is designed to surface the same signal fast: what should you do more of,
+              and what should you cut out immediately?
+            </p>
+          </div>
           <div className="ml-feature-grid">
-            {featureItems.map((item) => (
-              <article key={item.title} className="ml-feature-card">
-                <h3>{item.title}</h3>
-                <p>{item.detail}</p>
-              </article>
-            ))}
+            {/* Import in minutes */}
+            <article
+              className="ml-feature-card"
+              style={{ '--card-accent': 'linear-gradient(90deg, #60a5fa, #818cf8)' }}
+            >
+              <div className="ml-feature-icon" style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.22)' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </div>
+              <h3>Import in minutes</h3>
+              <p>Upload broker exports or sync supported brokers and start analyzing fast.</p>
+            </article>
+
+            {/* See your real edge */}
+            <article
+              className="ml-feature-card"
+              style={{ '--card-accent': 'linear-gradient(90deg, #34d399, #2dd4bf)' }}
+            >
+              <div className="ml-feature-icon" style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.22)' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              <h3>See your real edge</h3>
+              <p>Spot where your win rate and profitability are strongest by time, setup, and ticker.</p>
+            </article>
+
+            {/* Fix recurring mistakes */}
+            <article
+              className="ml-feature-card"
+              style={{ '--card-accent': 'linear-gradient(90deg, #fb923c, #f87171)' }}
+            >
+              <div className="ml-feature-icon" style={{ background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.22)' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb923c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+              </div>
+              <h3>Fix recurring mistakes</h3>
+              <p>Tag mistakes, review losing trades, and build a tighter process each week.</p>
+            </article>
+
+            {/* Trade with structure */}
+            <article
+              className="ml-feature-card"
+              style={{ '--card-accent': 'linear-gradient(90deg, #a78bfa, #60a5fa)' }}
+            >
+              <div className="ml-feature-icon" style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.22)' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                </svg>
+              </div>
+              <h3>Trade with structure</h3>
+              <p>Run every session with data-backed feedback instead of emotion-driven guesses.</p>
+            </article>
           </div>
         </section>
 
         <section className="ml-section">
-          <h2 className="ml-h2">How traders use it every week</h2>
-          <p className="ml-p">Simple loop. Import, review, adjust, repeat.</p>
-          <div className="ml-process-grid">
-            {processItems.map((item) => (
-              <article key={item.title} className="ml-process-card">
-                <div className="ml-process-step">{item.step}</div>
-                <h3 style={{ margin: '0 0 8px', fontSize: '19px' }}>{item.title}</h3>
-                <p style={{ margin: 0, color: '#8ea4be', lineHeight: 1.6 }}>{item.body}</p>
-              </article>
-            ))}
+          <div className="ml-section-header">
+            <div className="ml-section-eyebrow">How it works</div>
+            <h2 className="ml-h2">How traders use it every week</h2>
+            <p className="ml-p">Simple loop. Import, review, adjust, repeat.</p>
+          </div>
+          <div className="ml-process-grid-wrap">
+
+            {/* Step 1 */}
+            <div className="ml-process-card-inner">
+              <span className="ml-process-step-num">01</span>
+              <div className="ml-process-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <h3>Import your history</h3>
+              <p>Bring in your trades from broker files or account sync — no manual entry needed.</p>
+            </div>
+
+            {/* Arrow */}
+            <div className="ml-process-arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </div>
+
+            {/* Step 2 */}
+            <div className="ml-process-card-inner">
+              <span className="ml-process-step-num">02</span>
+              <div className="ml-process-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </div>
+              <h3>Review what matters</h3>
+              <p>See daily and trade-level performance with clear context on what's actually driving results.</p>
+            </div>
+
+            {/* Arrow */}
+            <div className="ml-process-arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </div>
+
+            {/* Step 3 */}
+            <div className="ml-process-card-inner">
+              <span className="ml-process-step-num">03</span>
+              <div className="ml-process-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  <polyline points="17 6 23 6 23 12"/>
+                </svg>
+              </div>
+              <h3>Improve weekly</h3>
+              <p>Use reports and AI reviews to sharpen decisions and set focused goals going forward.</p>
+            </div>
           </div>
         </section>
 
