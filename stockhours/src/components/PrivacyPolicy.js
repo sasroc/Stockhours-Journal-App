@@ -56,7 +56,7 @@ export default function PrivacyPolicy() {
         </div>
 
         <Section title="1. Overview">
-          <P>TradeBetter ("we," "us," or "our") operates the TradeBetter trading journal platform at tradebetter.app (the "Service"). This Privacy Policy explains how we collect, use, and protect your information when you use our Service.</P>
+          <P>TradeBetter ("we," "us," or "our") operates the TradeBetter trading journal platform at tradebetter.net (the "Service"). This Privacy Policy explains how we collect, use, and protect your information when you use our Service.</P>
           <P>By using TradeBetter, you agree to the collection and use of information in accordance with this policy. If you disagree with any part, please discontinue use of the Service.</P>
         </Section>
 
