@@ -203,7 +203,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const [debriefError, setDebriefError] = useState(null);
   const [debriefVisible, setDebriefVisible] = useState({});
   const navigate = useNavigate();
-  const { currentUser, isPro } = useAuth();
+  const { currentUser, isPro, tradingProfile } = useAuth();
 
   const trades = useMemo(() => {
     if (!tradeData.length) return [];
@@ -554,12 +554,40 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
       const sortedDates = Object.keys(calendarData).sort((a, b) => new Date(b) - new Date(a)).filter(d => d !== date);
       const recentHistory = sortedDates.slice(0, 5).map(d => {
         const dTrades = calendarData[d]?.trades || [];
+        const dayPL = dTrades.reduce((sum, t) => sum + t.profitLoss, 0);
+        const dayWinners = dTrades.filter(t => t.profitLoss > 0).length;
+        const symbolCounts = {};
+        dTrades.forEach(t => { const sym = t.Symbol || t.symbol; if (sym) symbolCounts[sym] = (symbolCounts[sym] || 0) + 1; });
+        const dominantSymbol = Object.keys(symbolCounts).sort((a, b) => symbolCounts[b] - symbolCounts[a])[0] || null;
         return {
           date: toDebriefKey(d),
           tradeCount: dTrades.length,
-          totalPL: dTrades.reduce((sum, t) => sum + t.profitLoss, 0),
+          totalPL: dayPL,
+          winRate: dTrades.length > 0 ? ((dayWinners / dTrades.length) * 100).toFixed(0) : null,
+          dominantSymbol,
+          isGreenDay: dayPL > 0,
         };
       });
+
+      // Compute current win/loss streak
+      const allTradesChron = Object.entries(calendarData)
+        .flatMap(([d, data]) => (data.trades || []).map(t => ({ ...t, _d: d })))
+        .sort((a, b) => new Date(a._d) - new Date(b._d));
+      let streakContext = null;
+      if (allTradesChron.length >= 2) {
+        const rev = [...allTradesChron].reverse();
+        const first = rev[0].profitLoss > 0 ? 'win' : rev[0].profitLoss < 0 ? 'loss' : null;
+        if (first) {
+          let count = 1;
+          for (let i = 1; i < rev.length; i++) {
+            const r = rev[i].profitLoss > 0 ? 'win' : rev[i].profitLoss < 0 ? 'loss' : null;
+            if (r === first) count++; else break;
+          }
+          if (count >= 2) {
+            streakContext = `The trader is currently on a ${count}-trade ${first === 'win' ? 'winning' : 'losing'} streak going into this debrief.`;
+          }
+        }
+      }
 
       const token = await currentUser.getIdToken();
       const API_URL = process.env.REACT_APP_STRIPE_API_URL || '';
@@ -569,7 +597,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ trades: tradePayload, stats, dailyNote, recentHistory }),
+        body: JSON.stringify({ trades: tradePayload, stats, dailyNote, recentHistory, tradingProfile: tradingProfile || null, streakContext }),
       });
 
       if (!response.ok) {

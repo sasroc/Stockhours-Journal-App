@@ -21,7 +21,7 @@ const getTradeKey = (trade) => {
 };
 
 // Placeholder for the detailed view
-function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistakesTags, setSetupsTags, setMistakesTags, selectedSetups, selectedMistakes, setSelectedSetups, setSelectedMistakes, setRatings, isPro, currentUser, tradingProfile }) {
+function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistakesTags, setSetupsTags, setMistakesTags, selectedSetups, selectedMistakes, setSelectedSetups, setSelectedMistakes, setRatings, isPro, currentUser, tradingProfile, streakContext, symbolStats }) {
   // Dummy values for fields not in trade object
   const grossPL = trade.netPL;
   const adjustedCost = (trade.entryPrice * trade.open.Quantity * 100).toFixed(2);
@@ -72,6 +72,8 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
             mistakes: selectedMistakes,
           },
           tradingProfile: tradingProfile || null,
+          streakContext: streakContext || null,
+          symbolStats: symbolStats || null,
         }),
       });
       const data = await res.json();
@@ -632,10 +634,38 @@ const AllTradesScreen = ({ tradeData, tradingProfile }) => {
     });
 
     // Sort trades by close date (most recent first)
-    return processedTrades.sort((a, b) => 
+    return processedTrades.sort((a, b) =>
       new Date(b.closeDate) - new Date(a.closeDate)
     );
   }, [tradeData]);
+
+  // Compute current consecutive win/loss streak from all closed trades
+  const streakInfo = useMemo(() => {
+    const closed = [...allTrades].sort((a, b) => new Date(b.closeDate || b.openDate) - new Date(a.closeDate || a.openDate));
+    if (closed.length === 0) return null;
+    const first = closed[0].netPL > 0 ? 'win' : closed[0].netPL < 0 ? 'loss' : null;
+    if (!first) return null;
+    let count = 1;
+    for (let i = 1; i < closed.length; i++) {
+      const r = closed[i].netPL > 0 ? 'win' : closed[i].netPL < 0 ? 'loss' : null;
+      if (r === first) count++;
+      else break;
+    }
+    return count >= 2 ? { count, type: first } : null;
+  }, [allTrades]);
+
+  // Compute per-symbol stats from all closed trades
+  const symbolStatsMap = useMemo(() => {
+    const map = {};
+    allTrades.forEach(t => {
+      if (!t.symbol) return;
+      if (!map[t.symbol]) map[t.symbol] = { trades: 0, wins: 0, totalPL: 0 };
+      map[t.symbol].trades++;
+      if (t.netPL > 0) map[t.symbol].wins++;
+      map[t.symbol].totalPL += t.netPL;
+    });
+    return map;
+  }, [allTrades]);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -754,6 +784,13 @@ const AllTradesScreen = ({ tradeData, tradingProfile }) => {
         isPro={isPro}
         currentUser={currentUser}
         tradingProfile={tradingProfile}
+        streakContext={streakInfo ? `The trader is currently on a ${streakInfo.count}-trade ${streakInfo.type === 'win' ? 'winning' : 'losing'} streak.` : null}
+        symbolStats={symbolStatsMap[selectedTrade.symbol] ? {
+          symbol: selectedTrade.symbol,
+          trades: symbolStatsMap[selectedTrade.symbol].trades,
+          winRate: ((symbolStatsMap[selectedTrade.symbol].wins / symbolStatsMap[selectedTrade.symbol].trades) * 100).toFixed(1),
+          avgPL: (symbolStatsMap[selectedTrade.symbol].totalPL / symbolStatsMap[selectedTrade.symbol].trades).toFixed(2),
+        } : null}
       />
     );
   }

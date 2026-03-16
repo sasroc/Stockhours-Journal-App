@@ -95,6 +95,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
   });
   const [isHalfScreen, setIsHalfScreen] = useState(window.innerWidth <= 960);
   const [patternInsights, setPatternInsights] = useState(null);
+  const [patternInsightsGeneratedAt, setPatternInsightsGeneratedAt] = useState(null);
   const [patternLoading, setPatternLoading] = useState(false);
   const [patternError, setPatternError] = useState(null);
 
@@ -116,6 +117,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
           if (userDoc.exists()) {
             const data = userDoc.data();
             if (data.patternInsights) setPatternInsights(data.patternInsights);
+            if (data.patternInsightsGeneratedAt) setPatternInsightsGeneratedAt(data.patternInsightsGeneratedAt);
           }
         } catch (err) {
           console.error('Failed to load pattern insights:', err);
@@ -1533,11 +1535,13 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
       }
 
       const data = await response.json();
+      const generatedAt = new Date().toISOString();
       setPatternInsights(data.insights);
+      setPatternInsightsGeneratedAt(generatedAt);
       // Persist to Firestore
       if (currentUser) {
         const userDocRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userDocRef, { patternInsights: data.insights });
+        await updateDoc(userDocRef, { patternInsights: data.insights, patternInsightsGeneratedAt: generatedAt });
       }
     } catch (err) {
       console.error('Pattern detection error:', err);
@@ -1549,10 +1553,11 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
 
   const handleDeletePatternInsights = async () => {
     setPatternInsights(null);
+    setPatternInsightsGeneratedAt(null);
     if (currentUser) {
       try {
         const userDocRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userDocRef, { patternInsights: null });
+        await updateDoc(userDocRef, { patternInsights: null, patternInsightsGeneratedAt: null });
       } catch (err) {
         console.error('Failed to delete pattern insights:', err);
       }
@@ -2270,7 +2275,12 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
                   <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px', letterSpacing: 0.1 }}>AI Pattern Insights</span>
                   <span style={{ color: 'rgba(45,212,191,0.7)', fontSize: '11px', background: 'rgba(45,212,191,0.08)', padding: '2px 8px', borderRadius: '20px', letterSpacing: 0.3 }}>GPT-4o</span>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {patternInsightsGeneratedAt && (
+                    <span style={{ color: '#4a6080', fontSize: '11px' }}>
+                      Generated {new Date(patternInsightsGeneratedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {new Date(patternInsightsGeneratedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </span>
+                  )}
                   <button
                     onClick={handlePatternDetection}
                     style={{ padding: '5px 13px', background: 'rgba(255,255,255,0.04)', color: '#7a90a8', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}

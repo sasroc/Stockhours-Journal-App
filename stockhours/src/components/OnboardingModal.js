@@ -27,6 +27,10 @@ const OnboardingModal = ({ open, onClose, editMode = false }) => {
   const [targetGainDollars, setTargetGainDollars] = useState('');
   const [saving, setSaving] = useState(false);
   const [hoveredGoal, setHoveredGoal] = useState(null);
+  const [tradingStyle, setTradingStyle] = useState('');
+  const [preferredInstruments, setPreferredInstruments] = useState(new Set());
+  const [experienceLevel, setExperienceLevel] = useState('');
+  const [accountSizeRange, setAccountSizeRange] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -46,6 +50,10 @@ const OnboardingModal = ({ open, onClose, editMode = false }) => {
       setMaxLossDollars(tradingProfile.maxLossDollars != null ? String(tradingProfile.maxLossDollars) : '');
       setTargetGainPercent(tradingProfile.targetGainPercent != null ? String(tradingProfile.targetGainPercent) : '');
       setTargetGainDollars(tradingProfile.targetGainDollars != null ? String(tradingProfile.targetGainDollars) : '');
+      setTradingStyle(tradingProfile.tradingStyle || '');
+      setPreferredInstruments(new Set(tradingProfile.preferredInstruments || []));
+      setExperienceLevel(tradingProfile.experienceLevel || '');
+      setAccountSizeRange(tradingProfile.accountSizeRange || '');
     } else if (!editMode) {
       setSelectedGoals(new Set());
       setOtherGoal('');
@@ -53,6 +61,10 @@ const OnboardingModal = ({ open, onClose, editMode = false }) => {
       setMaxLossDollars('');
       setTargetGainPercent('');
       setTargetGainDollars('');
+      setTradingStyle('');
+      setPreferredInstruments(new Set());
+      setExperienceLevel('');
+      setAccountSizeRange('');
     }
   }, [open, editMode, tradingProfile]);
 
@@ -87,6 +99,10 @@ const OnboardingModal = ({ open, onClose, editMode = false }) => {
         maxLossDollars: skipped ? (tradingProfile?.maxLossDollars ?? null) : parseNum(maxLossDollars),
         targetGainPercent: skipped ? (tradingProfile?.targetGainPercent ?? null) : parseNum(targetGainPercent),
         targetGainDollars: skipped ? (tradingProfile?.targetGainDollars ?? null) : parseNum(targetGainDollars),
+        tradingStyle: skipped ? (tradingProfile?.tradingStyle || '') : tradingStyle,
+        preferredInstruments: skipped ? (tradingProfile?.preferredInstruments || []) : Array.from(preferredInstruments),
+        experienceLevel: skipped ? (tradingProfile?.experienceLevel || '') : experienceLevel,
+        accountSizeRange: skipped ? (tradingProfile?.accountSizeRange || '') : accountSizeRange,
         onboardingCompleted: true,
       };
       await updateDoc(userDocRef, { tradingProfile: profile });
@@ -348,6 +364,88 @@ const OnboardingModal = ({ open, onClose, editMode = false }) => {
                 </div>
               </div>
               <div style={hintStyle}>Your profit target per trade</div>
+            </div>
+
+            <div style={{ marginTop: '20px', borderTop: '1px solid #1E3050', paddingTop: '20px' }}>
+              <div style={{ ...labelStyle, marginBottom: '14px', fontSize: '12px', color: '#6B7C93', textTransform: 'uppercase', letterSpacing: '0.05em' }}>About your trading</div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Trading style</label>
+                <select
+                  value={tradingStyle}
+                  onChange={e => setTradingStyle(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="">Select style...</option>
+                  <option value="Scalping">Scalping</option>
+                  <option value="Day Trading">Day Trading</option>
+                  <option value="Swing Trading">Swing Trading</option>
+                  <option value="Position Trading">Position Trading</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Preferred instruments</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {['0DTE Options', 'Weekly Options', 'Monthly Options', 'Stocks', 'Futures'].map(inst => {
+                    const sel = preferredInstruments.has(inst);
+                    return (
+                      <button
+                        key={inst}
+                        type="button"
+                        onClick={() => setPreferredInstruments(prev => {
+                          const next = new Set(prev);
+                          if (next.has(inst)) next.delete(inst); else next.add(inst);
+                          return next;
+                        })}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          border: `1.5px solid ${sel ? '#2DD4BF' : '#2B3D55'}`,
+                          backgroundColor: sel ? 'rgba(45, 212, 191, 0.1)' : '#0D1B2E',
+                          color: sel ? '#2DD4BF' : '#8899AA',
+                          fontWeight: sel ? 600 : 400,
+                        }}
+                      >
+                        {inst}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Experience level</label>
+                <select
+                  value={experienceLevel}
+                  onChange={e => setExperienceLevel(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="">Select level...</option>
+                  <option value="Beginner (<1 year)">Beginner (&lt;1 year)</option>
+                  <option value="Intermediate (1-3 years)">Intermediate (1–3 years)</option>
+                  <option value="Advanced (3-7 years)">Advanced (3–7 years)</option>
+                  <option value="Expert (7+ years)">Expert (7+ years)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Account size</label>
+                <select
+                  value={accountSizeRange}
+                  onChange={e => setAccountSizeRange(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="">Select range...</option>
+                  <option value="Under $5K">Under $5K</option>
+                  <option value="$5K–$25K">$5K–$25K</option>
+                  <option value="$25K–$100K">$25K–$100K</option>
+                  <option value="$100K–$500K">$100K–$500K</option>
+                  <option value="$500K+">$500K+</option>
+                </select>
+              </div>
             </div>
           </div>
         )}

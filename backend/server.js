@@ -1300,7 +1300,7 @@ app.post('/api/ai/trade-review', verifyFirebaseToken, aiRateLimiter, async (req,
     }
 
     // Validate trade data
-    const { trade, tradingProfile } = req.body;
+    const { trade, tradingProfile, streakContext, symbolStats } = req.body;
     if (!trade || !trade.symbol) {
       return res.status(400).json({ error: 'Missing trade data.' });
     }
@@ -1321,9 +1321,18 @@ app.post('/api/ai/trade-review', verifyFirebaseToken, aiRateLimiter, async (req,
       ].filter(Boolean).join(' / ');
       profileLines.push(`- Target gain per trade: ${parts}`);
     }
+    if (tradingProfile?.tradingStyle) profileLines.push(`- Trading style: ${tradingProfile.tradingStyle}`);
+    if (tradingProfile?.preferredInstruments?.length) profileLines.push(`- Preferred instruments: ${tradingProfile.preferredInstruments.join(', ')}`);
+    if (tradingProfile?.experienceLevel) profileLines.push(`- Experience level: ${tradingProfile.experienceLevel}`);
+    if (tradingProfile?.accountSizeRange) profileLines.push(`- Account size: ${tradingProfile.accountSizeRange}`);
     const profileContext = profileLines.length
       ? `TRADER'S PERSONAL STRATEGY RULES:\n${profileLines.join('\n')}`
       : null;
+
+    const streakLine = streakContext ? `\n\nCURRENT STREAK CONTEXT: ${streakContext}` : '';
+    const symbolLine = symbolStats
+      ? `\n\nTHIS SYMBOL'S HISTORY FOR THIS TRADER: ${symbolStats.trades} trades on ${symbolStats.symbol}, ${symbolStats.winRate}% win rate, avg P&L $${symbolStats.avgPL}. Use this to say whether this trade is typical or an outlier for them on this ticker.`
+      : '';
 
     const systemPrompt = `You are TradeBetter AI — a sharp, encouraging trading coach. Analyze this trade and give quick, punchy feedback the trader can absorb in 30 seconds. Use this EXACT format:
 
@@ -1339,7 +1348,7 @@ One sentence: what was traded, outcome, and holding time.
 **💡 Key Lesson**
 One sentence takeaway the trader should remember.
 
-Rules: Max 120 words total. Be specific, never generic. Conversational tone — talk TO the trader, not about them.${profileContext ? `\n\n${profileContext}\nWhen rules are set, explicitly evaluate each rule against this trade's results — e.g. "You stayed within your 10% max loss rule ✓" or "This trade exceeded your 10% max loss limit ✗ (actual: -18%)". Keep it brief, one line per rule.` : ''}`;
+Rules: Max 120 words total. Be specific, never generic. Conversational tone — talk TO the trader, not about them.${profileContext ? `\n\n${profileContext}\nWhen rules are set, explicitly evaluate each rule against this trade's results — e.g. "You stayed within your 10% max loss rule ✓" or "This trade exceeded your 10% max loss limit ✗ (actual: -18%)". Keep it brief, one line per rule.` : ''}${streakLine}${symbolLine}`;
 
     const side = (trade.type || '').toUpperCase() === 'PUT' ? 'SHORT' : 'LONG';
     const holdingPeriod = trade.entryTime && trade.exitTime
@@ -1413,7 +1422,7 @@ app.post('/api/ai/daily-debrief', verifyFirebaseToken, aiRateLimiter, async (req
       return res.status(403).json({ error: 'AI Daily Debrief is available on the Pro plan.' });
     }
 
-    const { trades, stats, dailyNote, recentHistory, tradingProfile } = req.body;
+    const { trades, stats, dailyNote, recentHistory, tradingProfile, streakContext } = req.body;
     if (!trades || !trades.length) {
       return res.status(400).json({ error: 'No trades provided for debrief.' });
     }
@@ -1434,9 +1443,15 @@ app.post('/api/ai/daily-debrief', verifyFirebaseToken, aiRateLimiter, async (req
       ].filter(Boolean).join(' / ');
       profileLines.push(`- Target gain per trade: ${parts}`);
     }
+    if (tradingProfile?.tradingStyle) profileLines.push(`- Trading style: ${tradingProfile.tradingStyle}`);
+    if (tradingProfile?.preferredInstruments?.length) profileLines.push(`- Preferred instruments: ${tradingProfile.preferredInstruments.join(', ')}`);
+    if (tradingProfile?.experienceLevel) profileLines.push(`- Experience level: ${tradingProfile.experienceLevel}`);
+    if (tradingProfile?.accountSizeRange) profileLines.push(`- Account size: ${tradingProfile.accountSizeRange}`);
     const profileContext = profileLines.length
       ? `TRADER'S PERSONAL STRATEGY RULES:\n${profileLines.join('\n')}`
       : null;
+
+    const streakLine = streakContext ? `\n\nCURRENT STREAK CONTEXT: ${streakContext}` : '';
 
     const systemPrompt = `You are TradeBetter AI — a sharp, encouraging trading coach delivering an end-of-day debrief. Make it scannable and actionable — the trader should absorb it in under a minute. Use this EXACT format:
 
@@ -1453,7 +1468,7 @@ app.post('/api/ai/daily-debrief', verifyFirebaseToken, aiRateLimiter, async (req
 **🎯 Tomorrow's Focus**
 - 2 specific action items for the next session
 
-Rules: Max 200 words total. Be specific to THIS trader's data, never generic. Conversational tone — talk TO the trader.${profileContext ? `\n\n${profileContext}\nIn the Patterns section, check today's trades against their per-trade rules and call out any violations or streaks of adherence.` : ''}`;
+Rules: Max 200 words total. Be specific to THIS trader's data, never generic. Conversational tone — talk TO the trader.${profileContext ? `\n\n${profileContext}\nIn the Patterns section, check today's trades against their per-trade rules and call out any violations or streaks of adherence.` : ''}${streakLine}`;
 
     const tradeLines = trades.map((t, i) => {
       let line = `Trade ${i + 1}: ${t.symbol} ${t.type || ''} | P&L: $${t.profitLoss != null ? t.profitLoss.toFixed(2) : 'N/A'} | ROI: ${t.netROI != null ? t.netROI.toFixed(2) + '%' : 'N/A'} | Qty: ${t.quantity || 'N/A'}`;
@@ -1473,7 +1488,10 @@ Rules: Max 200 words total. Be specific to THIS trader's data, never generic. Co
     if (recentHistory && recentHistory.length) {
       userPrompt += `\n\nRecent Trading Days:`;
       recentHistory.forEach(day => {
-        userPrompt += `\n- ${day.date}: ${day.tradeCount} trades, P&L: $${day.totalPL != null ? day.totalPL.toFixed(2) : 'N/A'}`;
+        const greenRed = day.isGreenDay != null ? (day.isGreenDay ? '🟢' : '🔴') : '';
+        const winRatePart = day.winRate != null ? `, ${day.winRate}% win rate` : '';
+        const symbolPart = day.dominantSymbol ? `, top ticker: ${day.dominantSymbol}` : '';
+        userPrompt += `\n- ${greenRed} ${day.date}: ${day.tradeCount} trades, P&L: $${day.totalPL != null ? day.totalPL.toFixed(2) : 'N/A'}${winRatePart}${symbolPart}`;
       });
     }
 
@@ -1521,7 +1539,7 @@ app.post('/api/ai/pattern-detection', verifyFirebaseToken, aiRateLimiter, async 
       return res.status(403).json({ error: 'AI Pattern Detection is available on the Pro plan.' });
     }
 
-    const { stats, tradingProfile } = req.body;
+    const { stats, tradingProfile, streakContext } = req.body;
     if (!stats || !stats.overall || stats.overall.totalTrades <= 0) {
       return res.status(400).json({ error: 'No trade data provided for analysis.' });
     }
@@ -1542,9 +1560,15 @@ app.post('/api/ai/pattern-detection', verifyFirebaseToken, aiRateLimiter, async 
       ].filter(Boolean).join(' / ');
       profileLines.push(`- Target gain per trade: ${parts}`);
     }
+    if (tradingProfile?.tradingStyle) profileLines.push(`- Trading style: ${tradingProfile.tradingStyle}`);
+    if (tradingProfile?.preferredInstruments?.length) profileLines.push(`- Preferred instruments: ${tradingProfile.preferredInstruments.join(', ')}`);
+    if (tradingProfile?.experienceLevel) profileLines.push(`- Experience level: ${tradingProfile.experienceLevel}`);
+    if (tradingProfile?.accountSizeRange) profileLines.push(`- Account size: ${tradingProfile.accountSizeRange}`);
     const profileContext = profileLines.length
       ? `TRADER'S PERSONAL STRATEGY RULES:\n${profileLines.join('\n')}`
       : null;
+
+    const streakLine = streakContext ? `\n\nCURRENT STREAK CONTEXT: ${streakContext}` : '';
 
     const systemPrompt = `You are an expert trading coach with 20+ years of experience in options and equities trading. You are analyzing a trader's full trade history statistics to identify behavioral patterns and actionable insights.
 
@@ -1562,7 +1586,7 @@ Prioritize the most impactful and surprising patterns. Look for:
 - Common mistakes and their cost
 - Symbol concentration or diversification effects
 
-Keep the total response around 600 words. Be direct, specific, and constructive.${profileContext ? `\n\n${profileContext}\nReference their stated rules when identifying patterns — highlight if their behavior consistently conflicts with their max loss or gain targets.` : ''}`;
+Keep the total response around 600 words. Be direct, specific, and constructive.${profileContext ? `\n\n${profileContext}\nReference their stated rules when identifying patterns — highlight if their behavior consistently conflicts with their max loss or gain targets.` : ''}${streakLine}`;
 
     let userPrompt = `Here are the trader's full history statistics:\n\n`;
 
@@ -1675,7 +1699,7 @@ app.post('/api/ai/weekly-review', verifyFirebaseToken, aiRateLimiter, async (req
       return res.status(403).json({ error: 'AI Weekly Review is available on the Pro plan.' });
     }
 
-    const { weeklyStats, dailyBreakdown, tradeCount, notes, tradingProfile } = req.body;
+    const { weeklyStats, dailyBreakdown, tradeCount, notes, tradingProfile, streakContext, bySymbol, bySetup, priorWeekGoals } = req.body;
     if (!weeklyStats || tradeCount <= 0) {
       return res.status(400).json({ error: 'No trade data provided for weekly review.' });
     }
@@ -1696,9 +1720,18 @@ app.post('/api/ai/weekly-review', verifyFirebaseToken, aiRateLimiter, async (req
       ].filter(Boolean).join(' / ');
       profileLines.push(`- Target gain per trade: ${parts}`);
     }
+    if (tradingProfile?.tradingStyle) profileLines.push(`- Trading style: ${tradingProfile.tradingStyle}`);
+    if (tradingProfile?.preferredInstruments?.length) profileLines.push(`- Preferred instruments: ${tradingProfile.preferredInstruments.join(', ')}`);
+    if (tradingProfile?.experienceLevel) profileLines.push(`- Experience level: ${tradingProfile.experienceLevel}`);
+    if (tradingProfile?.accountSizeRange) profileLines.push(`- Account size: ${tradingProfile.accountSizeRange}`);
     const profileContext = profileLines.length
       ? `TRADER'S PERSONAL STRATEGY RULES:\n${profileLines.join('\n')}`
       : null;
+
+    const streakLine = streakContext ? `\n\nCURRENT STREAK CONTEXT: ${streakContext}` : '';
+    const priorGoalsLine = priorWeekGoals
+      ? `\n\nPRIOR WEEK'S AI-SET GOALS (evaluate whether the trader followed through on each):\n${priorWeekGoals}`
+      : '';
 
     const systemPrompt = `You are a concise trading coach. Generate a brief weekly review.
 
@@ -1715,7 +1748,7 @@ Keep it SHORT — the entire response should be under 300 words. No filler, no r
 **Next Week's Focus**
 3 numbered goals. One sentence each. Specific and actionable.
 
-The "---GOALS---" delimiter MUST appear on its own line exactly as shown.${profileContext ? `\n\n${profileContext}\nIn the review, evaluate whether the week's trades generally followed their per-trade rules. Call out adherence patterns or repeated violations.` : ''}`;
+The "---GOALS---" delimiter MUST appear on its own line exactly as shown.${profileContext ? `\n\n${profileContext}\nIn the review, evaluate whether the week's trades generally followed their per-trade rules. Call out adherence patterns or repeated violations.` : ''}${streakLine}${priorGoalsLine}`;
 
     let userPrompt = `Here is the trader's weekly data:\n\n`;
     userPrompt += `WEEKLY STATS:\n`;
@@ -1735,6 +1768,20 @@ The "---GOALS---" delimiter MUST appear on its own line exactly as shown.${profi
         userPrompt += `- ${day.date}: ${day.trades} trades, P&L $${day.totalPL?.toFixed(2)}, ${day.winners}W/${day.losers}L\n`;
       });
       userPrompt += `\n`;
+    }
+
+    if (bySymbol && bySymbol.length > 0) {
+      userPrompt += `\nTOP SYMBOLS THIS WEEK:\n`;
+      bySymbol.forEach(s => {
+        userPrompt += `- ${s.symbol}: ${s.trades} trades, ${s.winRate}% win rate, total P&L $${s.totalPL != null ? s.totalPL.toFixed(2) : 'N/A'}\n`;
+      });
+    }
+
+    if (bySetup && bySetup.length > 0) {
+      userPrompt += `\nSETUPS USED THIS WEEK:\n`;
+      bySetup.forEach(s => {
+        userPrompt += `- ${s.tag}: ${s.trades} trades, ${s.winRate}% win rate, avg P&L $${s.avgPL != null ? s.avgPL.toFixed(2) : 'N/A'}\n`;
+      });
     }
 
     if (notes && notes.length > 0) {

@@ -313,12 +313,44 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
       const sortedDates = Object.keys(dailyTrades).sort((a, b) => new Date(b) - new Date(a)).filter(d => d !== date);
       const recentHistory = sortedDates.slice(0, 5).map(d => {
         const dayTrades = dailyTrades[d];
+        const dayPL = dayTrades.reduce((sum, t) => sum + t.profitLoss, 0);
+        const dayWinners = dayTrades.filter(t => t.profitLoss > 0).length;
+        const symbolCounts = {};
+        dayTrades.forEach(t => { const sym = t.Symbol || t.symbol; if (sym) symbolCounts[sym] = (symbolCounts[sym] || 0) + 1; });
+        const dominantSymbol = Object.keys(symbolCounts).sort((a, b) => symbolCounts[b] - symbolCounts[a])[0] || null;
         return {
           date: d,
           tradeCount: dayTrades.length,
-          totalPL: dayTrades.reduce((sum, t) => sum + t.profitLoss, 0),
+          totalPL: dayPL,
+          winRate: dayTrades.length > 0 ? ((dayWinners / dayTrades.length) * 100).toFixed(0) : null,
+          dominantSymbol,
+          isGreenDay: dayPL > 0,
         };
       });
+
+      // Compute current win/loss streak across all trades (sorted chronologically)
+      const allTradesFlat = Object.entries(dailyTrades)
+        .flatMap(([d, ts]) => ts.map(t => ({ ...t, _date: d })))
+        .sort((a, b) => {
+          const da = a.FirstBuyExecTime || a.TradeDate || a._date;
+          const db2 = b.FirstBuyExecTime || b.TradeDate || b._date;
+          return new Date(da) - new Date(db2);
+        });
+      let streakContext = null;
+      if (allTradesFlat.length >= 2) {
+        const rev = [...allTradesFlat].reverse();
+        const first = rev[0].profitLoss > 0 ? 'win' : rev[0].profitLoss < 0 ? 'loss' : null;
+        if (first) {
+          let count = 1;
+          for (let i = 1; i < rev.length; i++) {
+            const r = rev[i].profitLoss > 0 ? 'win' : rev[i].profitLoss < 0 ? 'loss' : null;
+            if (r === first) count++; else break;
+          }
+          if (count >= 2) {
+            streakContext = `The trader is currently on a ${count}-trade ${first === 'win' ? 'winning' : 'losing'} streak going into this debrief.`;
+          }
+        }
+      }
 
       const token = await currentUser.getIdToken();
       const API_URL = process.env.REACT_APP_STRIPE_API_URL || '';
@@ -328,7 +360,7 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ trades: tradePayload, stats, dailyNote, recentHistory, tradingProfile: tradingProfile || null }),
+        body: JSON.stringify({ trades: tradePayload, stats, dailyNote, recentHistory, tradingProfile: tradingProfile || null, streakContext }),
       });
 
       if (!response.ok) {

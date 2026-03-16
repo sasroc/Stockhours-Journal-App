@@ -278,11 +278,55 @@ const WeeklyReviewScreen = ({ tradeData, tradingProfile, tradeRatings = {} }) =>
       }
     }
 
+    // Compute per-symbol stats
+    const symbolMap = {};
+    weekTrades.forEach(t => {
+      const sym = t.symbol || t.Symbol;
+      if (!sym) return;
+      if (!symbolMap[sym]) symbolMap[sym] = { trades: 0, wins: 0, totalPL: 0 };
+      symbolMap[sym].trades++;
+      if (t.profitLoss > 0) symbolMap[sym].wins++;
+      symbolMap[sym].totalPL += t.profitLoss;
+    });
+    const bySymbol = Object.entries(symbolMap)
+      .map(([symbol, d]) => ({
+        symbol,
+        trades: d.trades,
+        winRate: d.trades > 0 ? ((d.wins / d.trades) * 100).toFixed(1) : '0',
+        totalPL: d.totalPL,
+      }))
+      .sort((a, b) => Math.abs(b.totalPL) - Math.abs(a.totalPL))
+      .slice(0, 8);
+
+    // Compute per-setup stats using tradeRatings
+    const setupMap = {};
+    weekTrades.forEach(t => {
+      const key = `${t.symbol || t.Symbol}-${t.open?.Strike || ''}-${t.open?.Expiration || ''}-${t.open?.ExecTime || ''}`;
+      const meta = tradeRatings[key] || {};
+      (meta.setups || []).forEach(tag => {
+        if (!setupMap[tag]) setupMap[tag] = { trades: 0, wins: 0, totalPL: 0 };
+        setupMap[tag].trades++;
+        if (t.profitLoss > 0) setupMap[tag].wins++;
+        setupMap[tag].totalPL += t.profitLoss;
+      });
+    });
+    const bySetup = Object.entries(setupMap)
+      .map(([tag, d]) => ({
+        tag,
+        trades: d.trades,
+        winRate: d.trades > 0 ? ((d.wins / d.trades) * 100).toFixed(1) : '0',
+        avgPL: d.trades > 0 ? d.totalPL / d.trades : 0,
+      }))
+      .sort((a, b) => b.trades - a.trades)
+      .slice(0, 6);
+
     return {
       weeklyStats: { totalPL, totalTrades, winners, losers, winRate, profitFactor, bestDay, worstDay, totalVolume },
       dailyBreakdown,
       tradeCount: totalTrades,
       notes: weekNotes,
+      bySymbol,
+      bySetup,
     };
   };
 
@@ -291,6 +335,31 @@ const WeeklyReviewScreen = ({ tradeData, tradingProfile, tradeRatings = {} }) =>
     setError(null);
     try {
       const data = computeWeeklyData(weekKey);
+
+      // Find the most recent prior week's goals (from any earlier week)
+      const priorWeekGoals = Object.entries(weeklyReviews)
+        .filter(([k]) => k < weekKey && weeklyReviews[k]?.goals)
+        .sort(([a], [b]) => b.localeCompare(a))[0]?.[1]?.goals || null;
+
+      // Compute current win/loss streak from trades sorted by open date descending
+      const tradesSortedDesc = [...trades].sort((a, b) => {
+        const da = a.open?.ExecTime || a.openDate || '';
+        const db2 = b.open?.ExecTime || b.openDate || '';
+        return new Date(db2) - new Date(da);
+      });
+      let streakContext = null;
+      if (tradesSortedDesc.length >= 2) {
+        const first = tradesSortedDesc[0].profitLoss > 0 ? 'win' : tradesSortedDesc[0].profitLoss < 0 ? 'loss' : null;
+        if (first) {
+          let count = 1;
+          for (let i = 1; i < tradesSortedDesc.length; i++) {
+            const r = tradesSortedDesc[i].profitLoss > 0 ? 'win' : tradesSortedDesc[i].profitLoss < 0 ? 'loss' : null;
+            if (r === first) count++; else break;
+          }
+          if (count >= 2) streakContext = `The trader is currently on a ${count}-trade ${first === 'win' ? 'winning' : 'losing'} streak.`;
+        }
+      }
+
       const token = await currentUser.getIdToken();
       const API_URL = process.env.REACT_APP_STRIPE_API_URL || '';
       const response = await fetch(`${API_URL}/api/ai/weekly-review`, {
@@ -299,7 +368,7 @@ const WeeklyReviewScreen = ({ tradeData, tradingProfile, tradeRatings = {} }) =>
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ ...data, tradingProfile: tradingProfile || null }),
+        body: JSON.stringify({ ...data, tradingProfile: tradingProfile || null, priorWeekGoals, streakContext }),
       });
 
       if (!response.ok) {
