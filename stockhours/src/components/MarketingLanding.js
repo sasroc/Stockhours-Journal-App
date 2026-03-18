@@ -1388,6 +1388,64 @@ const MarketingLanding = () => {
           </div>
         </section>
 
+        <section className="ml-section">
+          <h2 className="ml-h2">See the app in action</h2>
+          <p className="ml-p">Explore the actual product flow, from overview to detailed review, in one interactive preview.</p>
+          <div className="ml-showcase-wrap">
+            <aside className="ml-showcase-panel">
+              {screenshotItems.map((item, index) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  className={`ml-showcase-item ${index === activeShotIndex ? 'active' : ''}`}
+                  onClick={() => setActiveShotIndex(index)}
+                >
+                  <h4><span className="ml-showcase-num">{index + 1}</span>{item.title}</h4>
+                  <p>{item.description}</p>
+                </button>
+              ))}
+            </aside>
+
+            <div className="ml-showcase-screen">
+              <div className="ml-screen-head">
+                <div className="ml-screen-dots">
+                  <span className="ml-screen-dot" />
+                  <span className="ml-screen-dot" />
+                  <span className="ml-screen-dot" />
+                </div>
+                <div className="ml-screen-title">{activeShot.title}</div>
+              </div>
+              <div className="ml-screen-image-wrap">
+                <img
+                  src={activeShot.src}
+                  alt={activeShot.title}
+                  className="ml-screen-image"
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.style.objectFit = 'contain';
+                    event.currentTarget.style.padding = '28px';
+                    event.currentTarget.src = primaryLogo;
+                  }}
+                />
+              </div>
+
+              <div className="ml-thumbs">
+                {screenshotItems.map((item, index) => (
+                  <button
+                    key={item.title}
+                    type="button"
+                    className={`ml-thumb ${index === activeShotIndex ? 'active' : ''}`}
+                    onClick={() => setActiveShotIndex(index)}
+                    aria-label={`Show ${item.title}`}
+                  >
+                    <img src={item.src} alt={item.title} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="ml-stat-band">
           <div className="ml-stat">
             <strong>One place</strong>
@@ -1539,64 +1597,6 @@ const MarketingLanding = () => {
               </div>
               <h3>Improve weekly</h3>
               <p>Use reports and AI reviews to sharpen decisions and set focused goals going forward.</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="ml-section">
-          <h2 className="ml-h2">See the app in action</h2>
-          <p className="ml-p">Explore the actual product flow, from overview to detailed review, in one interactive preview.</p>
-          <div className="ml-showcase-wrap">
-            <aside className="ml-showcase-panel">
-              {screenshotItems.map((item, index) => (
-                <button
-                  key={item.title}
-                  type="button"
-                  className={`ml-showcase-item ${index === activeShotIndex ? 'active' : ''}`}
-                  onClick={() => setActiveShotIndex(index)}
-                >
-                  <h4><span className="ml-showcase-num">{index + 1}</span>{item.title}</h4>
-                  <p>{item.description}</p>
-                </button>
-              ))}
-            </aside>
-
-            <div className="ml-showcase-screen">
-              <div className="ml-screen-head">
-                <div className="ml-screen-dots">
-                  <span className="ml-screen-dot" />
-                  <span className="ml-screen-dot" />
-                  <span className="ml-screen-dot" />
-                </div>
-                <div className="ml-screen-title">{activeShot.title}</div>
-              </div>
-              <div className="ml-screen-image-wrap">
-                <img
-                  src={activeShot.src}
-                  alt={activeShot.title}
-                  className="ml-screen-image"
-                  loading="lazy"
-                  onError={(event) => {
-                    event.currentTarget.style.objectFit = 'contain';
-                    event.currentTarget.style.padding = '28px';
-                    event.currentTarget.src = primaryLogo;
-                  }}
-                />
-              </div>
-
-              <div className="ml-thumbs">
-                {screenshotItems.map((item, index) => (
-                  <button
-                    key={item.title}
-                    type="button"
-                    className={`ml-thumb ${index === activeShotIndex ? 'active' : ''}`}
-                    onClick={() => setActiveShotIndex(index)}
-                    aria-label={`Show ${item.title}`}
-                  >
-                    <img src={item.src} alt={item.title} />
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         </section>
