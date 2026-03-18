@@ -4,27 +4,185 @@
     <meta charset="utf-8" />
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="TradeBetter - Your AI-powered trading journal"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/favicon.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+    <meta name="theme-color" content="#0A1628" />
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>TradeBetter</title>
+    <!-- Primary meta -->
+    <title>TradeBetter — AI Options Trading Journal | Schwab, Webull & thinkorswim</title>
+    <meta name="description" content="Track, analyze, and improve your options trades with AI coaching. Connect Schwab, Webull, or import from thinkorswim & IBKR. Win rate by setup, pattern detection, and weekly AI reviews." />
+    <meta name="author" content="TradeBetter" />
+    <meta name="keywords" content="options trading journal, trade journal, AI trading coach, thinkorswim journal, schwab trading journal, webull journal, IBKR journal, options trade tracker, trading analytics, win rate by setup, trade review AI, pattern detection trading" />
+    <link rel="canonical" href="https://tradebetter.net/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TradeBetter" />
+    <meta property="og:url" content="https://tradebetter.net/" />
+    <meta property="og:title" content="TradeBetter — AI Options Trading Journal" />
+    <meta property="og:description" content="The trading journal built for options traders. Connect Schwab, Webull, or import from thinkorswim & IBKR. AI coaching, pattern detection, and weekly reviews." />
+    <meta property="og:image" content="https://tradebetter.net/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="TradeBetter — AI Options Trading Journal dashboard" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TradeBetter — AI Options Trading Journal" />
+    <meta name="twitter:description" content="The trading journal built for options traders. Connect Schwab, Webull, or import from thinkorswim & IBKR. AI coaching, pattern detection, and weekly reviews." />
+    <meta name="twitter:image" content="https://tradebetter.net/og-image.png" />
+
+    <!-- PWA -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/favicon.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "TradeBetter",
+      "url": "https://tradebetter.net",
+      "logo": "https://tradebetter.net/favicon.png",
+      "description": "AI-powered trading journal built for options traders. Track performance, uncover behavioral patterns, and get personalized AI coaching across every trade.",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "support@tradebetter.net"
+      }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "TradeBetter",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web, iOS",
+      "url": "https://tradebetter.net",
+      "description": "The trading journal built for options traders. Import from Charles Schwab, Webull, thinkorswim, and Interactive Brokers. AI-powered trade review, daily debrief, pattern detection, and weekly reviews personalized to your goals.",
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Basic Monthly",
+          "price": "10.00",
+          "priceCurrency": "USD",
+          "description": "Full access to trade imports, dashboard, daily stats, all-trades view, and reports."
+        },
+        {
+          "@type": "Offer",
+          "name": "Basic Yearly",
+          "price": "102.00",
+          "priceCurrency": "USD",
+          "description": "Basic plan billed annually."
+        },
+        {
+          "@type": "Offer",
+          "name": "Pro Monthly",
+          "price": "25.00",
+          "priceCurrency": "USD",
+          "description": "All Basic features plus AI Trade Review, AI Daily Debrief, AI Pattern Detection, AI Weekly Review, and unlimited broker connections."
+        },
+        {
+          "@type": "Offer",
+          "name": "Pro Yearly",
+          "price": "255.00",
+          "priceCurrency": "USD",
+          "description": "Pro plan billed annually."
+        }
+      ],
+      "featureList": [
+        "Options trade journal with automatic P&L grouping",
+        "AI trade review coaching (GPT-4o)",
+        "AI daily debrief and session analysis",
+        "AI pattern detection across full trade history",
+        "AI weekly review with goal-based planning",
+        "Charles Schwab OAuth broker sync",
+        "Webull OAuth broker sync",
+        "thinkorswim CSV import",
+        "Interactive Brokers (IBKR) CSV import",
+        "Win rate by setup and mistake tags",
+        "Performance by symbol, day of week, and time of day",
+        "Trade notes and star ratings",
+        "TradingView chart integration",
+        "iOS app available on App Store",
+        "CSV data export"
+      ]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is TradeBetter?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "TradeBetter is a trading journal built specifically for options traders. You import your trade history from your broker, and TradeBetter automatically groups executions into round-trips, calculates P&L, and gives you a structured dashboard to review your performance — daily, weekly, and across your full history. Pro subscribers also get AI-powered coaching on individual trades, daily sessions, detected patterns, and weekly plans."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What brokers does TradeBetter support?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "TradeBetter supports direct OAuth connections with Charles Schwab and Webull for automatic trade syncing. You can also import CSV exports from thinkorswim (TD Ameritrade) and Interactive Brokers (IBKR Activity Statements). Additional broker support is on the roadmap."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does TradeBetter work for options traders specifically?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. TradeBetter is purpose-built for options traders. The trade grouping logic, P&L calculations, and analytics are all designed around options round-trips — grouping executions by symbol, strike, expiry, and contract type."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the AI coaching work in TradeBetter?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "TradeBetter uses GPT-4o to analyze your real trade data. There are four AI features: Trade Review (coaching on a specific trade's entry, sizing, and exit), Daily Debrief (session-level feedback against your goals), Pattern Detection (cross-history insights from your full trade log), and Weekly Review (a data-backed weekly plan). All AI features read your trading profile — goals, max loss targets, and gain targets — to make feedback relevant to your situation."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How much does TradeBetter cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "TradeBetter offers two plans: Basic at $10/month (or $102/year) which includes full trade import, dashboard, and analytics; and Pro at $25/month (or $255/year) which adds all four AI features (Trade Review, Daily Debrief, Pattern Detection, Weekly Review) and unlimited broker connections."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there an iOS app for TradeBetter?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. TradeBetter is available as a native app on the App Store for iPhone and iPad. The iOS app uses the same account as the web app, so your full journal is available across all your devices in sync."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my trading data secure with TradeBetter?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Your trade data is stored in your own private Firestore document and is never shared with other users or sold to third parties. Broker OAuth tokens are encrypted at rest. TradeBetter never has direct access to execute trades — connections are read-only for transaction history."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does the Reports screen analyze?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Reports surfaces patterns across your full trade history: performance by symbol, by day of week, by time of day, by setup tag, by mistake tag, and more. The goal is to find where your real edge is and where your losses are clustering. Pro subscribers also get an AI Insights tab that synthesizes these stats into plain-language behavioral patterns."
+          }
+        }
+      ]
+    }
+    </script>
+
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NEZRJYNTW9"></script>
     <script>
@@ -37,15 +195,5 @@
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
   </body>
 </html>

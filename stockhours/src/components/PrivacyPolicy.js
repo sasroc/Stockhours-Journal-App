@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import primaryLogo from '../assets/3.png';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const LAST_UPDATED = 'February 21, 2026';
 
@@ -25,6 +26,11 @@ const Ul = ({ items }) => (
 );
 
 export default function PrivacyPolicy() {
+  usePageMeta({
+    title: 'Privacy Policy — TradeBetter',
+    description: 'TradeBetter Privacy Policy — how we collect, use, and protect your trading data and personal information.',
+    canonical: 'https://tradebetter.net/privacy',
+  });
   const navigate = useNavigate();
 
   return (

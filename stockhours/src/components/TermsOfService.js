@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import primaryLogo from '../assets/3.png';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const LAST_UPDATED = 'February 21, 2026';
 
@@ -25,6 +26,11 @@ const Ul = ({ items }) => (
 );
 
 export default function TermsOfService() {
+  usePageMeta({
+    title: 'Terms of Service — TradeBetter',
+    description: 'TradeBetter Terms of Service — the legal terms governing your use of the TradeBetter options trading journal platform.',
+    canonical: 'https://tradebetter.net/terms',
+  });
   const navigate = useNavigate();
 
   return (

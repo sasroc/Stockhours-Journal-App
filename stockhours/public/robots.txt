@@ -1,3 +1,13 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Disallow: /dashboard
+Disallow: /reports
+Disallow: /alltrades
+Disallow: /dailystats
+Disallow: /imports
+Disallow: /settings
+Disallow: /weekly-reviews
+Disallow: /brokers
+Disallow: /paywall
+Disallow: /callback/
+
+Sitemap: https://tradebetter.net/sitemap.xml

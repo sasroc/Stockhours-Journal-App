@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
 import secondaryLogo from '../assets/2.png';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const categories = [
   {
@@ -163,6 +164,11 @@ const categories = [
 ];
 
 const FAQScreen = () => {
+  usePageMeta({
+    title: 'FAQ — TradeBetter | Options Trading Journal Questions Answered',
+    description: 'Answers to common questions about TradeBetter — brokers supported, AI features, pricing plans, data security, the iOS app, and how to get started journaling your options trades.',
+    canonical: 'https://tradebetter.net/faq',
+  });
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [openKey, setOpenKey] = useState(null);

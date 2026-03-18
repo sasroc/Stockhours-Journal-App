@@ -3,8 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
 import secondaryLogo from '../assets/2.png';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const PricingScreen = () => {
+  usePageMeta({
+    title: 'Pricing — TradeBetter | Options Trading Journal from $10/mo',
+    description: 'TradeBetter plans start at $10/month. Basic includes full trade analytics. Pro adds AI trade review, daily debrief, pattern detection, and weekly reviews. Cancel anytime.',
+    canonical: 'https://tradebetter.net/pricing',
+  });
   const navigate = useNavigate();
   const { currentUser, subscription, isSubscribed } = useAuth();
   const [billingCycle, setBillingCycle] = useState('monthly');

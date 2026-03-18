@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { theme } from '../theme';
 import primaryLogo from '../assets/3.png';
 import secondaryLogo from '../assets/2.png';
@@ -97,6 +98,11 @@ const faqItems = [
 ];
 
 const MarketingLanding = () => {
+  usePageMeta({
+    title: 'TradeBetter — AI Options Trading Journal | Schwab, Webull & thinkorswim',
+    description: 'Track, analyze, and improve your options trades with AI coaching. Connect Schwab, Webull, or import from thinkorswim & IBKR. Win rate by setup, pattern detection, and weekly AI reviews.',
+    canonical: 'https://tradebetter.net/',
+  });
   const navigate = useNavigate();
   const { currentUser, displayName, logout } = useAuth();
   const [activeShotIndex, setActiveShotIndex] = useState(0);
