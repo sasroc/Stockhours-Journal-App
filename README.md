@@ -94,8 +94,8 @@ Basic plan users see these features locked with an upgrade prompt. No AI calls a
 
 |  | Basic | Pro |
 |--|-------|-----|
-| **Monthly** | $20/mo | $45/mo |
-| **Yearly** | $17/mo ($204/yr) | $38/mo ($456/yr) |
+| **Monthly** | $10/mo | $25/mo |
+| **Yearly** | $8.50/mo ($102/yr) | $21.25/mo ($255/yr) |
 | Trade imports (file + broker) | Yes | Yes |
 | Dashboard, Daily Stats, Reports | Yes | Yes |
 | Tagging, notes, ratings | Yes | Yes |

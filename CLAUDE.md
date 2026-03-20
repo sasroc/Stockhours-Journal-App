@@ -99,6 +99,7 @@ Broker OAuth tokens live in subcollections: `users/{uid}/schwabTokens/primary` a
 
 ### Subscription Gating
 - **Pro check pattern** (backend): read `users/{uid}`, verify `subscription.plan === 'pro'` AND `subscription.status` is `'active'` or `'trialing'`
+- **Basic check pattern** (backend): same but `subscription.plan === 'basic'` OR `'pro'`
 - **Frontend**: `useAuth()` exposes `isPro`, `isSubscribed`, `subscriptionPlan`
 - `ProtectedRoute` component gates screens requiring any subscription
 - `PaywallScreen` is shown to unauthenticated/unsubscribed users
@@ -142,7 +143,7 @@ colors: {
 | Schwab API | OAuth broker connection, trade sync |
 | Webull API | OAuth broker connection, trade sync |
 | TradingView | Embedded chart widget in trade detail view |
-| Sentry | Error monitoring — frontend (`@sentry/react`) tunnels events through `POST /api/sentry-tunnel` on the backend to bypass ad blockers |
+| Sentry | Error monitoring (see Analytics & Monitoring section) |
 
 ## Reference Documents
 - `IOS_APP_SPEC.md` — full feature parity spec for the iOS app (separate repo: `TradeLensiOS/`); defines required screens, Firestore schema alignment, and subscription gating behavior
@@ -153,3 +154,10 @@ colors: {
 2. **Daily Debrief** — `POST /api/ai/daily-debrief` — day-level coaching
 3. **Pattern Detection** — `POST /api/ai/pattern-detection` — cross-history insights, persisted to Firestore
 4. **Weekly Review** — `POST /api/ai/weekly-review` — weekly summary with goals
+5. **AI Chat Assistant** — conversational interface (planned, not yet implemented)
+
+All AI endpoints receive `tradingProfile` in the request body; backend injects it into the GPT system prompt for personalized coaching.
+
+## Analytics & Monitoring
+- **Google Analytics**: GA4 (`G-NEZRJYNTW9`) via gtag script in `stockhours/public/index.html`
+- **Sentry**: Frontend init in `stockhours/src/index.js` (`REACT_APP_SENTRY_DSN`), backend in `backend/server.js` (`SENTRY_DSN`) with global error handler middleware. Frontend tunnels events through `POST /api/sentry-tunnel` to bypass ad blockers.
