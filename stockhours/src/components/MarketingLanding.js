@@ -1156,8 +1156,26 @@ const MarketingLanding = () => {
               padding: 0 16px;
             }
 
+            .ml-header {
+              padding: 14px 16px !important;
+            }
+
+            .ml-header-nav-links {
+              display: none !important;
+            }
+
+            .ml-header-email {
+              display: none !important;
+            }
+
             .ml-footer-grid {
               grid-template-columns: 1fr 1fr !important;
+              padding: 36px 16px 24px !important;
+              gap: 28px !important;
+            }
+
+            .ml-footer-bottom {
+              padding: 14px 16px !important;
             }
 
             .ml-nav-row {
@@ -1190,17 +1208,115 @@ const MarketingLanding = () => {
             }
 
             .ml-hero {
-              padding: 48px 0 16px;
+              padding: 36px 0 12px;
             }
 
             .ml-trust-row {
               gap: 12px;
+            }
+
+            .ml-sub {
+              font-size: 15px;
+              line-height: 1.65;
+            }
+
+            .ml-p {
+              font-size: 15px;
+            }
+
+            .ml-section {
+              margin-top: 60px;
+            }
+
+            .ml-section-header {
+              margin-bottom: 28px;
+            }
+
+            .ml-faq-section {
+              margin-top: 52px;
+              margin-bottom: 48px;
+            }
+
+            .ml-faq-header {
+              margin-bottom: 28px;
+            }
+
+            .ml-final {
+              flex-direction: column;
+              align-items: flex-start;
+              padding: 24px 20px;
+              gap: 16px;
+            }
+
+            .ml-final h3 {
+              font-size: 22px;
+            }
+
+            .ml-final p {
+              font-size: 14px;
+            }
+
+            .ml-kpi-value {
+              font-size: 20px;
+            }
+
+            .ml-showcase-panel {
+              padding: 10px;
+            }
+
+            .ml-showcase-item {
+              padding: 10px;
+            }
+
+            .ml-showcase-item h4 {
+              font-size: 14px;
+            }
+
+            .ml-h2 {
+              font-size: clamp(22px, 6.5vw, 34px);
+            }
+
+            .ml-stat {
+              padding: 14px 16px;
+            }
+
+            .ml-feature-card {
+              padding: 22px 20px;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .ml-footer-grid {
+              grid-template-columns: 1fr !important;
+            }
+
+            .ml-cta-row {
+              flex-direction: column;
+              align-items: stretch;
+            }
+
+            .ml-cta-row .ml-btn,
+            .ml-cta-row .ml-btn-primary {
+              justify-content: center;
+            }
+
+            .ml-cta-row a {
+              justify-content: center;
+            }
+
+            .ml-hero-visual {
+              padding: 16px;
+            }
+
+            .ml-process-card-inner {
+              padding: 22px 18px;
             }
           }
         `}
       </style>
 
       <header
+        className="ml-header"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -1256,11 +1372,12 @@ const MarketingLanding = () => {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <button className="ml-nav-link" onClick={() => navigate('/pricing')}>Pricing</button>
-          <button className="ml-nav-link" onClick={() => navigate('/faq')}>FAQ</button>
-          <button className="ml-nav-link" onClick={() => navigate('/brokers')}>Brokers</button>
-
-          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
+          <div className="ml-header-nav-links" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <button className="ml-nav-link" onClick={() => navigate('/pricing')}>Pricing</button>
+            <button className="ml-nav-link" onClick={() => navigate('/faq')}>FAQ</button>
+            <button className="ml-nav-link" onClick={() => navigate('/brokers')}>Brokers</button>
+            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
+          </div>
 
           {currentUser ? (
             <>
@@ -1280,7 +1397,7 @@ const MarketingLanding = () => {
                 }}>
                   {(displayName || currentUser.email || '').charAt(0).toUpperCase()}
                 </div>
-                <span style={{ fontSize: '13px', color: '#5a7290', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className="ml-header-email" style={{ fontSize: '13px', color: '#5a7290', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {currentUser.email}
                 </span>
               </div>
@@ -1828,7 +1945,7 @@ const MarketingLanding = () => {
         </div>
 
         {/* Bottom bar */}
-        <div style={{
+        <div className="ml-footer-bottom" style={{
           maxWidth: '1320px',
           margin: '0 auto',
           padding: '18px 24px',
