@@ -108,6 +108,7 @@ const MarketingLanding = () => {
   const [activeShotIndex, setActiveShotIndex] = useState(0);
   const activeShot = screenshotItems[activeShotIndex];
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const visibleFaqs = faqItems.slice(0, 6);
 
@@ -1312,6 +1313,215 @@ const MarketingLanding = () => {
               padding: 22px 18px;
             }
           }
+
+          /* ── Hamburger button ── */
+          .ml-hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            padding: 0;
+            transition: background 0.2s ease, border-color 0.2s ease;
+            flex-shrink: 0;
+          }
+
+          .ml-hamburger:hover {
+            background: rgba(255,255,255,0.09);
+            border-color: rgba(255,255,255,0.18);
+          }
+
+          .ml-hamburger-line {
+            width: 18px;
+            height: 1.5px;
+            background: #c8d8ec;
+            border-radius: 2px;
+            transition: transform 0.28s ease, opacity 0.2s ease;
+            transform-origin: center;
+          }
+
+          .ml-hamburger.open .ml-hamburger-line:nth-child(1) {
+            transform: rotate(45deg) translate(4.5px, 4.5px);
+          }
+          .ml-hamburger.open .ml-hamburger-line:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(0);
+          }
+          .ml-hamburger.open .ml-hamburger-line:nth-child(3) {
+            transform: rotate(-45deg) translate(4.5px, -4.5px);
+          }
+
+          /* ── Mobile menu overlay ── */
+          .ml-mobile-menu {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9;
+            pointer-events: none;
+          }
+
+          .ml-mobile-menu.open {
+            pointer-events: all;
+          }
+
+          .ml-mobile-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+          }
+
+          .ml-mobile-menu.open .ml-mobile-backdrop {
+            opacity: 1;
+          }
+
+          .ml-mobile-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding-top: 68px;
+            background: linear-gradient(180deg, rgba(5,7,14,0.99) 0%, rgba(8,11,20,0.99) 100%);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            transform: translateY(-100%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+
+          .ml-mobile-menu.open .ml-mobile-panel {
+            transform: translateY(0);
+          }
+
+          .ml-mobile-panel-inner {
+            padding: 16px 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+          }
+
+          .ml-mobile-nav-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: #b0c4db;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.18s ease, color 0.18s ease;
+            text-align: left;
+          }
+
+          .ml-mobile-nav-link:hover {
+            background: rgba(255,255,255,0.05);
+            color: #e8f1fb;
+          }
+
+          .ml-mobile-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.07);
+            margin: 8px 0;
+          }
+
+          .ml-mobile-auth {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 4px;
+          }
+
+          .ml-mobile-auth-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            border: none;
+            background: linear-gradient(135deg, #1ecf97 0%, #2db9ff 100%);
+            color: #021a12;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 0.15px;
+            box-shadow: 0 4px 18px rgba(30,207,151,0.28), 0 8px 28px rgba(45,185,255,0.18);
+            transition: filter 0.2s ease, transform 0.2s ease;
+          }
+
+          .ml-mobile-auth-primary:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+          }
+
+          .ml-mobile-auth-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(143,165,190,0.25);
+            color: #c4d4e8;
+            padding: 13px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s ease, border-color 0.2s ease;
+          }
+
+          .ml-mobile-auth-secondary:hover {
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(143,165,190,0.45);
+          }
+
+          /* ── Desktop auth / header logo responsive ── */
+          .ml-header-auth {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }
+
+          .ml-header-logo-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 11px;
+            overflow: hidden;
+            background-color: #0b0b0b;
+            border: 1px solid #1f1f1f;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6), 0 0 18px rgba(0,123,255,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          @media (max-width: 760px) {
+            .ml-hamburger { display: flex; }
+            .ml-header-auth { display: none; }
+            .ml-mobile-menu { display: block; }
+            .ml-header-logo-box {
+              width: 36px;
+              height: 36px;
+              border-radius: 9px;
+            }
+            .ml-header-brand-name {
+              font-size: 18px !important;
+            }
+          }
         `}
       </style>
 
@@ -1330,36 +1540,23 @@ const MarketingLanding = () => {
           backdropFilter: 'blur(10px)'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div
-            style={{
-              width: '54px',
-              height: '54px',
-              borderRadius: '14px',
-              overflow: 'hidden',
-              backgroundColor: '#0b0b0b',
-              border: '1px solid #1f1f1f',
-              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.6), 0 0 18px rgba(0, 123, 255, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="ml-header-logo-box">
             <img
               src={secondaryLogo}
               alt="TradeBetter Logo"
               style={{
-                width: '66px',
-                height: '66px',
+                width: '50px',
+                height: '50px',
                 objectFit: 'cover',
                 objectPosition: 'center',
-                transform: 'scale(1.1) translateX(7px)',
+                transform: 'scale(1.1) translateX(5px)',
                 display: 'block'
               }}
             />
           </div>
           <span
-            className="brandText"
+            className="brandText ml-header-brand-name"
             style={{
               fontSize: '22px',
               fontWeight: 700,
@@ -1371,7 +1568,9 @@ const MarketingLanding = () => {
             TradeBetter
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+
+        {/* Desktop nav */}
+        <div className="ml-header-auth" style={{ gap: '4px' }}>
           <div className="ml-header-nav-links" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <button className="ml-nav-link" onClick={() => navigate('/pricing')}>Pricing</button>
             <button className="ml-nav-link" onClick={() => navigate('/faq')}>FAQ</button>
@@ -1383,17 +1582,10 @@ const MarketingLanding = () => {
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '4px' }}>
                 <div style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '50%',
+                  width: '28px', height: '28px', borderRadius: '50%',
                   background: 'linear-gradient(135deg, #1ecf97 0%, #2db9ff 100%)',
-                  color: '#021a12',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  flexShrink: 0
+                  color: '#021a12', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '11px', fontWeight: 700, flexShrink: 0
                 }}>
                   {(displayName || currentUser.email || '').charAt(0).toUpperCase()}
                 </div>
@@ -1416,7 +1608,66 @@ const MarketingLanding = () => {
             </>
           )}
         </div>
+
+        {/* Mobile hamburger */}
+        <button
+          className={`ml-hamburger${mobileMenuOpen ? ' open' : ''}`}
+          onClick={() => setMobileMenuOpen(o => !o)}
+          aria-label="Toggle menu"
+        >
+          <span className="ml-hamburger-line" />
+          <span className="ml-hamburger-line" />
+          <span className="ml-hamburger-line" />
+        </button>
       </header>
+
+      {/* Mobile slide-down menu */}
+      <div className={`ml-mobile-menu${mobileMenuOpen ? ' open' : ''}`}>
+        <div className="ml-mobile-backdrop" onClick={() => setMobileMenuOpen(false)} />
+        <div className="ml-mobile-panel">
+          <div className="ml-mobile-panel-inner">
+            <button className="ml-mobile-nav-link" onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }}>
+              Pricing
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <button className="ml-mobile-nav-link" onClick={() => { navigate('/faq'); setMobileMenuOpen(false); }}>
+              FAQ
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <button className="ml-mobile-nav-link" onClick={() => { navigate('/brokers'); setMobileMenuOpen(false); }}>
+              Brokers
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+
+            <div className="ml-mobile-divider" />
+
+            <div className="ml-mobile-auth">
+              {currentUser ? (
+                <>
+                  <button className="ml-mobile-auth-primary" onClick={() => { navigate('/paywall'); setMobileMenuOpen(false); }}>
+                    Subscribe to Pro
+                  </button>
+                  <button className="ml-mobile-auth-secondary" onClick={async () => { await logout(); navigate('/login'); setMobileMenuOpen(false); }}>
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="ml-mobile-auth-primary" onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}>
+                    Get started
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </button>
+                  <button className="ml-mobile-auth-secondary" onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}>
+                    Log in
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       <main className="ml-shell">
         <section className="ml-hero">
