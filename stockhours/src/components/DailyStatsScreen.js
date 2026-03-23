@@ -328,26 +328,25 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
         };
       });
 
-      // Compute current win/loss streak across all trades (sorted chronologically)
-      const allTradesFlat = Object.entries(dailyTrades)
-        .flatMap(([d, ts]) => ts.map(t => ({ ...t, _date: d })))
-        .sort((a, b) => {
-          const da = a.FirstBuyExecTime || a.TradeDate || a._date;
-          const db2 = b.FirstBuyExecTime || b.TradeDate || b._date;
-          return new Date(da) - new Date(db2);
-        });
+      // Compute current win/loss streak by day (days on or before the debrief date)
+      const sortedAllDates = Object.keys(dailyTrades)
+        .filter(d => new Date(d) <= new Date(date))
+        .sort((a, b) => new Date(a) - new Date(b));
       let streakContext = null;
-      if (allTradesFlat.length >= 2) {
-        const rev = [...allTradesFlat].reverse();
-        const first = rev[0].profitLoss > 0 ? 'win' : rev[0].profitLoss < 0 ? 'loss' : null;
+      if (sortedAllDates.length >= 2) {
+        const dayResults = sortedAllDates.map(d => {
+          const pl = dailyTrades[d].reduce((sum, t) => sum + t.profitLoss, 0);
+          return pl > 0 ? 'win' : pl < 0 ? 'loss' : null;
+        });
+        const rev = [...dayResults].reverse();
+        const first = rev[0];
         if (first) {
           let count = 1;
           for (let i = 1; i < rev.length; i++) {
-            const r = rev[i].profitLoss > 0 ? 'win' : rev[i].profitLoss < 0 ? 'loss' : null;
-            if (r === first) count++; else break;
+            if (rev[i] === first) count++; else break;
           }
           if (count >= 2) {
-            streakContext = `The trader is currently on a ${count}-trade ${first === 'win' ? 'winning' : 'losing'} streak going into this debrief.`;
+            streakContext = `The trader is currently on a ${count}-day ${first === 'win' ? 'winning' : 'losing'} streak (consecutive ${first === 'win' ? 'profitable' : 'losing'} trading days).`;
           }
         }
       }

@@ -110,7 +110,9 @@ Broker OAuth tokens live in subcollections: `users/{uid}/schwabTokens/primary` a
 - Trade data is processed entirely on the frontend from raw CSV/broker data. `App.js` handles all trade grouping, P&L computation, and filtering logic via `generateGroupKey` (groups executions into trade round-trips by symbol+expiry+strike+type+date).
 - Supported CSV import formats: **thinkorswim** (auto-detected) and **IBKR Activity Statement** (detected when row[0]==='Trades' && row[1]==='Header').
 - Schwab sync fetches ~1 year of history via sequential 60-day windows and uses `_schwabActivityId` for deduplication. CSV trades (`tradeData`) and Schwab trades (`schwabTradeData`) are stored in separate Firestore fields; `mergeWithSchwabData()` in `App.js` combines them into `filteredTradeData` for display. A one-time migration path in `App.js` handles legacy documents that mixed both in `tradeData`.
-- RevenueCat webhook (`POST /api/revenuecat/webhook`) writes to the same `subscription` field as Stripe. `REVENUECAT_WEBHOOK_SECRET` must be set in `backend/.env`. Full implementation guide: `backend/REVENUECAT_MIGRATION_PLAN.md`.
+- RevenueCat webhook (`POST /api/revenuecat/webhook`) writes to the same `subscription` field as Stripe. `REVENUECAT_WEBHOOK_SECRET` must be set in `backend/.env`.
+- Webull sync (`POST /api/webull/sync`) mirrors the Schwab implementation: stores trade groups in `webullTradeData` on the user doc, uses tokens from `users/{uid}/webullTokens/primary`.
+- Account deletion: `DELETE /api/user/account` — cancels any active Stripe subscription (skipped for RevenueCat/IAP users), deletes Firestore user doc and all subcollections, and revokes Firebase auth.
 - Several components are very large (`ReportsScreen.js` ~102KB, `StatsDashboard.js` ~67KB, `App.js` and `server.js` each ~56KB). Read selectively.
 
 ## Theme & Styling
@@ -147,14 +149,14 @@ colors: {
 
 ## Reference Documents
 - `IOS_APP_SPEC.md` — full feature parity spec for the iOS app (separate repo: `TradeLensiOS/`); defines required screens, Firestore schema alignment, and subscription gating behavior
-- `backend/REVENUECAT_MIGRATION_PLAN.md` — step-by-step guide to adding the RevenueCat webhook (iOS IAP) alongside the existing Stripe integration
+- `backend/REVENUECAT_MIGRATION_PLAN.md` — implementation reference for the RevenueCat webhook (`POST /api/revenuecat/webhook`, already live in `server.js`)
 
 ## AI Features (all Pro-only, GPT-4o)
 1. **Trade Review** — `POST /api/ai/trade-review` — per-trade coaching
 2. **Daily Debrief** — `POST /api/ai/daily-debrief` — day-level coaching
 3. **Pattern Detection** — `POST /api/ai/pattern-detection` — cross-history insights, persisted to Firestore
 4. **Weekly Review** — `POST /api/ai/weekly-review` — weekly summary with goals
-5. **AI Chat Assistant** — conversational interface (planned, not yet implemented)
+5. **AI Chat Assistant** — conversational interface (**planned**, not yet implemented)
 
 All AI endpoints receive `tradingProfile` in the request body; backend injects it into the GPT system prompt for personalized coaching.
 
