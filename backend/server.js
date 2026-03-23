@@ -223,6 +223,9 @@ app.post('/api/stripe/checkout', verifyFirebaseToken, async (req, res) => {
         uid: req.user.uid,
         plan,
         billing
+      },
+      subscription_data: {
+        metadata: { uid: req.user.uid }
       }
     });
 
@@ -376,20 +379,62 @@ app.post('/api/stripe/webhook', async (req, res) => {
         }
         break;
       }
+      case 'invoice.paid': {
+        // Most reliable activation event — fires for $0 invoices (100% discount codes) too.
+        const invoice = event.data.object;
+        if (!invoice.subscription) break;
+        const paidSub = await stripe.subscriptions.retrieve(invoice.subscription);
+        const paidPriceId = paidSub.items.data[0]?.price?.id;
+        const paidPlan = getPlanForPrice(paidPriceId);
+        const paidInterval = paidSub.items.data[0]?.price?.recurring?.interval;
+        const paidUid = paidSub.metadata?.uid;
+        if (paidUid) {
+          const userRef = db.collection('users').doc(paidUid);
+          await updateUserSubscription(userRef, {
+            status: 'active',
+            plan: paidPlan,
+            interval: paidInterval === 'year' ? 'yearly' : 'monthly',
+            stripeCustomerId: invoice.customer
+          });
+        } else {
+          const userDoc = await getUserByCustomerId(invoice.customer);
+          if (userDoc) {
+            await updateUserSubscription(userDoc.ref, {
+              status: 'active',
+              plan: paidPlan,
+              interval: paidInterval === 'year' ? 'yearly' : 'monthly',
+              stripeCustomerId: invoice.customer
+            });
+          }
+        }
+        break;
+      }
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const subscription = event.data.object;
         const priceId = subscription.items.data[0]?.price?.id;
         const plan = getPlanForPrice(priceId);
         const interval = subscription.items.data[0]?.price?.recurring?.interval; // 'month' or 'year'
-        const userDoc = await getUserByCustomerId(subscription.customer);
-        if (userDoc) {
-          await updateUserSubscription(userDoc.ref, {
+        // Prefer uid from subscription metadata (set at checkout); fall back to customer ID lookup.
+        const subUid = subscription.metadata?.uid;
+        if (subUid) {
+          const userRef = db.collection('users').doc(subUid);
+          await updateUserSubscription(userRef, {
             status: subscription.status,
             plan,
             interval: interval === 'year' ? 'yearly' : 'monthly',
             stripeCustomerId: subscription.customer
           });
+        } else {
+          const userDoc = await getUserByCustomerId(subscription.customer);
+          if (userDoc) {
+            await updateUserSubscription(userDoc.ref, {
+              status: subscription.status,
+              plan,
+              interval: interval === 'year' ? 'yearly' : 'monthly',
+              stripeCustomerId: subscription.customer
+            });
+          }
         }
         break;
       }
