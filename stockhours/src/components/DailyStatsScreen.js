@@ -328,26 +328,49 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
         };
       });
 
-      // Compute current win/loss streak by day (days on or before the debrief date)
-      const sortedAllDates = Object.keys(dailyTrades)
-        .filter(d => new Date(d) <= new Date(date))
+      // Compute win/loss streak context relative to today's debrief date
+      // Prior streak: days strictly before the debrief date
+      const todayPL = trades.reduce((sum, t) => sum + t.profitLoss, 0);
+      const todayResult = todayPL > 0 ? 'win' : todayPL < 0 ? 'loss' : null;
+
+      const datesBeforeToday = Object.keys(dailyTrades)
+        .filter(d => new Date(d) < new Date(date))
         .sort((a, b) => new Date(a) - new Date(b));
-      let streakContext = null;
-      if (sortedAllDates.length >= 2) {
-        const dayResults = sortedAllDates.map(d => {
+
+      let priorStreak = 0;
+      let priorStreakType = null;
+      if (datesBeforeToday.length > 0) {
+        const priorResults = datesBeforeToday.map(d => {
           const pl = dailyTrades[d].reduce((sum, t) => sum + t.profitLoss, 0);
           return pl > 0 ? 'win' : pl < 0 ? 'loss' : null;
         });
-        const rev = [...dayResults].reverse();
-        const first = rev[0];
-        if (first) {
+        const revPrior = [...priorResults].reverse();
+        const firstPrior = revPrior[0];
+        if (firstPrior) {
           let count = 1;
-          for (let i = 1; i < rev.length; i++) {
-            if (rev[i] === first) count++; else break;
+          for (let i = 1; i < revPrior.length; i++) {
+            if (revPrior[i] === firstPrior) count++; else break;
           }
-          if (count >= 2) {
-            streakContext = `The trader is currently on a ${count}-day ${first === 'win' ? 'winning' : 'losing'} streak (consecutive ${first === 'win' ? 'profitable' : 'losing'} trading days).`;
-          }
+          priorStreak = count;
+          priorStreakType = firstPrior;
+        }
+      }
+
+      let streakContext = null;
+      if (todayResult && priorStreak >= 1) {
+        const totalStreak = priorStreak + 1;
+        if (todayResult === priorStreakType) {
+          streakContext = `Today is day ${totalStreak} of a ${priorStreakType === 'win' ? 'winning' : 'losing'} streak — ${totalStreak} consecutive ${priorStreakType === 'win' ? 'profitable' : 'losing'} trading days in a row (this already includes today, do not add 1).`;
+        } else {
+          streakContext = `Today breaks what was a ${priorStreak}-day ${priorStreakType === 'win' ? 'winning' : 'losing'} streak. Today is the first ${todayResult === 'win' ? 'profitable' : 'losing'} day after ${priorStreak} consecutive ${priorStreakType === 'win' ? 'profitable' : 'losing'} days.`;
+        }
+      } else if (todayResult && priorStreak === 0 && datesBeforeToday.length > 0) {
+        const lastDayResult = (() => {
+          const pl = dailyTrades[datesBeforeToday[datesBeforeToday.length - 1]].reduce((sum, t) => sum + t.profitLoss, 0);
+          return pl > 0 ? 'win' : pl < 0 ? 'loss' : null;
+        })();
+        if (lastDayResult && lastDayResult !== todayResult) {
+          streakContext = `Today is the first ${todayResult === 'win' ? 'profitable' : 'losing'} day after yesterday's ${lastDayResult === 'win' ? 'winning' : 'losing'} session.`;
         }
       }
 
