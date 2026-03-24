@@ -5,7 +5,7 @@ import { theme } from '../theme';
 import primaryLogo from '../assets/3.png';
 
 const PaywallScreen = () => {
-  const { currentUser, displayName, subscription, refreshSubscription, subscriptionLoading, isSubscribed, logout } = useAuth();
+  const { currentUser, displayName, refreshSubscription, subscriptionLoading, isSubscribed, logout } = useAuth();
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState('');
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -20,15 +20,17 @@ const PaywallScreen = () => {
       monthlyPrice: 10,
       yearlyPrice: 102,
       yearlyMonthly: 8.5,
-      description: 'For trade import + analytics',
+      description: 'Import your trades and see exactly where your edge is.',
       features: [
-        'Trade imports',
-        'Daily stats + reports',
-        'Tagging, notes, ratings',
-        'Full access to trade data',
-        '1 broker connection'
+        'Import trades from any broker (CSV)',
+        'Daily P&L stats, win rates, and reports',
+        'Tag setups & mistakes to find patterns',
+        'Rate every trade to build accountability',
+        'Connect 1 broker for auto-sync'
       ],
-      highlight: false
+      highlight: false,
+      badge: null,
+      cta: 'Get Started'
     },
     {
       id: 'pro',
@@ -36,15 +38,17 @@ const PaywallScreen = () => {
       monthlyPrice: 25,
       yearlyPrice: 255,
       yearlyMonthly: 21.25,
-      description: 'All Basic features + AI insights',
+      description: 'Everything in Basic, plus an AI coach that tells you exactly what to fix.',
       features: [
-        'Everything in Basic',
-        'AI trade review prompts',
-        'Pattern detection insights',
-        'Strategy summaries',
-        'Unlimited broker connections'
+        'AI reviews every trade — what worked, what didn\'t',
+        'End-of-day debrief with personalized coaching',
+        'Pattern detection across your full trade history',
+        'Weekly AI review with goals for next week',
+        'Connect unlimited brokers'
       ],
-      highlight: true
+      highlight: true,
+      badge: 'Most Popular',
+      cta: 'Start Improving Now'
     }
   ];
 
@@ -92,37 +96,6 @@ const PaywallScreen = () => {
     }
   };
 
-  const handleManageSubscription = async () => {
-    setError('');
-    setActionLoading('portal');
-    try {
-      if (!apiBase) {
-        setError('Stripe API is not configured. Set REACT_APP_STRIPE_API_URL in the frontend env.');
-        return;
-      }
-      const token = await currentUser.getIdToken();
-      const response = await fetch(`${apiBase}/api/stripe/portal`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || 'Unable to open portal.');
-      }
-
-      const data = await response.json();
-      window.location.assign(data.url);
-    } catch (err) {
-      setError(err.message || 'Unable to open portal.');
-    } finally {
-      setActionLoading('');
-    }
-  };
-
   useEffect(() => {
     if (isSubscribed) {
       navigate('/dashboard', { replace: true });
@@ -149,74 +122,14 @@ const PaywallScreen = () => {
           backgroundColor: '#0d0d0d'
         }}
       >
-        {/* Left: logo + back to home */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img src={primaryLogo} alt="TradeBetter Logo" style={{ height: '42px' }} />
-            <span style={{ fontSize: '20px', fontWeight: 600 }}>TradeBetter</span>
-          </div>
-          <button
-            onClick={() => navigate('/home')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#888',
-              cursor: 'pointer',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 0',
-              transition: 'color 0.2s'
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-            onMouseLeave={e => e.currentTarget.style.color = '#888'}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Back to home
-          </button>
+        {/* Left: logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img src={primaryLogo} alt="TradeBetter Logo" style={{ height: '42px' }} />
+          <span style={{ fontSize: '20px', fontWeight: 600 }}>TradeBetter</span>
         </div>
 
-        {/* Right: user info + actions */}
+        {/* Right: user info + sign out */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={refreshSubscription}
-            style={{
-              background: 'none',
-              border: '1px solid #333',
-              color: theme.colors.white,
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '13px'
-            }}
-            disabled={subscriptionLoading}
-          >
-            {subscriptionLoading ? 'Refreshing...' : 'Refresh status'}
-          </button>
-          <button
-            onClick={handleManageSubscription}
-            style={{
-              backgroundColor: theme.colors.teal,
-              border: 'none',
-              color: '#000',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '13px'
-            }}
-            disabled={actionLoading === 'portal'}
-          >
-            {actionLoading === 'portal' ? 'Opening...' : 'Manage subscription'}
-          </button>
-
-          {/* Divider */}
-          <div style={{ width: '1px', height: '28px', backgroundColor: '#333' }} />
-
-          {/* Signed-in user */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '32px',
@@ -258,11 +171,14 @@ const PaywallScreen = () => {
         </div>
       </header>
 
-      <main style={{ padding: '48px 32px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Choose your plan</h1>
-          <p style={{ color: '#aaa', marginBottom: '24px' }}>
-            Your account is not subscribed yet. Pick a plan to unlock TradeBetter.
+      <main style={{ padding: '52px 32px 64px' }}>
+        {/* Hero copy */}
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <h1 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '12px', lineHeight: 1.2 }}>
+            Stop guessing why you're losing trades.
+          </h1>
+          <p style={{ color: '#aaa', fontSize: '16px', maxWidth: '480px', margin: '0 auto 28px', lineHeight: 1.6 }}>
+            TradeBetter tracks every trade, tags every mistake, and uses AI to show you exactly what to fix — so you can grow your account faster.
           </p>
 
           {/* Billing Toggle */}
@@ -344,6 +260,7 @@ const PaywallScreen = () => {
           )}
         </div>
 
+        {/* Plan cards */}
         <div
           style={{
             display: 'grid',
@@ -357,15 +274,37 @@ const PaywallScreen = () => {
             <div
               key={plan.id}
               style={{
-                backgroundColor: plan.highlight ? '#101010' : '#0d0d0d',
-                borderRadius: '12px',
-                padding: '24px',
-                border: plan.highlight ? '1px solid #2c2c2c' : '1px solid #222',
-                boxShadow: plan.highlight ? '0 0 20px rgba(0, 123, 255, 0.12)' : 'none'
+                backgroundColor: plan.highlight ? '#0e1620' : '#0d0d0d',
+                borderRadius: '14px',
+                padding: '28px 24px 24px',
+                border: plan.highlight ? `1px solid ${theme.colors.teal}` : '1px solid #222',
+                boxShadow: plan.highlight ? `0 0 32px rgba(45, 212, 191, 0.12)` : 'none',
+                position: 'relative'
               }}
             >
-              <h2 style={{ marginTop: 0, marginBottom: '4px' }}>{plan.name}</h2>
-              <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '4px' }}>
+              {/* Most Popular badge */}
+              {plan.badge && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-13px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  backgroundColor: theme.colors.teal,
+                  color: '#000',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '4px 14px',
+                  borderRadius: '20px',
+                  whiteSpace: 'nowrap',
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase'
+                }}>
+                  {plan.badge}
+                </div>
+              )}
+
+              <h2 style={{ marginTop: 0, marginBottom: '4px', fontSize: '20px' }}>{plan.name}</h2>
+              <div style={{ fontSize: '34px', fontWeight: 700, marginBottom: '4px' }}>
                 {getPrice(plan)}
                 <span style={{ fontSize: '14px', fontWeight: 500, color: '#8c8c8c' }}>/month</span>
               </div>
@@ -375,15 +314,15 @@ const PaywallScreen = () => {
                 </div>
               )}
               {billingCycle === 'monthly' && (
-                <div style={{ fontSize: '13px', color: '#666', marginBottom: '12px' }}>
+                <div style={{ fontSize: '13px', color: '#555', marginBottom: '12px' }}>
                   Billed monthly
                 </div>
               )}
-              <div style={{ color: '#aaa', marginBottom: '16px', fontSize: '14px' }}>{plan.description}</div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px 0', color: '#ddd' }}>
+              <div style={{ color: '#888', marginBottom: '18px', fontSize: '13px', lineHeight: 1.5 }}>{plan.description}</div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#ddd' }}>
                 {plan.features.map((feature) => (
-                  <li key={feature} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={theme.colors.teal} strokeWidth="2">
+                  <li key={feature} style={{ marginBottom: '10px', display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '14px', lineHeight: 1.4 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={theme.colors.teal} strokeWidth="2.5" style={{ flexShrink: 0, marginTop: '2px' }}>
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                     {feature}
@@ -393,26 +332,65 @@ const PaywallScreen = () => {
               <button
                 onClick={() => startCheckout(plan.id)}
                 style={{
-                  backgroundColor: plan.highlight ? '#1b66ff' : theme.colors.teal,
-                  border: 'none',
-                  color: theme.colors.white,
-                  padding: '12px 16px',
-                  borderRadius: '6px',
+                  backgroundColor: plan.highlight ? theme.colors.teal : '#1e1e1e',
+                  border: plan.highlight ? 'none' : '1px solid #333',
+                  color: plan.highlight ? '#000' : theme.colors.white,
+                  padding: '13px 16px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   width: '100%',
-                  fontSize: '14px',
-                  fontWeight: 600
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  transition: 'opacity 0.15s'
                 }}
                 disabled={actionLoading === plan.id}
+                onMouseEnter={e => { if (!actionLoading) e.currentTarget.style.opacity = '0.88'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
               >
-                {actionLoading === plan.id ? 'Redirecting...' : `Choose ${plan.name}`}
+                {actionLoading === plan.id ? 'Redirecting...' : plan.cta}
               </button>
             </div>
           ))}
         </div>
 
-        <div style={{ marginTop: '24px', color: '#888', textAlign: 'center' }}>
-          Current plan: <strong style={{ color: theme.colors.white }}>{subscription.plan}</strong>
+        {/* Trust signals */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '28px',
+          marginTop: '32px',
+          flexWrap: 'wrap'
+        }}>
+          {[
+            { icon: '🔒', text: 'Secure checkout via Stripe' },
+            { icon: '↩️', text: 'Cancel anytime, no questions' },
+            { icon: '💳', text: 'No hidden fees' }
+          ].map(({ icon, text }) => (
+            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#666', fontSize: '13px' }}>
+              <span style={{ fontSize: '14px' }}>{icon}</span>
+              {text}
+            </div>
+          ))}
+        </div>
+
+        {/* Already subscribed link */}
+        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+          <button
+            onClick={refreshSubscription}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#555',
+              cursor: 'pointer',
+              fontSize: '13px',
+              textDecoration: 'underline',
+              textDecorationColor: '#333'
+            }}
+            disabled={subscriptionLoading}
+          >
+            {subscriptionLoading ? 'Checking...' : 'Already subscribed? Click here to refresh'}
+          </button>
         </div>
       </main>
     </div>
