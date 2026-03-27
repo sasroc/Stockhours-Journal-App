@@ -166,6 +166,17 @@ const PaywallScreen = () => {
             {currentUser?.email}
           </span>
           <button
+            onClick={() => navigate('/')}
+            style={{
+              background: 'none', border: '1px solid #222', color: '#555',
+              padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#555'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#222'; e.currentTarget.style.color = '#555'; }}
+          >
+            Back to Home
+          </button>
+          <button
             onClick={handleSignOut}
             style={{
               background: 'none', border: '1px solid #222', color: '#555',

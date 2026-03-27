@@ -1646,7 +1646,7 @@ function AppRoutesWrapper() {
     if (subscriptionLoading) {
       return <FullScreenLoader />;
     }
-    return isSubscribed ? <Navigate to="/dashboard" replace /> : <Navigate to="/paywall" replace />;
+    return isSubscribed ? <Navigate to="/dashboard" replace /> : <MarketingLanding />;
   };
 
   return (
@@ -1654,7 +1654,7 @@ function AppRoutesWrapper() {
       <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <Routes>
         <Route path="/" element={<HomeRoute />} />
-      <Route path="/home" element={<MarketingLanding />} />
+      <Route path="/home" element={<Navigate to="/" replace />} />
       <Route path="/pricing" element={<PricingScreen />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />

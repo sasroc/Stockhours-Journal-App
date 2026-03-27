@@ -87,7 +87,8 @@ No Redux. State lives in:
 ### Data Storage — Firestore
 All user data in a single `users/{uid}` document:
 - `tradeData` — array of trade groups from CSV imports
-- `schwabTradeData` — array of trade groups synced from Schwab (stored separately since commit `678dbef` to prevent CSV data loss on re-sync)
+- `schwabTradeData` — array of trade groups synced from Schwab (stored separately to prevent CSV data loss on re-sync)
+- `webullTradeData` — array of trade groups synced from Webull (same pattern as `schwabTradeData`)
 - `subscription` — `{ status, plan, interval, updatedAt }` where `status` ∈ `active|trialing|inactive|canceled` and `plan` ∈ `none|basic|pro`
 - `tradeRatings` — `{ [tradeId]: { rating, setups, mistakes } }`
 - `notes` — `{ [dateString]: noteText }`
