@@ -1755,7 +1755,7 @@ const MarketingLanding = () => {
 
             <p className="ml-sub">
               Import your options history, surface your real edge by setup and symbol,
-              and get GPT-4o coaching that tells you exactly what to keep — and what's costing you.
+              and get AI coaching that tells you exactly what to keep — and what's costing you.
             </p>
 
             <div className="ml-cta-row">
