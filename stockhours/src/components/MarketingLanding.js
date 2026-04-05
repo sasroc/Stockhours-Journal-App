@@ -116,43 +116,28 @@ const MarketingLanding = () => {
     <div className="ml-root">
       <style>
         {`
-          @keyframes brandShift {
-            0% {
-              color: #31d17c;
-              text-shadow: 0 0 18px rgba(49, 209, 124, 0.55);
-            }
-            50% {
-              color: #37a7ff;
-              text-shadow: 0 0 18px rgba(55, 167, 255, 0.6);
-            }
-            100% {
-              color: #31d17c;
-              text-shadow: 0 0 18px rgba(49, 209, 124, 0.55);
-            }
-          }
-
           @keyframes pulseGlow {
-            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6); }
-            50% { opacity: 0.85; box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
           }
 
-          @keyframes heroGlow {
-            0%, 100% { opacity: 0.55; }
-            50% { opacity: 0.8; }
+          @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
           }
 
           .brandText {
-            animation: brandShift 4.5s ease-in-out infinite;
+            color: #34d399;
           }
 
           .ml-root {
             min-height: 100vh;
             color: ${theme.colors.white};
             background:
-              radial-gradient(70% 55% at 50% 0%, rgba(46, 204, 113, 0.12), transparent 65%),
-              radial-gradient(45% 35% at 8% 8%, rgba(0, 123, 255, 0.18), transparent 75%),
-              radial-gradient(45% 35% at 92% 12%, rgba(45, 212, 191, 0.12), transparent 75%),
-              linear-gradient(180deg, #05070c 0%, #070d17 46%, #04060b 100%);
+              radial-gradient(ellipse 80% 50% at 20% -10%, rgba(52, 211, 153, 0.07) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 80% 10%, rgba(96, 165, 250, 0.07) 0%, transparent 55%),
+              radial-gradient(ellipse 50% 60% at 50% 100%, rgba(45, 212, 191, 0.04) 0%, transparent 60%),
+              #06080f;
           }
 
           .ml-shell {
@@ -205,48 +190,36 @@ const MarketingLanding = () => {
           .ml-btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            border: 1px solid rgba(143, 165, 190, 0.28);
-            background: rgba(255,255,255,0.04);
-            color: #c8d8ec;
-            padding: 13px 22px;
-            border-radius: 12px;
-            font-size: 15px;
+            gap: 7px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: #8fa8c4;
+            padding: 11px 20px;
+            border-radius: 10px;
+            font-size: 14.5px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.22s ease;
+            transition: border-color 0.18s ease, color 0.18s ease;
             font-family: inherit;
-            letter-spacing: 0.1px;
           }
 
           .ml-btn:hover {
-            border-color: rgba(143, 165, 190, 0.52);
-            background: rgba(255,255,255,0.07);
-            color: #e8f0fb;
-            transform: translateY(-1px);
+            border-color: rgba(255,255,255,0.2);
+            color: #c8d8ec;
           }
 
           .ml-btn-primary {
             border: none;
-            background: linear-gradient(135deg, #1ecf97 0%, #2db9ff 100%);
-            color: #021a12;
+            background: #34d399;
+            color: #021a10;
             font-weight: 700;
-            font-size: 15px;
-            padding: 13px 26px;
-            letter-spacing: 0.2px;
-            box-shadow:
-              0 0 0 1px rgba(30, 207, 151, 0.35),
-              0 8px 24px rgba(30, 207, 151, 0.28),
-              0 16px 40px rgba(45, 185, 255, 0.2);
+            font-size: 14.5px;
+            padding: 11px 24px;
+            letter-spacing: 0.1px;
           }
 
           .ml-btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow:
-              0 0 0 1px rgba(30, 207, 151, 0.45),
-              0 12px 32px rgba(30, 207, 151, 0.36),
-              0 20px 52px rgba(45, 185, 255, 0.28);
-            filter: brightness(1.06);
+            background: #2ec68e;
           }
 
           /* ── Navbar buttons ── */
@@ -332,71 +305,150 @@ const MarketingLanding = () => {
           }
 
           .ml-hero {
-            padding: 72px 0 24px;
+            padding: 72px 0 64px;
             display: grid;
-            grid-template-columns: 1.1fr 1fr;
-            gap: 56px;
+            grid-template-columns: 1fr 1.15fr;
+            gap: 72px;
             align-items: center;
+          }
+
+          .ml-hero-center {
+            animation: fadeUp 0.5s ease both;
+          }
+
+          .ml-hero-visual-col {
+            animation: fadeUp 0.5s ease 0.12s both;
+          }
+
+          .ml-hero-frame {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.07);
+            box-shadow: 0 32px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset;
+            background: #070d17;
+          }
+
+          .ml-hero-frame-chrome {
+            height: 34px;
+            background: rgba(255,255,255,0.025);
+            border-bottom: 1px solid rgba(255,255,255,0.055);
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            gap: 6px;
+          }
+
+          .ml-hero-frame-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+          }
+
+          .ml-hero-frame-img {
+            width: 100%;
+            display: block;
           }
 
           .ml-eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 9px;
-            padding: 7px 14px 7px 10px;
+            gap: 10px;
+            padding: 6px 14px 6px 6px;
             border-radius: 999px;
-            font-size: 12.5px;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            color: #34d399;
-            background: rgba(52, 211, 153, 0.08);
-            border: 1px solid rgba(52, 211, 153, 0.28);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            width: fit-content;
+            margin-bottom: 20px;
           }
 
-          .ml-eyebrow-dot {
-            width: 7px;
-            height: 7px;
+          .ml-eyebrow-avatars {
+            display: flex;
+            align-items: center;
+          }
+
+          .ml-eyebrow-avatar {
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
-            background: #34d399;
-            animation: pulseGlow 2.4s ease-in-out infinite;
+            border: 2px solid #06080f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: #fff;
+            position: relative;
             flex-shrink: 0;
           }
 
+          .ml-eyebrow-avatar:not(:first-child) {
+            margin-left: -8px;
+          }
+
+          .ml-eyebrow-text {
+            font-size: 12.5px;
+            font-weight: 500;
+            color: #8fa8c4;
+            letter-spacing: 0.1px;
+            white-space: nowrap;
+          }
+
+          .ml-eyebrow-stars {
+            display: flex;
+            align-items: center;
+            gap: 1px;
+          }
+
+          .ml-eyebrow-dot {
+            display: none;
+          }
+
           .ml-title {
-            margin: 20px 0 18px;
-            font-size: clamp(34px, 5.4vw, 54px);
-            line-height: 1.06;
-            letter-spacing: -1px;
-            max-width: 18ch;
+            margin: 0 0 18px;
+            font-size: clamp(36px, 5.2vw, 56px);
+            line-height: 1.05;
+            letter-spacing: -1.8px;
+            font-weight: 800;
+            max-width: 16ch;
+            color: #eef4ff;
+          }
+
+          .ml-title-line1 {
+            display: block;
+            font-size: 0.58em;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            color: #8fa8c4;
+            margin-bottom: 4px;
           }
 
           .ml-title-accent {
-            background: linear-gradient(135deg, #34d399 0%, #60a5fa 100%);
+            background: linear-gradient(120deg, #34d399 0%, #60a5fa 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
           }
 
           .ml-sub {
-            color: #8fa8c4;
-            font-size: 17px;
-            line-height: 1.75;
-            max-width: 48ch;
+            color: #627b96;
+            font-size: 16px;
+            line-height: 1.72;
+            max-width: 44ch;
+            margin: 0 0 32px;
           }
 
           .ml-cta-row {
-            margin-top: 32px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
           }
 
           .ml-trust-row {
-            margin-top: 20px;
+            margin-top: 18px;
             display: flex;
             align-items: center;
-            gap: 18px;
+            gap: 16px;
             flex-wrap: wrap;
           }
 
@@ -447,61 +499,64 @@ const MarketingLanding = () => {
             position: relative;
           }
 
-          .ml-hero-glow {
-            position: absolute;
-            inset: -30px;
-            border-radius: 40px;
-            background: radial-gradient(60% 60% at 50% 50%, rgba(30, 207, 151, 0.14) 0%, rgba(45, 185, 255, 0.1) 50%, transparent 100%);
-            animation: heroGlow 4s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 0;
+          .ml-spark-path {
+            stroke-dasharray: 420;
+            stroke-dashoffset: 420;
+            animation: sparkDraw 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation-delay: 0.6s;
           }
 
-          .ml-hero-visual {
-            position: relative;
-            z-index: 1;
-            border-radius: 22px;
-            border: 1px solid rgba(52, 211, 153, 0.18);
-            background: linear-gradient(160deg, rgba(14, 22, 38, 0.92) 0%, rgba(7, 11, 21, 0.96) 100%);
-            padding: 22px;
-            box-shadow:
-              0 0 0 1px rgba(255,255,255,0.04) inset,
-              0 32px 64px rgba(0, 0, 0, 0.55),
-              0 0 48px rgba(30, 207, 151, 0.08);
+          .ml-sparkline-wrap {
+            margin-bottom: 14px;
+            padding: 11px 13px;
+            border-radius: 13px;
+            background: rgba(255,255,255,0.022);
+            border: 1px solid rgba(255,255,255,0.05);
           }
 
-          .ml-visual-header {
+          .ml-sparkline-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 18px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            margin-bottom: 8px;
           }
 
-          .ml-visual-status {
-            margin-left: auto;
+          .ml-sparkline-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.55px;
+            color: #3d5a74;
+            font-weight: 700;
+          }
+
+          .ml-sparkline-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #34d399;
+            letter-spacing: -0.3px;
+          }
+
+          .ml-rating-row {
             display: flex;
             align-items: center;
             gap: 5px;
-            font-size: 11px;
-            color: #34d399;
-            font-weight: 600;
-            letter-spacing: 0.2px;
+            font-size: 12.5px;
+            color: #627b96;
+            font-weight: 500;
           }
 
-          .ml-visual-status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #34d399;
-            animation: pulseGlow 2s ease-in-out infinite;
+          .ml-hero-glow {
+            display: none;
+          }
+
+          .ml-hero-visual {
+            display: none;
           }
 
           .ml-visual-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
+            gap: 9px;
           }
 
           .ml-kpi {
@@ -1205,11 +1260,12 @@ const MarketingLanding = () => {
             }
 
             .ml-title {
-              letter-spacing: -0.7px;
+              font-size: clamp(34px, 9.5vw, 52px);
+              letter-spacing: -1.2px;
             }
 
             .ml-hero {
-              padding: 36px 0 12px;
+              padding: 40px 0 32px;
             }
 
             .ml-trust-row {
@@ -1671,28 +1727,44 @@ const MarketingLanding = () => {
 
       <main className="ml-shell">
         <section className="ml-hero">
-          <div>
+
+          {/* ── Left: copy ── */}
+          <div className="ml-hero-center">
             <div className="ml-eyebrow">
-              <span className="ml-eyebrow-dot" />
-              Built for serious options traders
+              <div className="ml-eyebrow-avatars">
+                <div className="ml-eyebrow-avatar" style={{ background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)' }}>JM</div>
+                <div className="ml-eyebrow-avatar" style={{ background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)' }}>AR</div>
+                <div className="ml-eyebrow-avatar" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>SK</div>
+              </div>
+              <div className="ml-eyebrow-stars">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill="#f59e0b">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                ))}
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#c8d8ec', marginLeft: '4px' }}>4.9</span>
+              </div>
+              <span className="ml-eyebrow-text">Loved by options traders</span>
             </div>
+
             <h1 className="ml-title">
-              Your trades already tell a story.{' '}
-              <span className="ml-title-accent">Are you reading it?</span>
+              <span className="ml-title-line1">Meet TradeBetter.</span>
+              The journal that{' '}
+              <span className="ml-title-accent">actually makes you better.</span>
             </h1>
+
             <p className="ml-sub">
-              Stop guessing what works. Import your history, uncover your real edge by setup and symbol,
-              and get clear AI feedback on what to keep doing and what to cut.
+              Import your options history, surface your real edge by setup and symbol,
+              and get GPT-4o coaching that tells you exactly what to keep — and what's costing you.
             </p>
 
             <div className="ml-cta-row">
               <button className="ml-btn ml-btn-primary" onClick={() => navigate(currentUser ? '/paywall' : '/login')}>
-                Get started
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '2px' }}>
+                Get started free
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
               </button>
-              <button className="ml-btn" onClick={() => navigate('/pricing')}>View plans</button>
               <a
                 href="https://apps.apple.com/us/app/tradebetter/id6759767433"
                 target="_blank"
@@ -1703,89 +1775,43 @@ const MarketingLanding = () => {
                   alignItems: 'center',
                   gap: '8px',
                   background: '#000',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '12px',
-                  padding: '10px 18px',
-                  transition: 'opacity 0.2s ease, transform 0.2s ease',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: '10px',
+                  padding: '10px 16px',
+                  transition: 'opacity 0.18s ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '0.8'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
               >
-                <svg width="16" height="20" viewBox="0 0 24 24" fill="white" style={{ flexShrink: 0 }}>
+                <svg width="15" height="18" viewBox="0 0 24 24" fill="white" style={{ flexShrink: 0 }}>
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                 </svg>
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                  <span style={{ fontSize: '9px', color: '#fff', fontWeight: 400, letterSpacing: '0.2px' }}>Download on the</span>
-                  <span style={{ fontSize: '14px', color: '#fff', fontWeight: 700, letterSpacing: '0.1px' }}>App Store</span>
+                  <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.6)', fontWeight: 400, letterSpacing: '0.2px' }}>Download on the</span>
+                  <span style={{ fontSize: '13px', color: '#fff', fontWeight: 700 }}>App Store</span>
                 </div>
               </a>
             </div>
 
-            <div className="ml-trust-row">
-              <div className="ml-trust-item">
-                <div className="ml-trust-check">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                Plans from $10 / month
+          </div>
+
+          {/* ── Right: real dashboard screenshot ── */}
+          <div className="ml-hero-visual-col">
+            <div className="ml-hero-frame">
+              <div className="ml-hero-frame-chrome">
+                <span className="ml-hero-frame-dot" style={{ background: '#ff5f57' }} />
+                <span className="ml-hero-frame-dot" style={{ background: '#febc2e' }} />
+                <span className="ml-hero-frame-dot" style={{ background: '#28c840' }} />
               </div>
-              <div className="ml-trust-item">
-                <div className="ml-trust-check">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                Cancel anytime
-              </div>
-              <div className="ml-trust-item">
-                <div className="ml-trust-check">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                Your data stays yours
-              </div>
+              <img
+                src={dashboardOverviewImg}
+                alt="TradeBetter dashboard"
+                className="ml-hero-frame-img"
+                loading="eager"
+              />
             </div>
           </div>
 
-          <div className="ml-hero-visual-wrap">
-            <div className="ml-hero-glow" />
-            <div className="ml-hero-visual">
-              <div className="ml-visual-header">
-                <img src={primaryLogo} alt="TradeBetter" style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '7px' }} />
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#7a96b4', letterSpacing: '0.1px' }}>Journal Snapshot</div>
-                <div className="ml-visual-status">
-                  <span className="ml-visual-status-dot" />
-                  Live
-                </div>
-              </div>
-
-              <div className="ml-visual-grid">
-                <div className="ml-kpi">
-                  <div className="ml-kpi-label">Net P&L</div>
-                  <div className="ml-kpi-value" style={{ color: '#34d399' }}>+$2,845</div>
-                  <div className="ml-kpi-sub">↑ 18% vs last month</div>
-                </div>
-                <div className="ml-kpi">
-                  <div className="ml-kpi-label">Win Rate</div>
-                  <div className="ml-kpi-value" style={{ color: '#60a5fa' }}>64%</div>
-                  <div className="ml-kpi-sub">132 closed trades</div>
-                </div>
-                <div className="ml-kpi">
-                  <div className="ml-kpi-label">Best Setup</div>
-                  <div className="ml-kpi-value" style={{ fontSize: '17px', color: '#e2ecfa' }}>Opening Range</div>
-                  <div className="ml-kpi-sub">71% win rate · +$1,620</div>
-                </div>
-                <div className="ml-kpi">
-                  <div className="ml-kpi-label">Top Mistake</div>
-                  <div className="ml-kpi-value" style={{ color: '#f87171', fontSize: '17px' }}>Late Entries</div>
-                  <div className="ml-kpi-sub">−$940 total impact</div>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '14px', padding: '12px 14px', borderRadius: '12px', background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.14)' }}>
-                <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#2f6b52', fontWeight: 600, marginBottom: '6px' }}>AI Insight · Pro</div>
-                <div style={{ fontSize: '13px', color: '#6fa898', lineHeight: 1.55 }}>
-                  Your <span style={{ color: '#34d399', fontWeight: 600 }}>Opening Range</span> setups are outperforming your average by 2.3×. Consider sizing up on high-conviction entries.
-                </div>
-              </div>
-            </div>
-          </div>
         </section>
 
         <section className="ml-section">
