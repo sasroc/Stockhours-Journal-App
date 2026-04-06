@@ -449,6 +449,178 @@ function AppRoutes() {
   };
   // --- end IBKR parser ---
 
+  // --- MooMoo CSV parser ---
+  const parseMooMooData = (data) => {
+    // Header row is data[0]; data rows start at data[1]
+    // Columns: 0=Side, 1=Symbol, 2=Name, 6=Status, 8=Order Time,
+    //          18=Fill Qty, 19=Fill Price, 21=Fill Time
+    const MONTH_MAP = {
+      Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
+      Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12,
+    };
+
+    const parseMooMooDateTime = (dtStr) => {
+      // "Apr 2, 2026 09:45:45 ET"
+      const match = String(dtStr || '').trim().match(
+        /^(\w+)\s+(\d+),\s+(\d{4})\s+(\d+):(\d+):(\d+)/
+      );
+      if (!match) return { execTime: new Date().toISOString(), tradeDate: 'N/A' };
+      const [, mon, day, year, hh, mm, ss] = match;
+      const month = MONTH_MAP[mon] || 1;
+      const d = new Date(parseInt(year, 10), month - 1, parseInt(day, 10), parseInt(hh, 10), parseInt(mm, 10), parseInt(ss, 10));
+      return {
+        execTime: isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString(),
+        tradeDate: `${month}/${parseInt(day, 10)}/${year}`,
+      };
+    };
+
+    const parseMooMooOptionName = (nameStr) => {
+      // "TSLA 260402 370.00C" or "SPY 260402 656.00C" or "MU 260402 370.00P"
+      const match = String(nameStr || '').trim().match(
+        /^([A-Z0-9.]+)\s+(\d{6})\s+([\d.]+)([CP])$/i
+      );
+      if (!match) return null;
+      const [, underlying, dateCode, strikeStr, type] = match;
+      const yy = parseInt(dateCode.slice(0, 2), 10);
+      const mm = parseInt(dateCode.slice(2, 4), 10);
+      const dd = parseInt(dateCode.slice(4, 6), 10);
+      const year = 2000 + yy;
+      // Match the same expiration format used by TOS/IBKR parsers: "${day} ${month} ${year}"
+      const expiration = `${dd} ${mm} ${year}`;
+      return {
+        underlying,
+        strike: parseFloat(strikeStr),
+        expiration,
+        type: type.toUpperCase() === 'C' ? 'CALL' : 'PUT',
+      };
+    };
+
+    const result = [];
+    // Track current order's metadata for continuation (partial-fill) rows
+    let lastSide = null, lastName = null, lastSymbol = null, lastStatus = null;
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row || row.length < 19) continue;
+
+      const side = String(row[0] || '').trim();
+      const symbol = String(row[1] || '').trim();
+      const name = String(row[2] || '').trim();
+      const status = String(row[6] || '').trim();
+
+      const isContinuationRow = side === '' && symbol === '';
+
+      if (!isContinuationRow) {
+        // Main order row — update running context
+        lastSide = side;
+        lastSymbol = symbol;
+        lastName = name;
+        lastStatus = status;
+      }
+
+      // Skip failed/unfilled orders
+      if (lastStatus !== 'Filled') continue;
+
+      // Parse fill qty and price from cols 18 and 19
+      const fillQtyRaw = row[18];
+      const fillPriceRaw = row[19];
+      const fillTimeRaw = row[21] || row[8]; // fall back to Order Time if Fill Time is empty
+
+      const fillQty = typeof fillQtyRaw === 'number'
+        ? fillQtyRaw
+        : parseInt(String(fillQtyRaw || '0').replace(/,/g, ''), 10);
+      if (!fillQty || fillQty <= 0) continue;
+
+      const fillPrice = typeof fillPriceRaw === 'number'
+        ? fillPriceRaw
+        : parseFloat(String(fillPriceRaw || '0').replace(/,/g, ''));
+
+      const { execTime, tradeDate } = parseMooMooDateTime(fillTimeRaw);
+      const buySell = (lastSide || '').toLowerCase() === 'buy' ? 'BUY' : 'SELL';
+      const parsed = parseMooMooOptionName(lastName);
+
+      if (parsed) {
+        result.push({
+          ExecTime: execTime,
+          TradeDate: tradeDate,
+          Side: buySell,
+          Quantity: fillQty,
+          Symbol: parsed.underlying,
+          Expiration: parsed.expiration,
+          Strike: parsed.strike,
+          Price: fillPrice,
+          OrderType: 'MooMoo',
+          PosEffect: 'UNKNOWN',
+          Type: parsed.type,
+        });
+      } else {
+        // Equity / unrecognised symbol
+        result.push({
+          ExecTime: execTime,
+          TradeDate: tradeDate,
+          Side: buySell,
+          Quantity: fillQty,
+          Symbol: lastSymbol || 'UNKNOWN',
+          Expiration: 'N/A',
+          Strike: 0,
+          Price: fillPrice,
+          OrderType: 'MooMoo',
+          PosEffect: 'UNKNOWN',
+          Type: 'EQUITY',
+        });
+      }
+    }
+
+    if (result.length === 0) {
+      throw new Error('No filled trades found in MooMoo file.');
+    }
+
+    // Post-process: infer PosEffect (OPEN/CLOSE) by tracking running position per group.
+    // MooMoo doesn't emit open/close markers; the StatsDashboard requires them for P&L.
+    const groups = new Map();
+    result.forEach(tx => {
+      const key = `${tx.Symbol}-${tx.Strike}-${tx.Expiration}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(tx);
+    });
+
+    groups.forEach(txs => {
+      txs.sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
+      let runningQty = 0; // positive = long, negative = short
+
+      txs.forEach(tx => {
+        if (runningQty === 0) {
+          // Flat — opening a new position
+          tx.PosEffect = 'OPEN';
+          runningQty += tx.Side === 'BUY' ? tx.Quantity : -tx.Quantity;
+        } else if (runningQty > 0) {
+          // Currently long
+          if (tx.Side === 'BUY') {
+            tx.PosEffect = 'OPEN'; // adding to long
+            runningQty += tx.Quantity;
+          } else {
+            tx.PosEffect = 'CLOSE'; // reducing / closing long
+            runningQty -= tx.Quantity;
+            if (runningQty < 0) runningQty = 0;
+          }
+        } else {
+          // Currently short
+          if (tx.Side === 'SELL') {
+            tx.PosEffect = 'OPEN'; // adding to short
+            runningQty -= tx.Quantity;
+          } else {
+            tx.PosEffect = 'CLOSE'; // reducing / closing short
+            runningQty += tx.Quantity;
+            if (runningQty > 0) runningQty = 0;
+          }
+        }
+      });
+    });
+
+    return result;
+  };
+  // --- end MooMoo parser ---
+
   const generateTransactionKey = (transaction, index) => {
     const execTime = new Date(transaction.ExecTime);
     const normalizedExecTime = new Date(
@@ -491,15 +663,18 @@ function AppRoutes() {
 
         // Auto-detect broker format
         const isIBKR = data.some(row => Array.isArray(row) && row[0] === 'Trades' && row[1] === 'Header');
+        const isMooMoo = Array.isArray(data[0]) && String(data[0][0] || '').replace(/^\uFEFF/, '') === 'Side' && data[0][7] === 'Filled@Avg Price';
 
         let transformedData;
         if (isIBKR) {
           transformedData = parseIBKRData(data);
+        } else if (isMooMoo) {
+          transformedData = parseMooMooData(data);
         } else {
           // thinkorswim format
           const tradeHistoryStart = data.findIndex(row => row[0] === 'Account Trade History');
           if (tradeHistoryStart === -1) {
-            throw new Error('Unrecognized file format. Please upload a thinkorswim or IBKR Activity Statement CSV.');
+            throw new Error('Unrecognized file format. Please upload a thinkorswim, IBKR Activity Statement, or MooMoo CSV.');
           }
 
           const sectionHeaders = data[tradeHistoryStart + 1].slice(1);
