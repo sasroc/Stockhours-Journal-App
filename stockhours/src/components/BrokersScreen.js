@@ -5,6 +5,7 @@ import { theme } from '../theme';
 import secondaryLogo from '../assets/2.png';
 import schwabLogo from '../assets/schwab-logo.png';
 import ibkrLogo from '../assets/ibkr-logo.png';
+import moomooLogo from '../assets/moomoo-logo-png_seeklogo-463955.png';
 
 const CheckIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -59,6 +60,20 @@ const csvBrokers = [
       'Upload the file on the Imports screen',
     ],
   },
+  {
+    name: 'MooMoo',
+    logo: moomooLogo,
+    badge: 'Supported',
+    badgeColor: '#60a5fa',
+    badgeBg: 'rgba(96,165,250,0.08)',
+    badgeBorder: 'rgba(96,165,250,0.25)',
+    description: 'Export your trade history from MooMoo as a CSV file. TradeBetter parses the format automatically — just upload and go.',
+    steps: [
+      'Open MooMoo → Account → Trade History',
+      'Set your date range and export as CSV',
+      'Upload the file on the Imports screen',
+    ],
+  },
 ];
 
 const BrokerCard = ({ broker, variant }) => (
@@ -79,7 +94,10 @@ const BrokerCard = ({ broker, variant }) => (
           background: '#fff', border: '1px solid rgba(255,255,255,0.12)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
-          <img src={broker.logo} alt={broker.name} style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
+          {broker.logo
+            ? <img src={broker.logo} alt={broker.name} style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
+            : <span style={{ fontSize: '13px', fontWeight: 800, color: broker.logoTextColor || '#1a1a1a', letterSpacing: '-0.3px', textAlign: 'center', lineHeight: 1.1 }}>{broker.logoText}</span>
+          }
         </div>
         <div>
           <div style={{ fontSize: '17px', fontWeight: 700, color: '#e8f1fb', letterSpacing: '-0.2px' }}>
