@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../theme';
@@ -6,6 +6,16 @@ import secondaryLogo from '../assets/2.png';
 import schwabLogo from '../assets/schwab-logo.png';
 import ibkrLogo from '../assets/ibkr-logo.png';
 import moomooLogo from '../assets/moomoo-logo-png_seeklogo-463955.png';
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+};
 
 const CheckIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -189,11 +199,13 @@ const SectionLabel = ({ icon, title, subtitle }) => (
 const BrokersScreen = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const isMobile = useIsMobile();
 
   return (
     <div style={{
       minHeight: '100vh',
       color: theme.colors.white,
+      overflowX: 'hidden',
       background: `
         radial-gradient(70% 45% at 50% 0%, rgba(46,204,113,0.09), transparent 65%),
         radial-gradient(45% 30% at 8% 8%, rgba(0,123,255,0.14), transparent 75%),
@@ -211,44 +223,50 @@ const BrokersScreen = () => {
       }}>
         <div style={{
           maxWidth: '1240px', margin: '0 auto',
-          padding: '0 24px', height: '72px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+          padding: isMobile ? '0 16px' : '0 24px',
+          height: '60px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
         }}>
           <button
             onClick={() => navigate('/home')}
             style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
+              display: 'flex', alignItems: 'center', gap: '10px',
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              flexShrink: 0,
             }}
           >
             <div style={{
-              width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden',
+              width: '36px', height: '36px', borderRadius: '10px', overflow: 'hidden',
               background: '#0b0b0b', border: '1px solid #1f1f1f',
               boxShadow: '0 6px 16px rgba(0,0,0,0.5), 0 0 14px rgba(0,123,255,0.2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
               <img src={secondaryLogo} alt="TradeBetter" style={{
-                width: '50px', height: '50px', objectFit: 'cover', objectPosition: 'center',
+                width: '46px', height: '46px', objectFit: 'cover', objectPosition: 'center',
                 transform: 'scale(1.1) translateX(6px)',
               }} />
             </div>
-            <span style={{ fontSize: '18px', fontWeight: 700, color: '#f2f7ff', letterSpacing: '0.2px' }}>
-              TradeBetter
-            </span>
+            {!isMobile && (
+              <span style={{ fontSize: '18px', fontWeight: 700, color: '#f2f7ff', letterSpacing: '0.2px' }}>
+                TradeBetter
+              </span>
+            )}
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               onClick={() => navigate('/home')}
               style={{
                 background: 'none', border: '1px solid rgba(130,155,185,0.28)',
-                color: '#afc4db', padding: '8px 16px', borderRadius: '8px',
-                cursor: 'pointer', fontSize: '13.5px', transition: 'all 0.2s',
+                color: '#afc4db', padding: isMobile ? '7px 12px' : '8px 16px',
+                borderRadius: '8px', cursor: 'pointer',
+                fontSize: isMobile ? '12px' : '13.5px', transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(130,155,185,0.55)'; e.currentTarget.style.color = '#dce9f5'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(130,155,185,0.28)'; e.currentTarget.style.color = '#afc4db'; }}
             >
-              ← Back to home
+              ← Back
             </button>
             <button
               onClick={() => navigate(currentUser ? '/paywall' : '/login')}
@@ -256,9 +274,11 @@ const BrokersScreen = () => {
                 border: 'none',
                 background: 'linear-gradient(135deg, #1ecf97 0%, #2db9ff 100%)',
                 color: '#03131a', fontWeight: 700,
-                padding: '9px 18px', borderRadius: '8px',
-                cursor: 'pointer', fontSize: '13.5px',
+                padding: isMobile ? '7px 14px' : '9px 18px',
+                borderRadius: '8px', cursor: 'pointer',
+                fontSize: isMobile ? '12px' : '13.5px',
                 boxShadow: '0 8px 20px rgba(46,204,113,0.18), 0 6px 16px rgba(45,185,255,0.2)',
+                whiteSpace: 'nowrap',
               }}
             >
               {currentUser ? 'Subscribe' : 'Get started'}
@@ -267,10 +287,13 @@ const BrokersScreen = () => {
         </div>
       </header>
 
-      <main style={{ maxWidth: '960px', margin: '0 auto', padding: '0 24px 100px' }}>
+      <main style={{
+        maxWidth: '960px', margin: '0 auto',
+        padding: isMobile ? '0 16px 80px' : '0 24px 100px',
+      }}>
 
         {/* Hero */}
-        <div style={{ textAlign: 'center', padding: '64px 0 56px' }}>
+        <div style={{ textAlign: 'center', padding: isMobile ? '40px 0 36px' : '64px 0 56px' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '7px',
             padding: '6px 14px', borderRadius: '999px',
@@ -287,7 +310,7 @@ const BrokersScreen = () => {
           </div>
           <h1 style={{
             margin: '0 0 16px',
-            fontSize: 'clamp(30px, 5vw, 46px)',
+            fontSize: 'clamp(26px, 5vw, 46px)',
             lineHeight: 1.08, letterSpacing: '-0.7px', fontWeight: 800,
           }}>
             Connect your broker.<br />
@@ -295,14 +318,14 @@ const BrokersScreen = () => {
           </h1>
           <p style={{
             margin: '0 auto', maxWidth: '52ch',
-            color: '#8fa8c4', fontSize: '17px', lineHeight: 1.7,
+            color: '#8fa8c4', fontSize: isMobile ? '15px' : '17px', lineHeight: 1.7,
           }}>
             TradeBetter supports direct OAuth connections for instant syncing, plus CSV imports for all other brokers. Getting your trade history in takes less than two minutes.
           </p>
         </div>
 
         {/* Direct Link section */}
-        <section style={{ marginBottom: '64px' }}>
+        <section style={{ marginBottom: '48px' }}>
           <SectionLabel
             icon={
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -313,7 +336,7 @@ const BrokersScreen = () => {
             title="Direct Connection"
             subtitle="One-click OAuth sync — no files needed"
           />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
             {directBrokers.map((broker) => (
               <BrokerCard key={broker.name} broker={broker} variant="direct" />
             ))}
@@ -328,15 +351,15 @@ const BrokersScreen = () => {
 
         {/* Divider */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px',
+          display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '40px',
         }}>
           <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-          <span style={{ fontSize: '12px', color: '#3e526a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>or import a file</span>
+          <span style={{ fontSize: '12px', color: '#3e526a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>or import a file</span>
           <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
         </div>
 
         {/* CSV section */}
-        <section style={{ marginBottom: '64px' }}>
+        <section style={{ marginBottom: '48px' }}>
           <SectionLabel
             icon={
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -347,7 +370,11 @@ const BrokersScreen = () => {
             title="CSV Import"
             subtitle="Export from your broker, upload in seconds"
           />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '16px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(380px, 1fr))',
+            gap: '16px',
+          }}>
             {csvBrokers.map((broker) => (
               <BrokerCard key={broker.name} broker={broker} variant="csv" />
             ))}
@@ -357,7 +384,7 @@ const BrokersScreen = () => {
         {/* Bottom CTA */}
         <div style={{
           borderRadius: '20px',
-          padding: '36px 32px',
+          padding: isMobile ? '28px 20px' : '36px 32px',
           border: '1px solid rgba(117,140,170,0.28)',
           background: `
             radial-gradient(45% 80% at 0% 100%, rgba(46,185,255,0.12), transparent 75%),
@@ -365,26 +392,27 @@ const BrokersScreen = () => {
             rgba(8,13,24,0.92)
           `,
           display: 'flex',
-          alignItems: 'center',
+          alignItems: isMobile ? 'flex-start' : 'center',
           justifyContent: 'space-between',
           gap: '20px',
-          flexWrap: 'wrap',
+          flexDirection: isMobile ? 'column' : 'row',
         }}>
           <div>
-            <h3 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.35px' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: isMobile ? '20px' : '24px', fontWeight: 700, letterSpacing: '-0.35px' }}>
               Ready to import your first trades?
             </h3>
             <p style={{ margin: 0, color: '#7a96b2', fontSize: '14.5px', lineHeight: 1.65 }}>
               Create your account, pick a plan, and get your journal set up in minutes.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
             <button
               onClick={() => navigate('/pricing')}
               style={{
                 border: '1px solid rgba(130,155,185,0.35)', background: 'rgba(10,16,28,0.7)',
                 color: '#c8d8ec', padding: '11px 22px', borderRadius: '10px',
                 cursor: 'pointer', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s',
+                flex: isMobile ? 1 : undefined,
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(45,212,191,0.45)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(130,155,185,0.35)'; }}
@@ -400,6 +428,7 @@ const BrokersScreen = () => {
                 padding: '11px 22px', borderRadius: '10px',
                 cursor: 'pointer', fontSize: '14px',
                 boxShadow: '0 10px 24px rgba(46,204,113,0.2), 0 8px 20px rgba(45,185,255,0.22)',
+                flex: isMobile ? 1 : undefined,
               }}
             >
               {currentUser ? 'Subscribe' : 'Get started'}
