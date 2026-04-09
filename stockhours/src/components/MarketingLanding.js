@@ -11,6 +11,7 @@ import allTradesImg from '../assets/all-trades.png';
 import reportsInsightsImg from '../assets/reports-insights.png';
 import importsImg from '../assets/imports.png';
 import weeklyReviewImg from '../assets/weekly-review.png';
+import iosScreenshotImg from '../assets/tbss.PNG';
 
 const screenshotItems = [
   {
@@ -305,10 +306,10 @@ const MarketingLanding = () => {
           }
 
           .ml-hero {
-            padding: 72px 0 64px;
+            padding: 72px 0 80px;
             display: grid;
-            grid-template-columns: 1fr 1.15fr;
-            gap: 72px;
+            grid-template-columns: 1fr 1.55fr;
+            gap: 48px;
             align-items: center;
           }
 
@@ -347,6 +348,147 @@ const MarketingLanding = () => {
           .ml-hero-frame-img {
             width: 100%;
             display: block;
+          }
+
+          /* ── Dual preview (phone + desktop) ── */
+          .ml-hero-dual-preview {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            gap: 20px;
+          }
+
+          /* ══════════════════════════════
+             iPhone 15 Pro — realistic frame
+             ══════════════════════════════ */
+          .ml-phone-mockup {
+            position: relative;
+            flex-shrink: 0;
+            z-index: 2;
+            width: 260px;
+
+            /* Titanium-finish frame gradient */
+            background: linear-gradient(
+              148deg,
+              #4a4a4c 0%,
+              #2e2e30 18%,
+              #1c1c1e 45%,
+              #111113 70%,
+              #1a1a1c 100%
+            );
+
+            /* outer-radius = inner-radius + padding (8px) so corners align perfectly */
+            border-radius: 54px;
+            padding: 8px;
+
+            /* Layered shadows:
+               1) hair-line inner highlight (top-left rim)
+               2) thin outer edge
+               3) ambient + key depth shadows */
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,0.22),
+              inset -1px 0 0 rgba(255,255,255,0.06),
+              0 0 0 0.5px rgba(0,0,0,0.9),
+              0 2px 4px rgba(0,0,0,0.5),
+              0 20px 60px rgba(0,0,0,0.75),
+              0 50px 120px rgba(0,0,0,0.5);
+
+            transform: rotate(-4deg) translateY(14px);
+          }
+
+          /* ── Side buttons via pseudo-elements ── */
+
+          /* Right side: power button */
+          .ml-phone-mockup::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 28%;
+            width: 3px;
+            height: 64px;
+            background: linear-gradient(to right, #1c1c1e, #3a3a3c 40%, #2a2a2c);
+            border-radius: 0 3px 3px 0;
+            box-shadow: inset -1px 0 0 rgba(255,255,255,0.12);
+          }
+
+          /* Left side: volume buttons (silent + vol up + vol down) */
+          .ml-phone-mockup::before {
+            content: '';
+            position: absolute;
+            left: -3px;
+            top: 18%;
+            width: 3px;
+            /* Three buttons as a gap-striped gradient */
+            height: 108px;
+            background: linear-gradient(
+              to bottom,
+              #2a2a2c 0px, #3a3a3c 2px, #2a2a2c 22px,   /* mute */
+              transparent 22px, transparent 30px,
+              #2a2a2c 30px, #3a3a3c 32px, #2a2a2c 62px,   /* vol up */
+              transparent 62px, transparent 70px,
+              #2a2a2c 70px, #3a3a3c 72px, #2a2a2c 108px   /* vol down */
+            );
+            border-radius: 3px 0 0 3px;
+            box-shadow: inset 1px 0 0 rgba(255,255,255,0.10);
+          }
+
+          /* ── Screen area — border-radius = 54 - 8 = 46px ── */
+          .ml-phone-screen-wrap {
+            border-radius: 46px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+          }
+
+          /* ── Dynamic Island ── */
+          .ml-phone-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            /* ~108pt at real iPhone scale → proportioned to 260px width */
+            width: 104px;
+            height: 30px;
+            background: #000;
+            border-radius: 50px;
+            z-index: 10;
+            /* Faint inner glow to separate from screen */
+            box-shadow:
+              0 0 0 1px rgba(60,60,62,0.8),
+              0 2px 6px rgba(0,0,0,0.9);
+          }
+
+          .ml-phone-screen {
+            width: 100%;
+            display: block;
+          }
+
+          /* Home indicator — rendered inside the phone frame below the screen */
+          .ml-phone-home-bar {
+            width: 88px;
+            height: 4px;
+            background: rgba(255,255,255,0.30);
+            border-radius: 10px;
+            margin: 9px auto 3px;
+          }
+
+          /* ── Desktop browser frame ── */
+          .ml-desktop-preview {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+            z-index: 1;
+            transform: rotate(2deg) translate(32px, -80px) scale(1.18);
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.10);
+            background: #070d17;
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,0.08),
+              0 0 0 0.5px rgba(0,0,0,0.8),
+              0 24px 60px rgba(0,0,0,0.7),
+              0 60px 120px rgba(0,0,0,0.45);
           }
 
           .ml-eyebrow {
@@ -1365,6 +1507,14 @@ const MarketingLanding = () => {
               padding: 16px;
             }
 
+            .ml-phone-mockup {
+              display: none;
+            }
+
+            .ml-desktop-preview {
+              transform: none;
+            }
+
             .ml-process-card-inner {
               padding: 22px 18px;
             }
@@ -1795,20 +1945,34 @@ const MarketingLanding = () => {
 
           </div>
 
-          {/* ── Right: real dashboard screenshot ── */}
+          {/* ── Right: phone + desktop dual preview ── */}
           <div className="ml-hero-visual-col">
-            <div className="ml-hero-frame">
-              <div className="ml-hero-frame-chrome">
-                <span className="ml-hero-frame-dot" style={{ background: '#ff5f57' }} />
-                <span className="ml-hero-frame-dot" style={{ background: '#febc2e' }} />
-                <span className="ml-hero-frame-dot" style={{ background: '#28c840' }} />
+            <div className="ml-hero-dual-preview">
+
+              {/* iOS phone mockup */}
+              <div className="ml-phone-mockup">
+                <div className="ml-phone-screen-wrap">
+                  <div className="ml-phone-island" />
+                  <img
+                    src={iosScreenshotImg}
+                    alt="TradeBetter iOS app"
+                    className="ml-phone-screen"
+                    loading="eager"
+                  />
+                </div>
+                <div className="ml-phone-home-bar" />
               </div>
-              <img
-                src={dashboardOverviewImg}
-                alt="TradeBetter dashboard"
-                className="ml-hero-frame-img"
-                loading="eager"
-              />
+
+              {/* Desktop browser frame */}
+              <div className="ml-desktop-preview">
+                <img
+                  src={dashboardOverviewImg}
+                  alt="TradeBetter dashboard"
+                  className="ml-hero-frame-img"
+                  loading="eager"
+                />
+              </div>
+
             </div>
           </div>
 
