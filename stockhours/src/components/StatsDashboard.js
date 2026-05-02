@@ -202,6 +202,10 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
   const [debriefLoading, setDebriefLoading] = useState(null);
   const [debriefError, setDebriefError] = useState(null);
   const [debriefVisible, setDebriefVisible] = useState({});
+  const [pnlDateFilter, setPnlDateFilter] = useState('ytd');
+  const [pnlExpanded, setPnlExpanded] = useState(false);
+  const [dailyPnlDateFilter, setDailyPnlDateFilter] = useState('ytd');
+  const [dailyPnlExpanded, setDailyPnlExpanded] = useState(false);
   const navigate = useNavigate();
   const { currentUser, isPro, tradingProfile } = useAuth();
 
@@ -388,13 +392,55 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     return { dailyPnlData, cumulativePnlData };
   }, [trades]);
 
+  const filteredCumulativePnlData = useMemo(() => {
+    const now = new Date();
+    let startDate = null;
+
+    switch (pnlDateFilter) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+        break;
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        break;
+      case 'ytd':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        startDate = null;
+    }
+
+    const filtered = startDate
+      ? dailyPnlData.filter(({ date }) => new Date(date + 'T00:00:00') >= startDate)
+      : [...dailyPnlData];
+
+    if (filtered.length === 0) return [];
+
+    const result = [];
+    const firstDate = new Date(filtered[0].date + 'T00:00:00');
+    const initialDate = new Date(firstDate);
+    initialDate.setDate(firstDate.getDate() - 1);
+    result.push({ date: initialDate.toISOString().split('T')[0], cumulativePnl: 0 });
+
+    let cumPnl = 0;
+    filtered.forEach(({ date, pnl }) => {
+      cumPnl += pnl;
+      result.push({ date, cumulativePnl: cumPnl });
+    });
+
+    return result;
+  }, [dailyPnlData, pnlDateFilter]);
+
   const cumulativePnlChartData = useMemo(() => {
     return {
-      labels: cumulativePnlData.map(data => data.date),
+      labels: filteredCumulativePnlData.map(data => data.date),
       datasets: [
         {
           label: 'Cumulative P&L',
-          data: cumulativePnlData.map(data => data.cumulativePnl),
+          data: filteredCumulativePnlData.map(data => data.cumulativePnl),
           borderColor: theme.colors.green,
           backgroundColor: theme.colors.green,
           fill: false,
@@ -417,7 +463,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
         },
       ],
     };
-  }, [cumulativePnlData]);
+  }, [filteredCumulativePnlData]);
 
   useEffect(() => {
     if (tradeData.length > 0) {
@@ -1293,18 +1339,44 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     },
   };
 
-  const dailyPnlChartData = {
-    labels: dailyPnlData.map(data => data.date),
+  const filteredDailyPnlData = useMemo(() => {
+    const now = new Date();
+    let startDate = null;
+
+    switch (dailyPnlDateFilter) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+        break;
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        break;
+      case 'ytd':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        startDate = null;
+    }
+
+    return startDate
+      ? dailyPnlData.filter(({ date }) => new Date(date + 'T00:00:00') >= startDate)
+      : [...dailyPnlData];
+  }, [dailyPnlData, dailyPnlDateFilter]);
+
+  const dailyPnlChartData = useMemo(() => ({
+    labels: filteredDailyPnlData.map(data => data.date),
     datasets: [
       {
         label: 'Daily P&L',
-        data: dailyPnlData.map(data => data.pnl),
-        backgroundColor: dailyPnlData.map(data => (data.pnl >= 0 ? theme.colors.green : theme.colors.red)),
-        borderColor: dailyPnlData.map(data => (data.pnl >= 0 ? theme.colors.green : theme.colors.red)),
+        data: filteredDailyPnlData.map(data => data.pnl),
+        backgroundColor: filteredDailyPnlData.map(data => (data.pnl >= 0 ? theme.colors.green : theme.colors.red)),
+        borderColor: filteredDailyPnlData.map(data => (data.pnl >= 0 ? theme.colors.green : theme.colors.red)),
         borderWidth: 1,
       },
     ],
-  };
+  }), [filteredDailyPnlData]);
 
   const dailyPnlChartOptions = {
     responsive: true,
@@ -1669,43 +1741,296 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
 
       {/* Charts Section */}
       <div style={{ marginTop: '40px' }}>
-        <div style={{ 
-          display: 'flex', 
+        <div style={{
+          display: 'flex',
           gap: '20px',
-          flexDirection: isMobileDevice ? 'column' : (isHalfScreen ? 'column' : 'row'),
-          marginBottom: '40px' 
+          flexDirection: (isMobileDevice || isHalfScreen || pnlExpanded || dailyPnlExpanded) ? 'column' : 'row',
+          marginBottom: '40px'
         }}>
+          {/* Cumulative P&L — filterable + expandable */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px', textAlign: 'center' }}>Cumulative Daily P&L</h3>
-            <div style={{ 
-              height: '300px', 
-              backgroundColor: '#1B2B43', 
-              padding: '20px', 
-              borderRadius: '8px',
-              overflow: 'hidden'
+            {/* Header row */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '14px',
+              flexWrap: 'wrap',
+              gap: '8px',
             }}>
-              <Line data={cumulativePnlChartData} options={{
-                ...cumulativePnlChartOptions,
-                maintainAspectRatio: false,
-                responsive: true
-              }} />
+              <h3 style={{ color: theme.colors.white, margin: 0, fontSize: '15px', fontWeight: 600 }}>
+                Cumulative P&L
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                {[
+                  { key: 'today', label: 'Today' },
+                  { key: 'week',  label: '1W'    },
+                  { key: 'month', label: '1M'    },
+                  { key: 'ytd',   label: 'YTD'   },
+                  { key: 'all',   label: 'All'   },
+                ].map(({ key, label }) => {
+                  const isActive = pnlDateFilter === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setPnlDateFilter(key)}
+                      style={{
+                        padding: '4px 11px',
+                        borderRadius: '20px',
+                        border: isActive ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                        backgroundColor: isActive ? theme.colors.teal : 'rgba(255,255,255,0.04)',
+                        color: isActive ? '#0A1628' : theme.colors.gray,
+                        fontSize: '12px',
+                        fontWeight: isActive ? '700' : '400',
+                        cursor: 'pointer',
+                        transition: 'background 0.15s, color 0.15s',
+                        letterSpacing: '0.2px',
+                        lineHeight: '1.5',
+                      }}
+                      onMouseEnter={e => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'rgba(45,212,191,0.1)';
+                          e.currentTarget.style.color = theme.colors.teal;
+                          e.currentTarget.style.borderColor = 'rgba(45,212,191,0.3)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)';
+                          e.currentTarget.style.color = theme.colors.gray;
+                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                        }
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+                {/* Expand / Collapse button */}
+                <button
+                  onClick={() => setPnlExpanded(e => !e)}
+                  title={pnlExpanded ? 'Collapse' : 'Expand'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    backgroundColor: pnlExpanded ? 'rgba(45,212,191,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: pnlExpanded ? theme.colors.teal : theme.colors.gray,
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'background 0.15s, color 0.15s',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor = 'rgba(45,212,191,0.12)';
+                    e.currentTarget.style.color = theme.colors.teal;
+                    e.currentTarget.style.borderColor = 'rgba(45,212,191,0.3)';
+                  }}
+                  onMouseLeave={e => {
+                    if (!pnlExpanded) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.color = theme.colors.gray;
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                    }
+                  }}
+                >
+                  {pnlExpanded ? (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="4 14 10 14 10 20"/>
+                      <polyline points="20 10 14 10 14 4"/>
+                      <line x1="10" y1="14" x2="3" y2="21"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/>
+                    </svg>
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/>
+                      <polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/>
+                      <line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+            {/* Chart box */}
+            <div style={{
+              height: pnlExpanded ? '480px' : '300px',
+              backgroundColor: '#1B2B43',
+              padding: '20px',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              transition: 'height 0.25s ease',
+              position: 'relative',
+            }}>
+              {filteredCumulativePnlData.length === 0 ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  gap: '8px',
+                }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={theme.colors.gray} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                  <span style={{ color: theme.colors.gray, fontSize: '13px' }}>No trades in this period</span>
+                </div>
+              ) : (
+                <Line data={cumulativePnlChartData} options={{
+                  ...cumulativePnlChartOptions,
+                  maintainAspectRatio: false,
+                  responsive: true
+                }} />
+              )}
             </div>
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ color: theme.colors.white, marginBottom: '20px', textAlign: 'center' }}>Daily P&L</h3>
-            <div style={{ 
-              height: '300px', 
-              backgroundColor: '#1B2B43', 
-              padding: '20px', 
-              borderRadius: '8px',
-              overflow: 'hidden'
+            {/* Header row */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '14px',
+              flexWrap: 'wrap',
+              gap: '8px',
             }}>
-              <Bar data={dailyPnlChartData} options={{
-                ...dailyPnlChartOptions,
-                maintainAspectRatio: false,
-                responsive: true
-              }} />
+              <h3 style={{ color: theme.colors.white, margin: 0, fontSize: '15px', fontWeight: 600 }}>
+                Daily P&L
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                {[
+                  { key: 'today', label: 'Today' },
+                  { key: 'week',  label: '1W'    },
+                  { key: 'month', label: '1M'    },
+                  { key: 'ytd',   label: 'YTD'   },
+                  { key: 'all',   label: 'All'   },
+                ].map(({ key, label }) => {
+                  const isActive = dailyPnlDateFilter === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setDailyPnlDateFilter(key)}
+                      style={{
+                        padding: '4px 11px',
+                        borderRadius: '20px',
+                        border: isActive ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                        backgroundColor: isActive ? theme.colors.teal : 'rgba(255,255,255,0.04)',
+                        color: isActive ? '#0A1628' : theme.colors.gray,
+                        fontSize: '12px',
+                        fontWeight: isActive ? '700' : '400',
+                        cursor: 'pointer',
+                        transition: 'background 0.15s, color 0.15s',
+                        letterSpacing: '0.2px',
+                        lineHeight: '1.5',
+                      }}
+                      onMouseEnter={e => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'rgba(45,212,191,0.1)';
+                          e.currentTarget.style.color = theme.colors.teal;
+                          e.currentTarget.style.borderColor = 'rgba(45,212,191,0.3)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)';
+                          e.currentTarget.style.color = theme.colors.gray;
+                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                        }
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+                {/* Expand / Collapse button */}
+                <button
+                  onClick={() => setDailyPnlExpanded(e => !e)}
+                  title={dailyPnlExpanded ? 'Collapse' : 'Expand'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    backgroundColor: dailyPnlExpanded ? 'rgba(45,212,191,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: dailyPnlExpanded ? theme.colors.teal : theme.colors.gray,
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'background 0.15s, color 0.15s',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor = 'rgba(45,212,191,0.12)';
+                    e.currentTarget.style.color = theme.colors.teal;
+                    e.currentTarget.style.borderColor = 'rgba(45,212,191,0.3)';
+                  }}
+                  onMouseLeave={e => {
+                    if (!dailyPnlExpanded) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.color = theme.colors.gray;
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                    }
+                  }}
+                >
+                  {dailyPnlExpanded ? (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="4 14 10 14 10 20"/>
+                      <polyline points="20 10 14 10 14 4"/>
+                      <line x1="10" y1="14" x2="3" y2="21"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/>
+                    </svg>
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/>
+                      <polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/>
+                      <line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+            {/* Chart box */}
+            <div style={{
+              height: dailyPnlExpanded ? '480px' : '300px',
+              backgroundColor: '#1B2B43',
+              padding: '20px',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              transition: 'height 0.25s ease',
+              position: 'relative',
+            }}>
+              {filteredDailyPnlData.length === 0 ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  gap: '8px',
+                }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={theme.colors.gray} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/>
+                    <line x1="9" y1="21" x2="9" y2="9"/>
+                  </svg>
+                  <span style={{ color: theme.colors.gray, fontSize: '13px' }}>No trades in this period</span>
+                </div>
+              ) : (
+                <Bar data={dailyPnlChartData} options={{
+                  ...dailyPnlChartOptions,
+                  maintainAspectRatio: false,
+                  responsive: true
+                }} />
+              )}
             </div>
           </div>
         </div>
