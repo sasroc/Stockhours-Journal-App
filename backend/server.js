@@ -825,6 +825,23 @@ app.get('/api/schwab/status', verifyFirebaseToken, async (req, res) => {
       return res.json({ connected: false, lastSync: null });
     }
     const userData = userSnap.data();
+
+    // Proactively refresh the access token on every status check so the
+    // 7-day refresh token window keeps rolling forward as long as the user
+    // opens the app, preventing unnecessary reconnects.
+    if (userData.schwabConnected) {
+      const tokenDoc = await userRef.collection('schwabTokens').doc('primary').get();
+      if (tokenDoc.exists) {
+        const refreshed = await refreshSchwabTokenIfNeeded(userRef, tokenDoc);
+        if (!refreshed) {
+          // Refresh token itself expired — clear the connection
+          await userRef.collection('schwabTokens').doc('primary').delete();
+          await userRef.set({ schwabConnected: false }, { merge: true });
+          return res.json({ connected: false, lastSync: null });
+        }
+      }
+    }
+
     res.json({
       connected: !!userData.schwabConnected,
       lastSync: userData.schwabLastSync ? userData.schwabLastSync.toDate?.() || userData.schwabLastSync : null,
