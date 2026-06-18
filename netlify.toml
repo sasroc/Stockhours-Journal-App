@@ -1,3 +1,4 @@
 [build]
-  command = "cd stockhours && npm run build"
-  publish = "stockhours/build"
+  base = "stockhours"
+  command = "npm run build"
+  publish = "build"
