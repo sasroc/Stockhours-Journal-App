@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { FaCheck, FaEllipsisH } from 'react-icons/fa';
 import TradingViewChart from './TradingViewChart';
 import { useLocation } from 'react-router-dom';
+import { getInstrumentLabel, getInstrumentMultiplier, isShareTrade } from '../utils/tradeInstruments';
 
 const ROWS_PER_PAGE = 50;
 
@@ -24,14 +25,15 @@ const getTradeKey = (trade) => {
 function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistakesTags, setSetupsTags, setMistakesTags, selectedSetups, selectedMistakes, setSelectedSetups, setSelectedMistakes, setRatings, isPro, currentUser, tradingProfile, streakContext, symbolStats }) {
   // Dummy values for fields not in trade object
   const grossPL = trade.netPL;
-  const adjustedCost = (trade.entryPrice * trade.open.Quantity * 100).toFixed(2);
+  const tradeMultiplier = getInstrumentMultiplier(trade.open);
+  const adjustedCost = (trade.entryPrice * trade.open.Quantity * tradeMultiplier).toFixed(2);
   // Format date as 'Tue, May 06, 2025'
   function formatDate(dateStr) {
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: '2-digit', year: 'numeric' });
   }
   const tradeDate = formatDate(trade.open.ExecTime || trade.open.TradeDate);
-  const optionTaken = `${trade.open.Expiration || ''} ${trade.open.Strike || ''} ${trade.open.Type || ''}`;
+  const optionTaken = getInstrumentLabel(trade.open);
 
   // Trade rating state (supports half-stars)
   const [hoverRating, setHoverRating] = React.useState(null);
@@ -358,7 +360,9 @@ function TradeDetailView({ trade, onBack, rating, setRating, setupsTags, mistake
             </div>
             {/* Side */}
             {(() => {
-              const side = (trade.open.Type || '').toUpperCase() === 'PUT' ? 'SHORT' : 'LONG';
+              const side = isShareTrade(trade.open)
+                ? (trade.open.Side === 'SELL' ? 'SHORT' : 'LONG')
+                : (trade.open.Type || '').toUpperCase() === 'PUT' ? 'SHORT' : 'LONG';
               const sideColor = side === 'LONG' ? theme.colors.green : theme.colors.red;
               return (
                 <div style={{ color: '#b3b3c6', fontSize: 16 }}>
@@ -561,16 +565,16 @@ const AllTradesScreen = ({ tradeData, tradingProfile }) => {
       let totalBuyCost = 0;
       let totalSellQuantity = 0;
       let totalSellProceeds = 0;
-      const CONTRACT_MULTIPLIER = 100;
 
       transactions.forEach(tx => {
+        const contractMultiplier = getInstrumentMultiplier(tx);
         if (tx.PosEffect === 'OPEN' && tx.Side === 'BUY') {
           openTx = tx;
           totalBuyQuantity += tx.Quantity;
-          totalBuyCost += tx.Quantity * tx.Price * CONTRACT_MULTIPLIER;
+          totalBuyCost += tx.Quantity * tx.Price * contractMultiplier;
         } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'SELL' && openTx) {
           totalSellQuantity += Math.abs(tx.Quantity);
-          totalSellProceeds += Math.abs(tx.Quantity) * tx.Price * CONTRACT_MULTIPLIER;
+          totalSellProceeds += Math.abs(tx.Quantity) * tx.Price * contractMultiplier;
 
           if (totalSellQuantity >= totalBuyQuantity) {
             const profitLoss = totalSellProceeds - totalBuyCost;
@@ -601,11 +605,11 @@ const AllTradesScreen = ({ tradeData, tradingProfile }) => {
           // Short option: sell to open
           openTx = tx;
           totalSellQuantity += tx.Quantity;
-          totalSellProceeds += tx.Quantity * tx.Price * CONTRACT_MULTIPLIER;
+          totalSellProceeds += tx.Quantity * tx.Price * contractMultiplier;
         } else if (tx.PosEffect === 'CLOSE' && tx.Side === 'BUY' && openTx) {
           // Short option: buy to close
           totalBuyQuantity += Math.abs(tx.Quantity);
-          totalBuyCost += Math.abs(tx.Quantity) * tx.Price * CONTRACT_MULTIPLIER;
+          totalBuyCost += Math.abs(tx.Quantity) * tx.Price * contractMultiplier;
           if (totalBuyQuantity >= totalSellQuantity) {
             const profitLoss = totalSellProceeds - totalBuyCost;
             const netROI = totalSellProceeds > 0 ? (profitLoss / totalSellProceeds) * 100 : 0;

@@ -19,6 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import NoteModal from './NoteModal';
+import { getInstrumentLabel, getInstrumentMultiplier } from '../utils/tradeInstruments';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -155,9 +156,9 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
 
     const processedTrades = [];
     const positions = new Map(); // Map of Symbol-Strike-Expiration to { totalQuantity, currentQuantity, buyRecords, sellRecords }
-    const CONTRACT_MULTIPLIER = 100;
 
     sortedTransactions.forEach(transaction => {
+      const contractMultiplier = getInstrumentMultiplier(transaction);
       const key = `${transaction.Symbol}-${transaction.Strike}-${transaction.Expiration}`;
       if (!positions.has(key)) {
         positions.set(key, {
@@ -201,7 +202,7 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
             const buyRecord = position.buyRecords.shift();
             buyRecordsForCycle.push(buyRecord);
             totalBuyQuantity += buyRecord.quantity;
-            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
+            totalBuyCost += buyRecord.quantity * buyRecord.price * contractMultiplier;
           }
 
           let totalSellQuantity = 0;
@@ -212,7 +213,7 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
             const sellRecord = position.sellRecords.shift();
             sellRecordsForCycle.push(sellRecord);
             totalSellQuantity += sellRecord.quantity;
-            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
+            totalSellProceeds += sellRecord.quantity * sellRecord.price * contractMultiplier;
           }
 
           const profitLoss = totalSellProceeds - totalBuyCost;
@@ -968,8 +969,7 @@ const DailyStatsScreen = ({ tradeData, tradingProfile }) => {
                           minute: '2-digit',
                           second: '2-digit',
                         });
-                        const optionType = trade.Type || 'CALL';
-                        const instrument = `${trade.Expiration} ${trade.Strike} ${optionType}`;
+                        const instrument = getInstrumentLabel(trade);
 
                         return (
                           <tr key={index} style={{ borderBottom: '1px solid #333' }}>

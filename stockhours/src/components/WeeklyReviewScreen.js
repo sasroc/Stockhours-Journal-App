@@ -3,6 +3,7 @@ import { theme } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getInstrumentMultiplier } from '../utils/tradeInstruments';
 
 // Week helpers
 const getWeekMonday = (date) => {
@@ -94,9 +95,9 @@ const WeeklyReviewScreen = ({ tradeData, tradingProfile, tradeRatings = {} }) =>
 
     const processedTrades = [];
     const positions = new Map();
-    const CONTRACT_MULTIPLIER = 100;
 
     sortedTransactions.forEach(transaction => {
+      const contractMultiplier = getInstrumentMultiplier(transaction);
       const key = `${transaction.Symbol}-${transaction.Strike}-${transaction.Expiration}`;
       if (!positions.has(key)) {
         positions.set(key, {
@@ -137,7 +138,7 @@ const WeeklyReviewScreen = ({ tradeData, tradingProfile, tradeRatings = {} }) =>
             const buyRecord = position.buyRecords.shift();
             buyRecordsForCycle.push(buyRecord);
             totalBuyQuantity += buyRecord.quantity;
-            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
+            totalBuyCost += buyRecord.quantity * buyRecord.price * contractMultiplier;
           }
 
           let totalSellQuantity = 0;
@@ -148,7 +149,7 @@ const WeeklyReviewScreen = ({ tradeData, tradingProfile, tradeRatings = {} }) =>
             const sellRecord = position.sellRecords.shift();
             sellRecordsForCycle.push(sellRecord);
             totalSellQuantity += sellRecord.quantity;
-            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
+            totalSellProceeds += sellRecord.quantity * sellRecord.price * contractMultiplier;
           }
 
           const profitLoss = totalSellProceeds - totalBuyCost;

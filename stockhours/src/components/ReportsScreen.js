@@ -5,6 +5,7 @@ import { startOfWeek, endOfWeek, eachWeekOfInterval, getMonth, getHours, differe
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getInstrumentMultiplier } from '../utils/tradeInstruments';
 
 // ChartContainer component for robust responsive chart rendering
 function ChartContainer({ data, options, layout, title }) {
@@ -134,9 +135,9 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
     const sortedTransactions = allTransactions.sort((a, b) => new Date(a.ExecTime) - new Date(b.ExecTime));
     const trades = [];
     const positions = new Map();
-    const CONTRACT_MULTIPLIER = 100;
 
     sortedTransactions.forEach(transaction => {
+      const contractMultiplier = getInstrumentMultiplier(transaction);
       const key = `${transaction.Symbol}-${transaction.Strike}-${transaction.Expiration}`;
       if (!positions.has(key)) {
         positions.set(key, {
@@ -173,7 +174,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
             const buyRecord = position.buyRecords.shift();
             buyRecordsForCycle.push(buyRecord);
             totalBuyQuantity += buyRecord.quantity;
-            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
+            totalBuyCost += buyRecord.quantity * buyRecord.price * contractMultiplier;
           }
 
           let totalSellQuantity = 0;
@@ -183,7 +184,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
             const sellRecord = position.sellRecords.shift();
             sellRecordsForCycle.push(sellRecord);
             totalSellQuantity += sellRecord.quantity;
-            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
+            totalSellProceeds += sellRecord.quantity * sellRecord.price * contractMultiplier;
           }
 
           const profitLoss = totalSellProceeds - totalBuyCost;
@@ -233,7 +234,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
             const sellRecord = position.sellRecords.shift();
             sellRecordsForCycle.push(sellRecord);
             totalSellQuantity += sellRecord.quantity;
-            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
+            totalSellProceeds += sellRecord.quantity * sellRecord.price * contractMultiplier;
           }
           let totalBuyQuantity = 0;
           let totalBuyCost = 0;
@@ -242,7 +243,7 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
             const buyRecord = position.buyRecords.shift();
             buyRecordsForCycle.push(buyRecord);
             totalBuyQuantity += buyRecord.quantity;
-            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
+            totalBuyCost += buyRecord.quantity * buyRecord.price * contractMultiplier;
           }
           const profitLoss = totalSellProceeds - totalBuyCost;
           const exitTime = buyRecordsForCycle[buyRecordsForCycle.length - 1].execTime;
@@ -283,12 +284,13 @@ const ReportsScreen = ({ tradeData, setupsTags = [], mistakesTags = [], tradeRat
           const entryPrice = openTx.Price;
           const exitPrice = tx.Price;
           const quantity = openTx.Quantity;
-          const contractMultiplier = 100;
+          const contractMultiplier = getInstrumentMultiplier(openTx);
           const netPL = (exitPrice - entryPrice) * quantity * contractMultiplier * (openTx.Side === 'BUY' ? 1 : -1);
           const tradeObj = {
             Symbol: openTx.Symbol,
             Strike: openTx.Strike,
             Expiration: openTx.Expiration,
+            Type: openTx.Type,
             FirstBuyExecTime: openTx.ExecTime,
             ExitTime: tx.ExecTime,
             TradeDate: openTx.TradeDate,

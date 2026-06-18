@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import NoteModal from './NoteModal';
+import { getInstrumentLabel, getInstrumentMultiplier } from '../utils/tradeInstruments';
 
 const InfoCircle = ({ tooltip }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -217,9 +218,9 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
 
     const processedTrades = [];
     const positions = new Map();
-    const CONTRACT_MULTIPLIER = 100;
 
     sortedTransactions.forEach(transaction => {
+      const contractMultiplier = getInstrumentMultiplier(transaction);
       const key = `${transaction.Symbol}-${transaction.Strike}-${transaction.Expiration}`;
       if (!positions.has(key)) {
         positions.set(key, {
@@ -260,7 +261,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             const buyRecord = position.buyRecords.shift();
             buyRecordsForCycle.push(buyRecord);
             totalBuyQuantity += buyRecord.quantity;
-            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
+            totalBuyCost += buyRecord.quantity * buyRecord.price * contractMultiplier;
           }
 
           let totalSellQuantity = 0;
@@ -271,7 +272,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             const sellRecord = position.sellRecords.shift();
             sellRecordsForCycle.push(sellRecord);
             totalSellQuantity += sellRecord.quantity;
-            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
+            totalSellProceeds += sellRecord.quantity * sellRecord.price * contractMultiplier;
           }
 
           const profitLoss = totalSellProceeds - totalBuyCost;
@@ -289,6 +290,8 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             Type: transaction.Type,
             Quantity: totalBuyQuantity,
             Price: buyRecordsForCycle[0].price,
+            OpenSide: 'BUY',
+            CloseSide: 'SELL',
           });
 
           position.totalQuantity = 0;
@@ -321,7 +324,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             const sellRecord = position.sellRecords.shift();
             sellRecordsForCycle.push(sellRecord);
             totalSellQuantity += sellRecord.quantity;
-            totalSellProceeds += sellRecord.quantity * sellRecord.price * CONTRACT_MULTIPLIER;
+            totalSellProceeds += sellRecord.quantity * sellRecord.price * contractMultiplier;
           }
           let totalBuyQuantity = 0;
           let totalBuyCost = 0;
@@ -330,7 +333,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             const buyRecord = position.buyRecords.shift();
             buyRecordsForCycle.push(buyRecord);
             totalBuyQuantity += buyRecord.quantity;
-            totalBuyCost += buyRecord.quantity * buyRecord.price * CONTRACT_MULTIPLIER;
+            totalBuyCost += buyRecord.quantity * buyRecord.price * contractMultiplier;
           }
           const profitLoss = totalSellProceeds - totalBuyCost;
           const lastBuyRecord = buyRecordsForCycle[buyRecordsForCycle.length - 1];
@@ -346,6 +349,8 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
             Type: transaction.Type,
             Quantity: totalSellQuantity,
             Price: sellRecordsForCycle[0].price,
+            OpenSide: 'SELL',
+            CloseSide: 'BUY',
           });
           position.totalQuantity = 0;
           position.currentQuantity = 0;
@@ -568,7 +573,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
         symbol: trade.Symbol,
         type: trade.Type || 'N/A',
         profitLoss: trade.profitLoss,
-        netROI: trade.Quantity && trade.Price ? (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100 : 0,
+        netROI: trade.Quantity && trade.Price ? (trade.profitLoss / (trade.Quantity * trade.Price * getInstrumentMultiplier(trade))) * 100 : 0,
         quantity: trade.Quantity || 0,
         entryTime: trade.FirstBuyExecTime ? new Date(trade.FirstBuyExecTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
         setups: [],
@@ -713,15 +718,18 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     const winrate = trades.length > 0 ? ((winningTrades / trades.length) * 100).toFixed(0) : '--';
 
     const handleTradeClick = (trade) => {
+      const contractMultiplier = getInstrumentMultiplier(trade);
+      const priceMove = trade.Quantity ? trade.profitLoss / (trade.Quantity * contractMultiplier) : 0;
+      const closePrice = trade.OpenSide === 'SELL' ? trade.Price - priceMove : trade.Price + priceMove;
       // Transform the trade object to match the expected structure
       const transformedTrade = {
         symbol: trade.Symbol,
         openDate: trade.TradeDate,
         closeDate: trade.LastSellTradeDate || trade.TradeDate,
         entryPrice: trade.Price,
-        exitPrice: trade.Price + (trade.profitLoss / (trade.Quantity * 100)), // Calculate exit price from P&L
+        exitPrice: closePrice,
         netPL: trade.profitLoss,
-        netROI: (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100,
+        netROI: trade.Quantity && trade.Price ? (trade.profitLoss / (trade.Quantity * trade.Price * contractMultiplier)) * 100 : 0,
         open: {
           Quantity: trade.Quantity,
           ExecTime: trade.FirstBuyExecTime,
@@ -730,15 +738,15 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
           Strike: trade.Strike,
           Expiration: trade.Expiration,
           Price: trade.Price,
-          Side: 'BUY',
+          Side: trade.OpenSide || 'BUY',
           PosEffect: 'OPEN'
         },
         close: {
           ExecTime: trade.LastSellExecTime,
           TradeDate: trade.LastSellTradeDate || trade.TradeDate,
           Quantity: trade.Quantity,
-          Price: trade.Price + (trade.profitLoss / (trade.Quantity * 100)),
-          Side: 'SELL',
+          Price: closePrice,
+          Side: trade.CloseSide || 'SELL',
           PosEffect: 'CLOSE'
         }
       };
@@ -1081,9 +1089,8 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                     minute: '2-digit',
                     second: '2-digit',
                   });
-                  const optionType = trade.Type || 'CALL';
-                  const instrument = `${trade.Expiration} ${trade.Strike} ${optionType}`;
-                  const netROI = (trade.profitLoss / (trade.Quantity * trade.Price * 100)) * 100;
+                  const instrument = getInstrumentLabel(trade);
+                  const netROI = trade.Quantity && trade.Price ? (trade.profitLoss / (trade.Quantity * trade.Price * getInstrumentMultiplier(trade))) * 100 : 0;
                   const isHovered = hoveredTrade === index;
                   
                   return (
@@ -1111,7 +1118,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
                           display: 'inline-block',
                         }}>{trade.Symbol}</span>
                       </td>
-                      <td style={{ padding: '12px 8px', color: '#fff', fontSize: 15 }}>{optionType}</td>
+                      <td style={{ padding: '12px 8px', color: '#fff', fontSize: 15 }}>{trade.Type || 'N/A'}</td>
                       <td style={{ padding: '12px 8px', color: '#fff', fontSize: 15 }}>{instrument}</td>
                       <td style={{ padding: '12px 8px', textAlign: 'right', color: trade.profitLoss >= 0 ? theme.colors.green : theme.colors.red, fontWeight: 600, fontSize: 15 }}>${trade.profitLoss.toFixed(2)}</td>
                       <td style={{ padding: '12px 8px', textAlign: 'right', color: netROI >= 0 ? theme.colors.green : theme.colors.red, fontWeight: 600, fontSize: 15 }}>{netROI.toFixed(2)}%</td>
