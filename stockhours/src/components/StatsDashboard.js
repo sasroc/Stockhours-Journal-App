@@ -361,7 +361,7 @@ const StatsDashboard = ({ tradeData, isMobileDevice, isHalfScreen }) => {
     return processedTrades;
   }, [tradeData]);
 
-  const { dailyPnlData, cumulativePnlData } = useMemo(() => {
+  const { dailyPnlData } = useMemo(() => {
     const dailyPnlMap = {};
     const cumulativePnlData = [];
     const sortedTrades = trades.sort((a, b) => new Date(a.FirstBuyExecTime) - new Date(b.FirstBuyExecTime));
